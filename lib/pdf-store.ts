@@ -13,6 +13,28 @@ export interface SearchResult {
   text: string;
 }
 
+export interface Annotation {
+  id: string;
+  type: 'highlight' | 'comment' | 'shape' | 'text';
+  pageNumber: number;
+  content?: string;
+  color: string;
+  position: {
+    x: number;
+    y: number;
+    width?: number;
+    height?: number;
+  };
+  timestamp: number;
+}
+
+export interface Bookmark {
+  id: string;
+  pageNumber: number;
+  title: string;
+  timestamp: number;
+}
+
 export interface PDFOutlineNode {
   title: string;
   bold?: boolean;
@@ -44,6 +66,7 @@ interface PDFState {
   isFullscreen: boolean;
   showThumbnails: boolean;
   showOutline: boolean;
+  showAnnotations: boolean;
   isDarkMode: boolean;
 
   // Outline/Bookmarks
@@ -53,9 +76,19 @@ interface PDFState {
   searchQuery: string;
   searchResults: SearchResult[];
   currentSearchIndex: number;
+  caseSensitiveSearch: boolean;
+
+  // Annotations
+  annotations: Annotation[];
+  
+  // Bookmarks
+  bookmarks: Bookmark[];
 
   // Recent files
   recentFiles: RecentFile[];
+  
+  // Reading progress
+  readingProgress: number; // 0-100 percentage
 
   // Actions
   setCurrentPDF: (file: File | null) => void;
@@ -78,14 +111,22 @@ interface PDFState {
   toggleFullscreen: () => void;
   toggleThumbnails: () => void;
   toggleOutline: () => void;
+  toggleAnnotations: () => void;
   toggleDarkMode: () => void;
   setOutline: (outline: PDFOutlineNode[]) => void;
   setSearchQuery: (query: string) => void;
   setSearchResults: (results: SearchResult[]) => void;
   nextSearchResult: () => void;
   previousSearchResult: () => void;
+  toggleCaseSensitiveSearch: () => void;
+  addAnnotation: (annotation: Omit<Annotation, 'id' | 'timestamp'>) => void;
+  removeAnnotation: (id: string) => void;
+  updateAnnotation: (id: string, updates: Partial<Annotation>) => void;
+  addBookmark: (pageNumber: number, title: string) => void;
+  removeBookmark: (id: string) => void;
   addRecentFile: (file: RecentFile) => void;
   clearRecentFiles: () => void;
+  updateReadingProgress: (progress: number) => void;
   resetPDF: () => void;
 }
 
@@ -104,12 +145,17 @@ export const usePDFStore = create<PDFState>()(
       isFullscreen: false,
       showThumbnails: false,
       showOutline: false,
+      showAnnotations: false,
       isDarkMode: false,
       outline: [],
       searchQuery: '',
       searchResults: [],
       currentSearchIndex: 0,
+      caseSensitiveSearch: false,
+      annotations: [],
+      bookmarks: [],
       recentFiles: [],
+      readingProgress: 0,
 
       // Actions
       setCurrentPDF: (file) => set({ currentPDF: file }),
@@ -198,6 +244,8 @@ export const usePDFStore = create<PDFState>()(
 
       toggleOutline: () => set((state) => ({ showOutline: !state.showOutline })),
 
+      toggleAnnotations: () => set((state) => ({ showAnnotations: !state.showAnnotations })),
+
       toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
 
       setOutline: (outline) => set({ outline }),
@@ -222,6 +270,51 @@ export const usePDFStore = create<PDFState>()(
         }
       },
 
+      toggleCaseSensitiveSearch: () => set((state) => ({ caseSensitiveSearch: !state.caseSensitiveSearch })),
+
+      addAnnotation: (annotation) => {
+        const newAnnotation: Annotation = {
+          ...annotation,
+          id: `annotation-${Date.now()}-${Math.random()}`,
+          timestamp: Date.now(),
+        };
+        set((state) => ({ annotations: [...state.annotations, newAnnotation] }));
+      },
+
+      removeAnnotation: (id) => {
+        set((state) => ({
+          annotations: state.annotations.filter((a) => a.id !== id),
+        }));
+      },
+
+      updateAnnotation: (id, updates) => {
+        set((state) => ({
+          annotations: state.annotations.map((a) =>
+            a.id === id ? { ...a, ...updates } : a
+          ),
+        }));
+      },
+
+      addBookmark: (pageNumber, title) => {
+        const newBookmark: Bookmark = {
+          id: `bookmark-${Date.now()}-${Math.random()}`,
+          pageNumber,
+          title,
+          timestamp: Date.now(),
+        };
+        set((state) => ({ bookmarks: [...state.bookmarks, newBookmark] }));
+      },
+
+      removeBookmark: (id) => {
+        set((state) => ({
+          bookmarks: state.bookmarks.filter((b) => b.id !== id),
+        }));
+      },
+
+      updateReadingProgress: (progress) => {
+        set({ readingProgress: Math.min(100, Math.max(0, progress)) });
+      },
+
       addRecentFile: (file) => {
         const { recentFiles } = get();
         const filtered = recentFiles.filter((f) => f.url !== file.url);
@@ -243,10 +336,15 @@ export const usePDFStore = create<PDFState>()(
         isFullscreen: false,
         showThumbnails: false,
         showOutline: false,
+        showAnnotations: false,
         outline: [],
         searchQuery: '',
         searchResults: [],
         currentSearchIndex: 0,
+        caseSensitiveSearch: false,
+        annotations: [],
+        bookmarks: [],
+        readingProgress: 0,
       }),
     }),
     {
@@ -254,6 +352,8 @@ export const usePDFStore = create<PDFState>()(
       partialize: (state) => ({
         recentFiles: state.recentFiles,
         isDarkMode: state.isDarkMode,
+        annotations: state.annotations,
+        bookmarks: state.bookmarks,
       }),
     }
   )

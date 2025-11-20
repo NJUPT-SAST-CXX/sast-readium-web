@@ -6,8 +6,16 @@ import { loadPDFDocument, searchInPDF, downloadPDF, printPDF, PDFDocumentProxy, 
 import { PDFToolbar } from './pdf-toolbar';
 import { PDFPage } from './pdf-page';
 import { PDFThumbnail } from './pdf-thumbnail';
+import { PDFOutline } from './pdf-outline';
+import { PDFBookmarks } from './pdf-bookmarks';
+import { PDFAnnotationsList } from './pdf-annotations-list';
+import { PDFProgressBar } from './pdf-progress-bar';
+import { PDFAnnotationsToolbar } from './pdf-annotations-toolbar';
+import { PDFTextLayer } from './pdf-text-layer';
+import { PDFAnnotationLayer } from './pdf-annotation-layer';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { useTouchGestures } from '@/hooks/use-touch-gestures';
 
 interface PDFViewerProps {
   file: File;
@@ -20,30 +28,43 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
     zoom,
     rotation,
     showThumbnails,
+    showOutline,
+    showAnnotations,
     isDarkMode,
     isFullscreen,
     numPages,
+    viewMode,
+    fitMode,
+    outline,
+    caseSensitiveSearch,
+    searchQuery,
     setNumPages,
     setCurrentPage,
     setZoom,
+    setOutline,
+    goToPage,
     nextPage,
     previousPage,
     addRecentFile,
     setSearchResults,
+    updateReadingProgress,
   } = usePDFStore();
 
   const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null);
   const [currentPageObj, setCurrentPageObj] = useState<PDFPageProxy | null>(null);
+  const [allPages, setAllPages] = useState<(PDFPageProxy | null)[]>([]);
   const [thumbnailPages, setThumbnailPages] = useState<(PDFPageProxy | null)[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [containerWidth, setContainerWidth] = useState<number>(0);
   const viewerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const lastScrollTop = useRef<number>(0);
   const isScrollingProgrammatically = useRef<boolean>(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pageRefsMap = useRef<Map<number, HTMLDivElement>>(new Map());
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
     // Load saved width from localStorage or use default
     if (typeof window !== 'undefined') {
@@ -53,6 +74,9 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
     return 240;
   });
   const [isResizing, setIsResizing] = useState(false);
+  const [showBookmarksPanel, setShowBookmarksPanel] = useState(false);
+  const [selectedAnnotationType, setSelectedAnnotationType] = useState<'highlight' | 'comment' | 'shape' | 'text' | null>(null);
+  const touchContainerRef = useRef<HTMLDivElement>(null);
 
   // Load PDF document
   useEffect(() => {
@@ -84,6 +108,66 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
           numPages: pdf.numPages,
         });
 
+        // Load outline/bookmarks
+        try {
+          const pdfOutline = await pdf.getOutline();
+          if (pdfOutline) {
+            // Process outline to include page numbers
+            type OutlineItem = {
+              title: string;
+              bold?: boolean;
+              italic?: boolean;
+              color?: number[];
+              dest?: string | unknown[];
+              items?: OutlineItem[];
+              pageNumber?: number;
+            };
+
+            const processOutline = async (items: OutlineItem[]): Promise<OutlineItem[]> => {
+              return Promise.all(items.map(async (item) => {
+                const processed: OutlineItem = {
+                  title: item.title,
+                  bold: item.bold,
+                  italic: item.italic,
+                  color: item.color,
+                };
+
+                // Try to get page number from destination
+                if (item.dest) {
+                  try {
+                    const dest = typeof item.dest === 'string'
+                      ? await pdf.getDestination(item.dest)
+                      : item.dest as unknown[];
+                    
+                    if (dest && Array.isArray(dest) && dest[0]) {
+                      const pageRef = dest[0];
+                      const pageIndex = await pdf.getPageIndex(pageRef);
+                      processed.pageNumber = pageIndex + 1;
+                    }
+                  } catch (err) {
+                    console.error('Error getting page number for outline item:', err);
+                  }
+                }
+
+                // Process children recursively
+                if (item.items && item.items.length > 0) {
+                  processed.items = await processOutline(item.items);
+                }
+
+                return processed;
+              }));
+            };
+
+            const processedOutline = await processOutline(pdfOutline as OutlineItem[]);
+            setOutline(processedOutline);
+          } else {
+            setOutline([]);
+          }
+        } catch (err) {
+          console.error('Error loading outline:', err);
+          setOutline([]);
+        }
+
         setIsLoading(false);
       } catch (err) {
         console.error('Error loading PDF:', err);
@@ -100,7 +184,7 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
     return () => {
       mounted = false;
     };
-  }, [file, setNumPages, addRecentFile]);
+  }, [file, setNumPages, addRecentFile, setOutline]);
 
   // Load current page
   useEffect(() => {
@@ -125,6 +209,116 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
       mounted = false;
     };
   }, [pdfDocument, currentPage]);
+
+  // Load all pages for continuous and two-page views
+  useEffect(() => {
+    if (!pdfDocument || viewMode === 'single') {
+      setAllPages([]);
+      return;
+    }
+
+    let mounted = true;
+    const CHUNK_SIZE = 3;
+
+    const loadAllPages = async () => {
+      const pages: (PDFPageProxy | null)[] = new Array(pdfDocument.numPages).fill(null);
+      setAllPages(pages);
+
+      for (let start = 1; start <= pdfDocument.numPages; start += CHUNK_SIZE) {
+        if (!mounted) break;
+
+        const end = Math.min(start + CHUNK_SIZE - 1, pdfDocument.numPages);
+        const chunkPromises = [];
+
+        for (let i = start; i <= end; i++) {
+          chunkPromises.push(
+            pdfDocument.getPage(i)
+              .then((page) => ({ index: i - 1, page }))
+              .catch((err) => {
+                console.error(`Error loading page ${i}:`, err);
+                return { index: i - 1, page: null };
+              })
+          );
+        }
+
+        const results = await Promise.all(chunkPromises);
+        
+        if (!mounted) break;
+
+        setAllPages((prev) => {
+          const updated = [...prev];
+          results.forEach(({ index, page }) => {
+            updated[index] = page;
+          });
+          return updated;
+        });
+
+        if (end < pdfDocument.numPages) {
+          await new Promise((resolve) => setTimeout(resolve, 30));
+        }
+      }
+    };
+
+    loadAllPages();
+
+    return () => {
+      mounted = false;
+    };
+  }, [pdfDocument, viewMode]);
+
+  // Measure container width and apply fit modes with throttling for better performance
+  useEffect(() => {
+    let resizeTimeout: NodeJS.Timeout | null = null;
+
+    const updateContainerWidth = () => {
+      if (scrollContainerRef.current) {
+        const width = scrollContainerRef.current.clientWidth;
+        setContainerWidth(width);
+      }
+    };
+
+    const throttledResize = () => {
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
+      resizeTimeout = setTimeout(updateContainerWidth, 150); // 150ms throttle
+    };
+
+    updateContainerWidth();
+    window.addEventListener('resize', throttledResize);
+
+    return () => {
+      window.removeEventListener('resize', throttledResize);
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
+    };
+  }, [showThumbnails]);
+
+  // Apply fit mode zoom with debouncing to prevent performance issues
+  useEffect(() => {
+    if (!currentPageObj || !containerWidth || fitMode === 'custom') return;
+
+    // Debounce the zoom calculation to prevent excessive re-renders
+    const timeoutId = setTimeout(() => {
+      const viewport = currentPageObj.getViewport({ scale: 1, rotation });
+      const padding = 64; // Account for padding
+      const availableWidth = containerWidth - padding;
+      const availableHeight = window.innerHeight - 150; // Account for toolbar
+
+      if (fitMode === 'fitWidth') {
+        const newZoom = availableWidth / viewport.width;
+        setZoom(newZoom);
+      } else if (fitMode === 'fitPage') {
+        const zoomWidth = availableWidth / viewport.width;
+        const zoomHeight = availableHeight / viewport.height;
+        const newZoom = Math.min(zoomWidth, zoomHeight);
+        setZoom(newZoom);
+      }
+    }, 100); // 100ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [currentPageObj, containerWidth, fitMode, rotation, setZoom]);
 
   // Load thumbnail pages in chunks (lazy loading)
   useEffect(() => {
@@ -192,11 +386,11 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Prevent default for our shortcuts
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Home' || e.key === 'End') {
         e.preventDefault();
       }
 
-      const { nextPage, previousPage, zoomIn, zoomOut, rotateClockwise, rotateCounterClockwise, toggleFullscreen } = usePDFStore.getState();
+      const { nextPage, previousPage, firstPage, lastPage, zoomIn, zoomOut, rotateClockwise, rotateCounterClockwise, toggleFullscreen } = usePDFStore.getState();
 
       switch (e.key) {
         case 'ArrowLeft':
@@ -204,6 +398,12 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
           break;
         case 'ArrowRight':
           nextPage();
+          break;
+        case 'Home':
+          firstPage();
+          break;
+        case 'End':
+          lastPage();
           break;
         case '+':
         case '=':
@@ -420,6 +620,33 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
     }
   }, [sidebarWidth, isResizing]);
 
+  // Update reading progress when page changes
+  useEffect(() => {
+    if (numPages > 0) {
+      const progress = ((currentPage - 1) / (numPages - 1)) * 100;
+      updateReadingProgress(progress);
+    }
+  }, [currentPage, numPages, updateReadingProgress]);
+
+  // Touch gestures support
+  useTouchGestures(touchContainerRef, {
+    onSwipeLeft: () => {
+      if (viewMode === 'single') {
+        nextPage();
+      }
+    },
+    onSwipeRight: () => {
+      if (viewMode === 'single') {
+        previousPage();
+      }
+    },
+    onPinchZoom: (scale) => {
+      const currentZoom = zoom;
+      const newZoom = Math.min(Math.max(currentZoom * scale, 0.5), 3.0);
+      setZoom(newZoom);
+    },
+  });
+
   const handleSearch = async (query: string) => {
     if (!pdfDocument || !query) {
       setSearchResults([]);
@@ -437,6 +664,7 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
       
       const results = await searchInPDF(pdfDocument, query, {
         signal: abortControllerRef.current.signal,
+        caseSensitive: caseSensitiveSearch,
         onProgress: (current, total) => {
           console.log(`Searching... ${current}/${total} pages`);
         },
@@ -456,6 +684,63 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
 
   const handlePrint = () => {
     printPDF(file);
+  };
+
+  /**
+   * Handle bookmark navigation with proper scrolling for continuous and two-page modes
+   */
+  const handleBookmarkNavigate = (pageNumber: number) => {
+    goToPage(pageNumber);
+    
+    // For continuous and two-page modes, scroll to the specific page
+    if (viewMode !== 'single') {
+      // Use requestAnimationFrame to ensure DOM is updated
+      requestAnimationFrame(() => {
+        const pageElement = pageRefsMap.current.get(pageNumber);
+        if (pageElement && scrollContainerRef.current) {
+          // Calculate the scroll position with some offset for better visibility
+          const containerRect = scrollContainerRef.current.getBoundingClientRect();
+          const pageRect = pageElement.getBoundingClientRect();
+          const scrollTop = scrollContainerRef.current.scrollTop;
+          const offset = pageRect.top - containerRect.top + scrollTop - 20; // 20px offset from top
+          
+          // Smooth scroll to the page
+          scrollContainerRef.current.scrollTo({
+            top: Math.max(0, offset),
+            behavior: 'smooth'
+          });
+        }
+      });
+    }
+  };
+
+  /**
+   * Handle annotation navigation - navigates to the page containing the annotation
+   * and scrolls to it in continuous/two-page modes
+   */
+  const handleAnnotationNavigate = (pageNumber: number, annotationId: string) => {
+    goToPage(pageNumber);
+    
+    // For continuous and two-page modes, scroll to the specific page
+    if (viewMode !== 'single') {
+      // Use requestAnimationFrame to ensure DOM is updated
+      requestAnimationFrame(() => {
+        const pageElement = pageRefsMap.current.get(pageNumber);
+        if (pageElement && scrollContainerRef.current) {
+          // Calculate the scroll position with some offset for better visibility
+          const containerRect = scrollContainerRef.current.getBoundingClientRect();
+          const pageRect = pageElement.getBoundingClientRect();
+          const scrollTop = scrollContainerRef.current.scrollTop;
+          const offset = pageRect.top - containerRect.top + scrollTop - 20; // 20px offset from top
+          
+          // Smooth scroll to the page
+          scrollContainerRef.current.scrollTo({
+            top: Math.max(0, offset),
+            behavior: 'smooth'
+          });
+        }
+      });
+    }
   };
 
   if (isLoading) {
@@ -501,16 +786,23 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
         onPrint={handlePrint}
         onSearch={handleSearch}
         onClose={onClose}
+        onToggleBookmarks={() => setShowBookmarksPanel(!showBookmarksPanel)}
+      />
+      
+      {/* Annotations Toolbar */}
+      <PDFAnnotationsToolbar
+        onAnnotationTypeSelect={setSelectedAnnotationType}
+        selectedType={selectedAnnotationType}
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden pb-16 sm:pb-20">
         {/* Thumbnails Sidebar */}
         {showThumbnails && (
           <div
-            className="relative border-r border-border bg-muted/30"
+            className="relative flex flex-col border-r border-border bg-muted/30 overflow-hidden"
             style={{ width: `${sidebarWidth}px` }}
           >
-            <ScrollArea className="h-full">
+            <ScrollArea className="flex-1 h-full">
               <div className="space-y-2 p-2">
                 {thumbnailPages.map((page, index) => (
                   <PDFThumbnail
@@ -534,22 +826,225 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
           </div>
         )}
 
+        {/* Outline/Bookmarks Sidebar */}
+        {showOutline && (
+          <div className="w-80 border-r border-border bg-muted/30 flex flex-col overflow-hidden">
+            <PDFOutline
+              outline={outline}
+              onNavigate={handleBookmarkNavigate}
+              currentPage={currentPage}
+            />
+          </div>
+        )}
+
+        {/* User Bookmarks Panel */}
+        {showBookmarksPanel && (
+          <div className="w-80 border-r border-border bg-muted/30 flex flex-col overflow-hidden">
+            <PDFBookmarks
+              onNavigate={handleBookmarkNavigate}
+              currentPage={currentPage}
+            />
+          </div>
+        )}
+
+        {/* Annotations Panel */}
+        {showAnnotations && (
+          <div className="w-80 border-r border-border bg-muted/30 flex flex-col overflow-hidden">
+            <PDFAnnotationsList
+              onNavigate={handleAnnotationNavigate}
+              currentPage={currentPage}
+            />
+          </div>
+        )}
+
         {/* Main PDF Viewer */}
         <div
-          ref={scrollContainerRef}
+          ref={(el) => {
+            if (el) {
+              (scrollContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+              (touchContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+            }
+          }}
           className="flex-1 overflow-auto bg-muted/50"
           style={{ scrollBehavior: 'smooth' }}
         >
-          <div className="flex min-h-full items-center justify-center p-8">
-            <PDFPage
-              page={currentPageObj}
-              scale={zoom}
-              rotation={rotation}
-              className="max-w-full"
-            />
-          </div>
+          {/* Single Page View */}
+          {viewMode === 'single' && (
+            <div className="flex min-h-full items-center justify-center p-8">
+              <div className="relative">
+                <PDFPage
+                  page={currentPageObj}
+                  scale={zoom}
+                  rotation={rotation}
+                  className="max-w-full"
+                />
+                <PDFTextLayer
+                  page={currentPageObj}
+                  scale={zoom}
+                  rotation={rotation}
+                  searchQuery={searchQuery}
+                  caseSensitive={caseSensitiveSearch}
+                />
+                <PDFAnnotationLayer
+                  page={currentPageObj}
+                  scale={zoom}
+                  rotation={rotation}
+                  selectedAnnotationType={selectedAnnotationType}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Continuous Scroll View */}
+          {viewMode === 'continuous' && (
+            <div className="flex flex-col items-center gap-4 p-8">
+              {allPages.map((page, index) => (
+                <div
+                  key={index}
+                  ref={(el) => {
+                    if (el) {
+                      pageRefsMap.current.set(index + 1, el);
+                    } else {
+                      pageRefsMap.current.delete(index + 1);
+                    }
+                  }}
+                  data-page={index + 1}
+                  className={cn(
+                    'transition-opacity',
+                    currentPage === index + 1 && 'ring-2 ring-primary rounded'
+                  )}
+                >
+                  <div className="relative">
+                    <PDFPage
+                      page={page}
+                      scale={zoom}
+                      rotation={rotation}
+                      className="shadow-lg"
+                    />
+                    <PDFTextLayer
+                      page={page}
+                      scale={zoom}
+                      rotation={rotation}
+                      searchQuery={searchQuery}
+                      caseSensitive={caseSensitiveSearch}
+                    />
+                    <PDFAnnotationLayer
+                      page={page}
+                      scale={zoom}
+                      rotation={rotation}
+                      selectedAnnotationType={selectedAnnotationType}
+                    />
+                  </div>
+                  <div className="mt-2 text-center text-sm text-muted-foreground">
+                    Page {index + 1} of {numPages}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Two Page View */}
+          {viewMode === 'twoPage' && (
+            <div className="flex flex-col items-center gap-4 p-8">
+              {Array.from({ length: Math.ceil(numPages / 2) }).map((_, pairIndex) => (
+                <div
+                  key={pairIndex}
+                  className="flex gap-4"
+                >
+                  {/* Left page */}
+                  {allPages[pairIndex * 2] && (
+                    <div
+                      ref={(el) => {
+                        if (el) {
+                          pageRefsMap.current.set(pairIndex * 2 + 1, el);
+                        } else {
+                          pageRefsMap.current.delete(pairIndex * 2 + 1);
+                        }
+                      }}
+                      data-page={pairIndex * 2 + 1}
+                      className={cn(
+                        'transition-opacity',
+                        currentPage === pairIndex * 2 + 1 && 'ring-2 ring-primary rounded'
+                      )}
+                    >
+                      <div className="relative">
+                        <PDFPage
+                          page={allPages[pairIndex * 2]}
+                          scale={zoom}
+                          rotation={rotation}
+                          className="shadow-lg"
+                        />
+                        <PDFTextLayer
+                          page={allPages[pairIndex * 2]}
+                          scale={zoom}
+                          rotation={rotation}
+                          searchQuery={searchQuery}
+                          caseSensitive={caseSensitiveSearch}
+                        />
+                        <PDFAnnotationLayer
+                          page={allPages[pairIndex * 2]}
+                          scale={zoom}
+                          rotation={rotation}
+                          selectedAnnotationType={selectedAnnotationType}
+                        />
+                      </div>
+                      <div className="mt-2 text-center text-sm text-muted-foreground">
+                        Page {pairIndex * 2 + 1}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Right page */}
+                  {allPages[pairIndex * 2 + 1] && (
+                    <div
+                      ref={(el) => {
+                        if (el) {
+                          pageRefsMap.current.set(pairIndex * 2 + 2, el);
+                        } else {
+                          pageRefsMap.current.delete(pairIndex * 2 + 2);
+                        }
+                      }}
+                      data-page={pairIndex * 2 + 2}
+                      className={cn(
+                        'transition-opacity',
+                        currentPage === pairIndex * 2 + 2 && 'ring-2 ring-primary rounded'
+                      )}
+                    >
+                      <div className="relative">
+                        <PDFPage
+                          page={allPages[pairIndex * 2 + 1]}
+                          scale={zoom}
+                          rotation={rotation}
+                          className="shadow-lg"
+                        />
+                        <PDFTextLayer
+                          page={allPages[pairIndex * 2 + 1]}
+                          scale={zoom}
+                          rotation={rotation}
+                          searchQuery={searchQuery}
+                          caseSensitive={caseSensitiveSearch}
+                        />
+                        <PDFAnnotationLayer
+                          page={allPages[pairIndex * 2 + 1]}
+                          scale={zoom}
+                          rotation={rotation}
+                          selectedAnnotationType={selectedAnnotationType}
+                        />
+                      </div>
+                      <div className="mt-2 text-center text-sm text-muted-foreground">
+                        Page {pairIndex * 2 + 2}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
+      
+      {/* Reading Progress Bar - Fixed at bottom */}
+      <PDFProgressBar />
     </div>
   );
 }

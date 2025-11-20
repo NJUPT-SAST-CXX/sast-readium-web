@@ -23,6 +23,9 @@ import {
   Columns2,
   FileText,
   Rows3,
+  Star,
+  CaseSensitive,
+  MessageSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,9 +44,10 @@ interface PDFToolbarProps {
   onPrint: () => void;
   onSearch: (query: string) => void;
   onClose: () => void;
+  onToggleBookmarks?: () => void;
 }
 
-export function PDFToolbar({ onDownload, onPrint, onSearch, onClose }: PDFToolbarProps) {
+export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBookmarks }: PDFToolbarProps) {
   const {
     currentPage,
     numPages,
@@ -51,12 +55,14 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose }: PDFToolba
     isFullscreen,
     showThumbnails,
     showOutline,
+    showAnnotations,
     isDarkMode,
     searchQuery,
     searchResults,
     currentSearchIndex,
     viewMode,
     fitMode,
+    caseSensitiveSearch,
     nextPage,
     previousPage,
     firstPage,
@@ -72,10 +78,12 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose }: PDFToolba
     toggleFullscreen,
     toggleThumbnails,
     toggleOutline,
+    toggleAnnotations,
     toggleDarkMode,
     setSearchQuery,
     nextSearchResult,
     previousSearchResult,
+    toggleCaseSensitiveSearch,
   } = usePDFStore();
 
   const [pageInput, setPageInput] = useState(currentPage.toString());
@@ -146,6 +154,33 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose }: PDFToolba
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Toggle Bookmarks</TooltipContent>
+            </Tooltip>
+            {onToggleBookmarks && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onToggleBookmarks}
+                  >
+                    <Star className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>My Bookmarks</TooltipContent>
+              </Tooltip>
+            )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleAnnotations}
+                  className={showAnnotations ? 'bg-accent' : ''}
+                >
+                  <MessageSquare className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Toggle Annotations</TooltipContent>
             </Tooltip>
           </div>
 
@@ -291,6 +326,82 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose }: PDFToolba
               </TooltipTrigger>
               <TooltipContent>Rotate Clockwise</TooltipContent>
             </Tooltip>
+
+            <Separator orientation="vertical" className="h-6" />
+
+            {/* View Mode Controls */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setViewMode('single')}
+                  className={viewMode === 'single' ? 'bg-accent' : ''}
+                >
+                  <FileText className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Single Page</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setViewMode('continuous')}
+                  className={viewMode === 'continuous' ? 'bg-accent' : ''}
+                >
+                  <Rows3 className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Continuous Scroll</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setViewMode('twoPage')}
+                  className={viewMode === 'twoPage' ? 'bg-accent' : ''}
+                >
+                  <Columns2 className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Two Page View</TooltipContent>
+            </Tooltip>
+
+            <Separator orientation="vertical" className="h-6" />
+
+            {/* Fit Mode Controls */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setFitMode('fitWidth')}
+                  className={fitMode === 'fitWidth' ? 'bg-accent' : ''}
+                >
+                  <Maximize2 className="h-5 w-5 rotate-90" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Fit to Width</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setFitMode('fitPage')}
+                  className={fitMode === 'fitPage' ? 'bg-accent' : ''}
+                >
+                  <Maximize2 className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Fit to Page</TooltipContent>
+            </Tooltip>
           </div>
 
           {/* Right Section */}
@@ -364,6 +475,20 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose }: PDFToolba
                 onChange={(e) => setLocalSearchQuery(e.target.value)}
                 className="flex-1"
               />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant={caseSensitiveSearch ? 'default' : 'ghost'}
+                    size="icon"
+                    onClick={toggleCaseSensitiveSearch}
+                    className="h-9 w-9"
+                  >
+                    <CaseSensitive className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Case Sensitive</TooltipContent>
+              </Tooltip>
               <Button type="submit" size="sm">
                 Search
               </Button>

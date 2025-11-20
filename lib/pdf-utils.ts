@@ -20,6 +20,8 @@ export interface PDFDocumentProxy {
   numPages: number;
   getPage: (pageNumber: number) => Promise<PDFPageProxy>;
   getOutline: () => Promise<PDFOutlineNode[] | null>;
+  getDestination: (dest: string) => Promise<unknown[] | null>;
+  getPageIndex: (pageRef: unknown) => Promise<number>;
 }
 
 export interface PDFPageProxy {
@@ -91,10 +93,11 @@ export async function searchInPDF(
   options?: {
     signal?: AbortSignal;
     onProgress?: (current: number, total: number) => void;
+    caseSensitive?: boolean;
   }
 ): Promise<Array<{ pageNumber: number; text: string }>> {
   const results: Array<{ pageNumber: number; text: string }> = [];
-  const normalizedQuery = query.toLowerCase();
+  const normalizedQuery = options?.caseSensitive ? query : query.toLowerCase();
 
   for (let i = 1; i <= pdf.numPages; i++) {
     // Check for cancellation
@@ -107,15 +110,16 @@ export async function searchInPDF(
       const textContent = await page.getTextContent();
       const pageText = textContent.items
         .map((item) => (item as TextItem).str)
-        .join(' ')
-        .toLowerCase();
+        .join(' ');
+      
+      const searchText = options?.caseSensitive ? pageText : pageText.toLowerCase();
 
-      if (pageText.includes(normalizedQuery)) {
+      if (searchText.includes(normalizedQuery)) {
         // Find the context around the match
-        const index = pageText.indexOf(normalizedQuery);
+        const index = searchText.indexOf(normalizedQuery);
         const start = Math.max(0, index - 50);
-        const end = Math.min(pageText.length, index + query.length + 50);
-        const context = pageText.substring(start, end);
+        const end = Math.min(searchText.length, index + query.length + 50);
+        const context = searchText.substring(start, end);
 
         results.push({
           pageNumber: i,

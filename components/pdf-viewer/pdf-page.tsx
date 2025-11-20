@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, memo } from 'react';
 import { PDFPageProxy } from '@/lib/pdf-utils';
 import { usePDFStore } from '@/lib/pdf-store';
 
@@ -12,12 +12,12 @@ interface PDFPageProps {
   onDoubleClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
-export function PDFPage({ page, scale, rotation, className = '', onDoubleClick }: PDFPageProps) {
+const PDFPageComponent = ({ page, scale, rotation, className = '', onDoubleClick }: PDFPageProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const renderTaskRef = useRef<{ cancel: () => void; promise: Promise<void> } | null>(null);
+  const renderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isZooming, setIsZooming] = useState(false);
-  const previousZoomRef = useRef<number>(scale);
   const { setZoom, zoom } = usePDFStore();
 
   useEffect(() => {
@@ -37,57 +37,71 @@ export function PDFPage({ page, scale, rotation, className = '', onDoubleClick }
       renderTaskRef.current.cancel();
     }
 
+    // Clear any pending timeout
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current);
+    }
+
     let isMounted = true;
 
-    // Get device pixel ratio for high-DPI displays (Retina, 4K, etc.)
-    const devicePixelRatio = window.devicePixelRatio || 1;
+    // Throttle rendering to prevent excessive re-renders during scale/rotation changes
+    renderTimeoutRef.current = setTimeout(() => {
+      if (!isMounted || !canvasRef.current) return;
 
-    // Calculate viewport with proper scaling
-    const viewport = page.getViewport({ scale, rotation });
+      // Get device pixel ratio for high-DPI displays (Retina, 4K, etc.)
+      // Limit to 2 for performance in fit modes
+      const devicePixelRatio = Math.min(window.devicePixelRatio || 1, 2);
 
-    // Set canvas dimensions with DPI scaling for crisp rendering
-    // The canvas internal resolution is higher than its CSS size
-    const outputScale = devicePixelRatio;
-    canvas.width = Math.floor(viewport.width * outputScale);
-    canvas.height = Math.floor(viewport.height * outputScale);
+      // Calculate viewport with proper scaling
+      const viewport = page.getViewport({ scale, rotation });
 
-    // Set CSS size to match the logical viewport size
-    canvas.style.width = `${Math.floor(viewport.width)}px`;
-    canvas.style.height = `${Math.floor(viewport.height)}px`;
+      // Set canvas dimensions with DPI scaling for crisp rendering
+      // The canvas internal resolution is higher than its CSS size
+      const outputScale = devicePixelRatio;
+      canvas.width = Math.floor(viewport.width * outputScale);
+      canvas.height = Math.floor(viewport.height * outputScale);
 
-    // Scale the context to match the output scale
-    context.scale(outputScale, outputScale);
+      // Set CSS size to match the logical viewport size
+      canvas.style.width = `${Math.floor(viewport.width)}px`;
+      canvas.style.height = `${Math.floor(viewport.height)}px`;
 
-    // Enable image smoothing for better quality
-    context.imageSmoothingEnabled = true;
-    context.imageSmoothingQuality = 'high';
+      // Scale the context to match the output scale
+      context.scale(outputScale, outputScale);
 
-    // Render the page with optimized settings
-    const renderContext = {
-      canvasContext: context,
-      viewport: viewport,
-      // Enable text layer rendering for better quality
-      intent: 'display',
-    };
+      // Enable image smoothing for better quality
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = 'high';
 
-    renderTaskRef.current = page.render(renderContext);
+      // Render the page with optimized settings
+      const renderContext = {
+        canvasContext: context,
+        viewport: viewport,
+        // Enable text layer rendering for better quality
+        intent: 'display',
+      };
 
-    renderTaskRef.current.promise
-      .then(() => {
-        if (isMounted) {
-          // Rendering complete
-        }
-      })
-      .catch((error: Error) => {
-        if (isMounted && error.name !== 'RenderingCancelledException') {
-          console.error('Error rendering page:', error);
-        }
-      });
+      renderTaskRef.current = page.render(renderContext);
+
+      renderTaskRef.current.promise
+        .then(() => {
+          if (isMounted) {
+            // Rendering complete
+          }
+        })
+        .catch((error: Error) => {
+          if (isMounted && error.name !== 'RenderingCancelledException') {
+            console.error('Error rendering page:', error);
+          }
+        });
+    }, 50); // 50ms throttle for rendering
 
     return () => {
       isMounted = false;
       if (renderTaskRef.current) {
         renderTaskRef.current.cancel();
+      }
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
       }
     };
   }, [page, scale, rotation]);
@@ -105,8 +119,15 @@ export function PDFPage({ page, scale, rotation, className = '', onDoubleClick }
 
     setIsZooming(true);
 
-    // Toggle between current zoom and 2x zoom
-    const targetZoom = zoom < 1.8 ? 2.0 : 1.0;
+    // Cycle between zoom levels: 100% -> 150% -> 200% -> 100%
+    let targetZoom: number;
+    if (zoom < 1.2) {
+      targetZoom = 1.5; // Zoom to 150%
+    } else if (zoom < 1.8) {
+      targetZoom = 2.0; // Zoom to 200%
+    } else {
+      targetZoom = 1.0; // Reset to 100%
+    }
 
     // Get click position relative to the container
     const rect = container.getBoundingClientRect();
@@ -117,8 +138,12 @@ export function PDFPage({ page, scale, rotation, className = '', onDoubleClick }
     const xPercent = x / rect.width;
     const yPercent = y / rect.height;
 
-    // Store the click position for potential scroll adjustment
-    const scrollContainer = container.closest('.pdf-scroll-container');
+    // Find the scroll container (parent with overflow)
+    let scrollContainer = container.parentElement;
+    while (scrollContainer && scrollContainer.scrollHeight === scrollContainer.clientHeight) {
+      scrollContainer = scrollContainer.parentElement;
+    }
+
     if (scrollContainer) {
       const beforeScrollLeft = scrollContainer.scrollLeft;
       const beforeScrollTop = scrollContainer.scrollTop;
@@ -127,22 +152,24 @@ export function PDFPage({ page, scale, rotation, className = '', onDoubleClick }
       setZoom(targetZoom);
 
       // Wait for re-render, then adjust scroll to keep the clicked point centered
-      setTimeout(() => {
-        const newRect = container.getBoundingClientRect();
-        const newX = xPercent * newRect.width;
-        const newY = yPercent * newRect.height;
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const newRect = container.getBoundingClientRect();
+          const newX = xPercent * newRect.width;
+          const newY = yPercent * newRect.height;
 
-        const deltaX = newX - x;
-        const deltaY = newY - y;
+          const deltaX = newX - x;
+          const deltaY = newY - y;
 
-        scrollContainer.scrollLeft = beforeScrollLeft + deltaX;
-        scrollContainer.scrollTop = beforeScrollTop + deltaY;
+          scrollContainer.scrollLeft = beforeScrollLeft + deltaX;
+          scrollContainer.scrollTop = beforeScrollTop + deltaY;
 
-        setIsZooming(false);
-      }, 50);
+          setIsZooming(false);
+        }, 100);
+      });
     } else {
       setZoom(targetZoom);
-      setTimeout(() => setIsZooming(false), 50);
+      setTimeout(() => setIsZooming(false), 100);
     }
   };
 
@@ -164,5 +191,16 @@ export function PDFPage({ page, scale, rotation, className = '', onDoubleClick }
       />
     </div>
   );
-}
+};
+
+// Memoize the component to prevent unnecessary re-renders
+// Only re-render when page, scale, or rotation changes
+export const PDFPage = memo(PDFPageComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.page === nextProps.page &&
+    Math.abs(prevProps.scale - nextProps.scale) < 0.001 && // Avoid re-render for tiny scale changes
+    prevProps.rotation === nextProps.rotation &&
+    prevProps.className === nextProps.className
+  );
+});
 
