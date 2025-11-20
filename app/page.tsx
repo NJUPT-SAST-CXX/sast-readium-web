@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { WelcomePage } from '@/components/welcome-page/WelcomePage';
-import { PDFViewer } from '@/components/pdf-viewer/PDFViewer';
+import { WelcomePage } from '@/components/welcome-page/welcome-page';
+import { PDFViewer } from '@/components/pdf-viewer/pdf-viewer';
 import { usePDFStore } from '@/lib/pdf-store';
 
 export default function Home() {

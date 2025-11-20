@@ -3,6 +3,8 @@
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   ZoomIn,
   ZoomOut,
   RotateCw,
@@ -14,9 +16,13 @@ import {
   Search,
   X,
   Menu,
-  FileText,
   Moon,
   Sun,
+  Maximize2,
+  BookOpen,
+  Columns2,
+  FileText,
+  Rows3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,20 +50,28 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose }: PDFToolba
     zoom,
     isFullscreen,
     showThumbnails,
+    showOutline,
     isDarkMode,
     searchQuery,
     searchResults,
     currentSearchIndex,
+    viewMode,
+    fitMode,
     nextPage,
     previousPage,
+    firstPage,
+    lastPage,
     goToPage,
     zoomIn,
     zoomOut,
     setZoom,
+    setViewMode,
+    setFitMode,
     rotateClockwise,
     rotateCounterClockwise,
     toggleFullscreen,
     toggleThumbnails,
+    toggleOutline,
     toggleDarkMode,
     setSearchQuery,
     nextSearchResult,
@@ -93,7 +107,8 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose }: PDFToolba
     onSearch(localSearchQuery);
   };
 
-  const zoomLevels = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0, 5.0];
+  // Zoom levels from 50% to 300% as requested
+  const zoomLevels = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0];
 
   return (
     <TooltipProvider>
@@ -119,10 +134,37 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose }: PDFToolba
               </TooltipTrigger>
               <TooltipContent>Toggle Thumbnails</TooltipContent>
             </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleOutline}
+                  className={showOutline ? 'bg-accent' : ''}
+                >
+                  <BookOpen className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Toggle Bookmarks</TooltipContent>
+            </Tooltip>
           </div>
 
           {/* Center Section - Navigation */}
           <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={firstPage}
+                  disabled={currentPage <= 1}
+                >
+                  <ChevronsLeft className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>First Page (Home)</TooltipContent>
+            </Tooltip>
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -134,7 +176,7 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose }: PDFToolba
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Previous Page</TooltipContent>
+              <TooltipContent>Previous Page (←)</TooltipContent>
             </Tooltip>
 
             <form onSubmit={handlePageInputSubmit} className="flex items-center gap-2">
@@ -159,7 +201,21 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose }: PDFToolba
                   <ChevronRight className="h-5 w-5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Next Page</TooltipContent>
+              <TooltipContent>Next Page (→)</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={lastPage}
+                  disabled={currentPage >= numPages}
+                >
+                  <ChevronsRight className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Last Page (End)</TooltipContent>
             </Tooltip>
 
             <Separator orientation="vertical" className="h-6" />
@@ -171,20 +227,35 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose }: PDFToolba
                   <ZoomOut className="h-5 w-5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Zoom Out</TooltipContent>
+              <TooltipContent>
+                <div className="text-xs">
+                  <div>Zoom Out</div>
+                  <div className="text-muted-foreground">Ctrl/Cmd + -</div>
+                </div>
+              </TooltipContent>
             </Tooltip>
 
-            <select
-              value={zoom}
-              onChange={(e) => setZoom(parseFloat(e.target.value))}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              {zoomLevels.map((level) => (
-                <option key={level} value={level}>
-                  {Math.round(level * 100)}%
-                </option>
-              ))}
-            </select>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <select
+                  value={zoom}
+                  onChange={(e) => setZoom(parseFloat(e.target.value))}
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm cursor-pointer hover:bg-accent"
+                >
+                  {zoomLevels.map((level) => (
+                    <option key={level} value={level}>
+                      {Math.round(level * 100)}%
+                    </option>
+                  ))}
+                </select>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="text-xs">
+                  <div>Zoom Level (50% - 300%)</div>
+                  <div className="text-muted-foreground">Ctrl/Cmd + Scroll to zoom</div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
@@ -192,7 +263,12 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose }: PDFToolba
                   <ZoomIn className="h-5 w-5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Zoom In</TooltipContent>
+              <TooltipContent>
+                <div className="text-xs">
+                  <div>Zoom In</div>
+                  <div className="text-muted-foreground">Ctrl/Cmd + +</div>
+                </div>
+              </TooltipContent>
             </Tooltip>
 
             <Separator orientation="vertical" className="h-6" />

@@ -3,9 +3,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { usePDFStore } from '@/lib/pdf-store';
 import { loadPDFDocument, searchInPDF, downloadPDF, printPDF, PDFDocumentProxy, PDFPageProxy } from '@/lib/pdf-utils';
-import { PDFToolbar } from './PDFToolbar';
-import { PDFPage } from './PDFPage';
-import { PDFThumbnail } from './PDFThumbnail';
+import { PDFToolbar } from './pdf-toolbar';
+import { PDFPage } from './pdf-page';
+import { PDFThumbnail } from './pdf-thumbnail';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
@@ -22,8 +22,12 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
     showThumbnails,
     isDarkMode,
     isFullscreen,
+    numPages,
     setNumPages,
     setCurrentPage,
+    setZoom,
+    nextPage,
+    previousPage,
     addRecentFile,
     setSearchResults,
   } = usePDFStore();
@@ -35,7 +39,20 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const lastScrollTop = useRef<number>(0);
+  const isScrollingProgrammatically = useRef<boolean>(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    // Load saved width from localStorage or use default
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('pdf-sidebar-width');
+      return saved ? parseInt(saved, 10) : 240;
+    }
+    return 240;
+  });
+  const [isResizing, setIsResizing] = useState(false);
 
   // Load PDF document
   useEffect(() => {
@@ -234,6 +251,175 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
     }
   }, [isFullscreen]);
 
+  // Mouse wheel zoom functionality
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Check if Ctrl/Cmd key is pressed for zoom
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+
+        // Get the current zoom level
+        const currentZoom = zoom;
+
+        // Determine zoom direction (negative deltaY = scroll up = zoom in)
+        const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
+
+        // Calculate new zoom level with limits (50% to 300%)
+        const newZoom = Math.min(Math.max(currentZoom + zoomDelta, 0.5), 3.0);
+
+        // Apply the new zoom
+        setZoom(newZoom);
+      }
+    };
+
+    // Add event listener with passive: false to allow preventDefault
+    scrollContainer.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      scrollContainer.removeEventListener('wheel', handleWheel);
+    };
+  }, [zoom, setZoom]);
+
+  // Auto page turn on vertical scroll
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      // Skip if scrolling programmatically (during page change)
+      if (isScrollingProgrammatically.current) {
+        return;
+      }
+
+      // Clear any existing timeout to debounce scroll events
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+
+      // Debounce the scroll handling to prevent rapid page switches
+      scrollTimeoutRef.current = setTimeout(() => {
+        // Double-check the flag hasn't been set during the timeout
+        if (isScrollingProgrammatically.current) {
+          return;
+        }
+
+        const scrollTop = scrollContainer.scrollTop;
+        const scrollHeight = scrollContainer.scrollHeight;
+        const clientHeight = scrollContainer.clientHeight;
+
+        // Threshold for triggering page turn (in pixels)
+        const threshold = 50;
+
+        // Check if scrolled to the bottom
+        if (scrollTop + clientHeight >= scrollHeight - threshold) {
+          const scrollDirection = scrollTop - lastScrollTop.current;
+
+          // Only trigger if scrolling down
+          if (scrollDirection > 0 && currentPage < numPages) {
+            // Set flag BEFORE any async operations
+            isScrollingProgrammatically.current = true;
+
+            // Advance to next page
+            nextPage();
+
+            // Reset scroll to top after a short delay
+            setTimeout(() => {
+              if (scrollContainer) {
+                scrollContainer.scrollTop = 0;
+                lastScrollTop.current = 0;
+                // Keep flag set for a bit longer to ensure all scroll events are ignored
+                setTimeout(() => {
+                  isScrollingProgrammatically.current = false;
+                }, 150);
+              }
+            }, 100);
+          }
+        }
+        // Check if scrolled to the top
+        else if (scrollTop <= threshold) {
+          const scrollDirection = scrollTop - lastScrollTop.current;
+
+          // Only trigger if scrolling up
+          if (scrollDirection < 0 && currentPage > 1) {
+            // Set flag BEFORE any async operations
+            isScrollingProgrammatically.current = true;
+
+            // Go to previous page
+            previousPage();
+
+            // Reset scroll to bottom after a short delay
+            setTimeout(() => {
+              if (scrollContainer) {
+                scrollContainer.scrollTop = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+                lastScrollTop.current = scrollContainer.scrollTop;
+                // Keep flag set for a bit longer to ensure all scroll events are ignored
+                setTimeout(() => {
+                  isScrollingProgrammatically.current = false;
+                }, 150);
+              }
+            }, 100);
+          }
+        }
+
+        // Update last scroll position
+        lastScrollTop.current = scrollTop;
+      }, 50); // 50ms debounce delay
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+      // Clean up timeout on unmount
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [currentPage, numPages, nextPage, previousPage]);
+
+  // Handle sidebar resize
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - startX;
+      const newWidth = Math.min(Math.max(startWidth + deltaX, 180), 500); // Min: 180px, Max: 500px
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      // Save to localStorage
+      localStorage.setItem('pdf-sidebar-width', sidebarWidth.toString());
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      // Remove user-select disable
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+
+    // Disable text selection while resizing
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  // Save sidebar width to localStorage when it changes
+  useEffect(() => {
+    if (!isResizing) {
+      localStorage.setItem('pdf-sidebar-width', sidebarWidth.toString());
+    }
+  }, [sidebarWidth, isResizing]);
+
   const handleSearch = async (query: string) => {
     if (!pdfDocument || !query) {
       setSearchResults([]);
@@ -320,7 +506,10 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
       <div className="flex flex-1 overflow-hidden">
         {/* Thumbnails Sidebar */}
         {showThumbnails && (
-          <div className="w-48 border-r border-border bg-muted/30">
+          <div
+            className="relative border-r border-border bg-muted/30"
+            style={{ width: `${sidebarWidth}px` }}
+          >
             <ScrollArea className="h-full">
               <div className="space-y-2 p-2">
                 {thumbnailPages.map((page, index) => (
@@ -334,21 +523,31 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
                 ))}
               </div>
             </ScrollArea>
+
+            {/* Resize Handle */}
+            <div
+              className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors group"
+              onMouseDown={handleResizeStart}
+            >
+              <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary/0 group-hover:bg-primary/50 transition-colors" />
+            </div>
           </div>
         )}
 
         {/* Main PDF Viewer */}
-        <div className="flex-1 overflow-auto bg-muted/50">
-          <ScrollArea className="h-full">
-            <div className="flex min-h-full items-center justify-center p-8">
-              <PDFPage
-                page={currentPageObj}
-                scale={zoom}
-                rotation={rotation}
-                className="max-w-full"
-              />
-            </div>
-          </ScrollArea>
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-auto bg-muted/50"
+          style={{ scrollBehavior: 'smooth' }}
+        >
+          <div className="flex min-h-full items-center justify-center p-8">
+            <PDFPage
+              page={currentPageObj}
+              scale={zoom}
+              rotation={rotation}
+              className="max-w-full"
+            />
+          </div>
         </div>
       </div>
     </div>

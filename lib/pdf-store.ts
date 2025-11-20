@@ -13,6 +13,20 @@ export interface SearchResult {
   text: string;
 }
 
+export interface PDFOutlineNode {
+  title: string;
+  bold?: boolean;
+  italic?: boolean;
+  color?: number[];
+  dest?: string | unknown[];
+  url?: string;
+  items?: PDFOutlineNode[];
+  pageNumber?: number;
+}
+
+export type ViewMode = 'single' | 'continuous' | 'twoPage';
+export type FitMode = 'custom' | 'fitWidth' | 'fitPage';
+
 interface PDFState {
   // Current PDF state
   currentPDF: File | null;
@@ -21,21 +35,28 @@ interface PDFState {
   currentPage: number;
   zoom: number;
   rotation: number;
-  
+
+  // View modes
+  viewMode: ViewMode;
+  fitMode: FitMode;
+
   // UI state
   isFullscreen: boolean;
   showThumbnails: boolean;
   showOutline: boolean;
   isDarkMode: boolean;
-  
+
+  // Outline/Bookmarks
+  outline: PDFOutlineNode[];
+
   // Search state
   searchQuery: string;
   searchResults: SearchResult[];
   currentSearchIndex: number;
-  
+
   // Recent files
   recentFiles: RecentFile[];
-  
+
   // Actions
   setCurrentPDF: (file: File | null) => void;
   setPdfUrl: (url: string | null) => void;
@@ -44,9 +65,13 @@ interface PDFState {
   nextPage: () => void;
   previousPage: () => void;
   goToPage: (page: number) => void;
+  firstPage: () => void;
+  lastPage: () => void;
   setZoom: (zoom: number) => void;
   zoomIn: () => void;
   zoomOut: () => void;
+  setViewMode: (mode: ViewMode) => void;
+  setFitMode: (mode: FitMode) => void;
   setRotation: (rotation: number) => void;
   rotateClockwise: () => void;
   rotateCounterClockwise: () => void;
@@ -54,6 +79,7 @@ interface PDFState {
   toggleThumbnails: () => void;
   toggleOutline: () => void;
   toggleDarkMode: () => void;
+  setOutline: (outline: PDFOutlineNode[]) => void;
   setSearchQuery: (query: string) => void;
   setSearchResults: (results: SearchResult[]) => void;
   nextSearchResult: () => void;
@@ -73,10 +99,13 @@ export const usePDFStore = create<PDFState>()(
       currentPage: 1,
       zoom: 1.0,
       rotation: 0,
+      viewMode: 'single' as ViewMode,
+      fitMode: 'custom' as FitMode,
       isFullscreen: false,
       showThumbnails: false,
       showOutline: false,
       isDarkMode: false,
+      outline: [],
       searchQuery: '',
       searchResults: [],
       currentSearchIndex: 0,
@@ -84,81 +113,99 @@ export const usePDFStore = create<PDFState>()(
 
       // Actions
       setCurrentPDF: (file) => set({ currentPDF: file }),
-      
+
       setPdfUrl: (url) => set({ pdfUrl: url }),
-      
+
       setNumPages: (numPages) => set({ numPages }),
-      
+
       setCurrentPage: (page) => {
         const { numPages } = get();
         if (page >= 1 && page <= numPages) {
           set({ currentPage: page });
         }
       },
-      
+
       nextPage: () => {
         const { currentPage, numPages } = get();
         if (currentPage < numPages) {
           set({ currentPage: currentPage + 1 });
         }
       },
-      
+
       previousPage: () => {
         const { currentPage } = get();
         if (currentPage > 1) {
           set({ currentPage: currentPage - 1 });
         }
       },
-      
+
       goToPage: (page) => {
         const { numPages } = get();
         if (page >= 1 && page <= numPages) {
           set({ currentPage: page });
         }
       },
-      
+
+      firstPage: () => {
+        set({ currentPage: 1 });
+      },
+
+      lastPage: () => {
+        const { numPages } = get();
+        set({ currentPage: numPages });
+      },
+
       setZoom: (zoom) => {
-        if (zoom >= 0.25 && zoom <= 5) {
-          set({ zoom });
+        // Zoom limits: 50% to 300%
+        if (zoom >= 0.5 && zoom <= 3.0) {
+          set({ zoom, fitMode: 'custom' });
         }
       },
-      
+
       zoomIn: () => {
         const { zoom } = get();
-        const newZoom = Math.min(zoom + 0.25, 5);
-        set({ zoom: newZoom });
+        // Increment by 0.25 (25%) with max of 300%
+        const newZoom = Math.min(zoom + 0.25, 3.0);
+        set({ zoom: newZoom, fitMode: 'custom' });
       },
-      
+
       zoomOut: () => {
         const { zoom } = get();
-        const newZoom = Math.max(zoom - 0.25, 0.25);
-        set({ zoom: newZoom });
+        // Decrement by 0.25 (25%) with min of 50%
+        const newZoom = Math.max(zoom - 0.25, 0.5);
+        set({ zoom: newZoom, fitMode: 'custom' });
       },
-      
+
+      setViewMode: (mode) => set({ viewMode: mode }),
+
+      setFitMode: (mode) => set({ fitMode: mode }),
+
       setRotation: (rotation) => set({ rotation: rotation % 360 }),
-      
+
       rotateClockwise: () => {
         const { rotation } = get();
         set({ rotation: (rotation + 90) % 360 });
       },
-      
+
       rotateCounterClockwise: () => {
         const { rotation } = get();
         set({ rotation: (rotation - 90 + 360) % 360 });
       },
-      
+
       toggleFullscreen: () => set((state) => ({ isFullscreen: !state.isFullscreen })),
-      
+
       toggleThumbnails: () => set((state) => ({ showThumbnails: !state.showThumbnails })),
-      
+
       toggleOutline: () => set((state) => ({ showOutline: !state.showOutline })),
-      
+
       toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
-      
+
+      setOutline: (outline) => set({ outline }),
+
       setSearchQuery: (query) => set({ searchQuery: query }),
-      
+
       setSearchResults: (results) => set({ searchResults: results, currentSearchIndex: 0 }),
-      
+
       nextSearchResult: () => {
         const { currentSearchIndex, searchResults } = get();
         if (searchResults.length > 0) {
@@ -166,7 +213,7 @@ export const usePDFStore = create<PDFState>()(
           set({ currentSearchIndex: newIndex, currentPage: searchResults[newIndex].pageNumber });
         }
       },
-      
+
       previousSearchResult: () => {
         const { currentSearchIndex, searchResults } = get();
         if (searchResults.length > 0) {
@@ -174,16 +221,16 @@ export const usePDFStore = create<PDFState>()(
           set({ currentSearchIndex: newIndex, currentPage: searchResults[newIndex].pageNumber });
         }
       },
-      
+
       addRecentFile: (file) => {
         const { recentFiles } = get();
         const filtered = recentFiles.filter((f) => f.url !== file.url);
         const updated = [file, ...filtered].slice(0, 10); // Keep only 10 most recent
         set({ recentFiles: updated });
       },
-      
+
       clearRecentFiles: () => set({ recentFiles: [] }),
-      
+
       resetPDF: () => set({
         currentPDF: null,
         pdfUrl: null,
@@ -191,9 +238,12 @@ export const usePDFStore = create<PDFState>()(
         currentPage: 1,
         zoom: 1.0,
         rotation: 0,
+        viewMode: 'single',
+        fitMode: 'custom',
         isFullscreen: false,
         showThumbnails: false,
         showOutline: false,
+        outline: [],
         searchQuery: '',
         searchResults: [],
         currentSearchIndex: 0,

@@ -20,17 +20,34 @@ export function PDFThumbnail({ page, pageNumber, isActive, onClick }: PDFThumbna
     if (!page || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
+    const context = canvas.getContext('2d', {
+      // Performance optimization for thumbnails
+      alpha: false,
+      willReadFrequently: false,
+    });
     if (!context) return;
 
-    const viewport = page.getViewport({ scale: 0.3 });
-    
-    canvas.height = viewport.height;
-    canvas.width = viewport.width;
+    // Use lower scale for thumbnails to improve performance
+    const thumbnailScale = 0.3;
+    const viewport = page.getViewport({ scale: thumbnailScale });
+
+    // For thumbnails, we can use lower DPI to improve performance
+    // Still apply some DPI scaling for clarity on high-DPI displays
+    const devicePixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    const outputScale = devicePixelRatio;
+
+    canvas.width = Math.floor(viewport.width * outputScale);
+    canvas.height = Math.floor(viewport.height * outputScale);
+
+    canvas.style.width = `${Math.floor(viewport.width)}px`;
+    canvas.style.height = `${Math.floor(viewport.height)}px`;
+
+    context.scale(outputScale, outputScale);
 
     const renderContext = {
       canvasContext: context,
       viewport: viewport,
+      intent: 'display',
     };
 
     page.render(renderContext).promise
