@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
   },
   // Configure assetPrefix or else the server won't properly resolve your assets.
   assetPrefix: isProd ? undefined : `http://${internalHost}:3000`,
+  // Empty turbopack config to silence webpack warning
+  turbopack: {},
 };
 
 export default nextConfig;
