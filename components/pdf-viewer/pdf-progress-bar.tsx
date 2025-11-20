@@ -2,6 +2,7 @@
 
 import { usePDFStore } from '@/lib/pdf-store';
 import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 
 interface PDFProgressBarProps {
   className?: string;
@@ -28,17 +29,7 @@ export function PDFProgressBar({ className }: PDFProgressBarProps) {
       )}
     >
       {/* Progress bar */}
-      <div className="relative h-1 sm:h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div
-          className="absolute h-full bg-primary transition-all duration-300 ease-out"
-          style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-          role="progressbar"
-          aria-valuenow={Math.round(progress)}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label={`Reading progress: ${Math.round(progress)}%`}
-        />
-      </div>
+      <Progress value={Math.min(100, Math.max(0, progress))} />
       
       {/* Page info - responsive text sizing */}
       <div className="mt-1 sm:mt-1.5 flex justify-between text-xs sm:text-sm text-muted-foreground">

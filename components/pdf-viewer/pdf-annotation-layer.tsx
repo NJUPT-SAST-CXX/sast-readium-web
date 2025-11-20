@@ -12,7 +12,7 @@ interface PDFAnnotationLayerProps {
   page: PDFPageProxy | null;
   scale: number;
   rotation: number;
-  selectedAnnotationType: 'highlight' | 'comment' | 'shape' | 'text' | null;
+  selectedAnnotationType: 'highlight' | 'comment' | 'shape' | 'text' | 'drawing' | null;
 }
 
 interface AnnotationInput {

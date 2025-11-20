@@ -15,7 +15,7 @@ export interface SearchResult {
 
 export interface Annotation {
   id: string;
-  type: 'highlight' | 'comment' | 'shape' | 'text';
+  type: 'highlight' | 'comment' | 'shape' | 'text' | 'drawing';
   pageNumber: number;
   content?: string;
   color: string;
@@ -25,7 +25,16 @@ export interface Annotation {
     width?: number;
     height?: number;
   };
+  // For drawing annotations
+  path?: Array<{ x: number; y: number }>;
+  strokeWidth?: number;
   timestamp: number;
+}
+
+export interface AnnotationHistory {
+  past: Annotation[][];
+  present: Annotation[];
+  future: Annotation[][];
 }
 
 export interface Bookmark {
@@ -33,6 +42,33 @@ export interface Bookmark {
   pageNumber: number;
   title: string;
   timestamp: number;
+}
+
+interface DocumentStateSnapshot {
+  numPages: number;
+  currentPage: number;
+  zoom: number;
+  rotation: number;
+  viewMode: ViewMode;
+  fitMode: FitMode;
+  isFullscreen: boolean;
+  showThumbnails: boolean;
+  showOutline: boolean;
+  showAnnotations: boolean;
+  isDarkMode: boolean;
+  isPresentationMode: boolean;
+  showKeyboardShortcuts: boolean;
+  outline: PDFOutlineNode[];
+  searchQuery: string;
+  searchResults: SearchResult[];
+  currentSearchIndex: number;
+  caseSensitiveSearch: boolean;
+  annotations: Annotation[];
+  annotationHistory: AnnotationHistory;
+  selectedAnnotationColor: string;
+  selectedStrokeWidth: number;
+  bookmarks: Bookmark[];
+  readingProgress: number;
 }
 
 export interface PDFOutlineNode {
@@ -48,6 +84,7 @@ export interface PDFOutlineNode {
 
 export type ViewMode = 'single' | 'continuous' | 'twoPage';
 export type FitMode = 'custom' | 'fitWidth' | 'fitPage';
+export type AnnotationStamp = 'approved' | 'rejected' | 'confidential' | 'draft' | 'final' | 'reviewed';
 
 interface PDFState {
   // Current PDF state
@@ -68,6 +105,8 @@ interface PDFState {
   showOutline: boolean;
   showAnnotations: boolean;
   isDarkMode: boolean;
+  isPresentationMode: boolean;
+  showKeyboardShortcuts: boolean;
 
   // Outline/Bookmarks
   outline: PDFOutlineNode[];
@@ -80,6 +119,9 @@ interface PDFState {
 
   // Annotations
   annotations: Annotation[];
+  annotationHistory: AnnotationHistory;
+  selectedAnnotationColor: string;
+  selectedStrokeWidth: number;
   
   // Bookmarks
   bookmarks: Bookmark[];
@@ -89,6 +131,10 @@ interface PDFState {
   
   // Reading progress
   readingProgress: number; // 0-100 percentage
+
+  // Multi-document sessions
+  activeDocumentId: string | null;
+  documents: Record<string, DocumentStateSnapshot>;
 
   // Actions
   setCurrentPDF: (file: File | null) => void;
@@ -113,6 +159,8 @@ interface PDFState {
   toggleOutline: () => void;
   toggleAnnotations: () => void;
   toggleDarkMode: () => void;
+  togglePresentationMode: () => void;
+  toggleKeyboardShortcuts: () => void;
   setOutline: (outline: PDFOutlineNode[]) => void;
   setSearchQuery: (query: string) => void;
   setSearchResults: (results: SearchResult[]) => void;
@@ -122,13 +170,51 @@ interface PDFState {
   addAnnotation: (annotation: Omit<Annotation, 'id' | 'timestamp'>) => void;
   removeAnnotation: (id: string) => void;
   updateAnnotation: (id: string, updates: Partial<Annotation>) => void;
+  undoAnnotation: () => void;
+  redoAnnotation: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+  setSelectedAnnotationColor: (color: string) => void;
+  setSelectedStrokeWidth: (width: number) => void;
+  addStampAnnotation: (stamp: AnnotationStamp, pageNumber: number, position: { x: number; y: number }) => void;
+  exportAnnotations: () => string;
+  importAnnotations: (data: string) => void;
   addBookmark: (pageNumber: number, title: string) => void;
   removeBookmark: (id: string) => void;
   addRecentFile: (file: RecentFile) => void;
   clearRecentFiles: () => void;
   updateReadingProgress: (progress: number) => void;
   resetPDF: () => void;
+  openDocumentSession: (id: string) => void;
+  closeDocumentSession: (id: string) => void;
 }
+
+const createSnapshotFromState = (state: PDFState): DocumentStateSnapshot => ({
+  numPages: state.numPages,
+  currentPage: state.currentPage,
+  zoom: state.zoom,
+  rotation: state.rotation,
+  viewMode: state.viewMode,
+  fitMode: state.fitMode,
+  isFullscreen: state.isFullscreen,
+  showThumbnails: state.showThumbnails,
+  showOutline: state.showOutline,
+  showAnnotations: state.showAnnotations,
+  isDarkMode: state.isDarkMode,
+  isPresentationMode: state.isPresentationMode,
+  showKeyboardShortcuts: state.showKeyboardShortcuts,
+  outline: state.outline,
+  searchQuery: state.searchQuery,
+  searchResults: state.searchResults,
+  currentSearchIndex: state.currentSearchIndex,
+  caseSensitiveSearch: state.caseSensitiveSearch,
+  annotations: state.annotations,
+  annotationHistory: state.annotationHistory,
+  selectedAnnotationColor: state.selectedAnnotationColor,
+  selectedStrokeWidth: state.selectedStrokeWidth,
+  bookmarks: state.bookmarks,
+  readingProgress: state.readingProgress,
+});
 
 export const usePDFStore = create<PDFState>()(
   persist(
@@ -147,15 +233,26 @@ export const usePDFStore = create<PDFState>()(
       showOutline: false,
       showAnnotations: false,
       isDarkMode: false,
+      isPresentationMode: false,
+      showKeyboardShortcuts: false,
       outline: [],
       searchQuery: '',
       searchResults: [],
       currentSearchIndex: 0,
       caseSensitiveSearch: false,
       annotations: [],
+      annotationHistory: {
+        past: [],
+        present: [],
+        future: [],
+      },
+      selectedAnnotationColor: '#ffff00',
+      selectedStrokeWidth: 2,
       bookmarks: [],
       recentFiles: [],
       readingProgress: 0,
+      activeDocumentId: null,
+      documents: {},
 
       // Actions
       setCurrentPDF: (file) => set({ currentPDF: file }),
@@ -248,6 +345,10 @@ export const usePDFStore = create<PDFState>()(
 
       toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
 
+      togglePresentationMode: () => set((state) => ({ isPresentationMode: !state.isPresentationMode })),
+
+      toggleKeyboardShortcuts: () => set((state) => ({ showKeyboardShortcuts: !state.showKeyboardShortcuts })),
+
       setOutline: (outline) => set({ outline }),
 
       setSearchQuery: (query) => set({ searchQuery: query }),
@@ -278,21 +379,165 @@ export const usePDFStore = create<PDFState>()(
           id: `annotation-${Date.now()}-${Math.random()}`,
           timestamp: Date.now(),
         };
-        set((state) => ({ annotations: [...state.annotations, newAnnotation] }));
+        set((state) => ({
+          annotations: [...state.annotations, newAnnotation],
+          annotationHistory: {
+            past: [...state.annotationHistory.past, state.annotationHistory.present],
+            present: [...state.annotations, newAnnotation],
+            future: [], // Clear redo stack
+          },
+        }));
       },
 
       removeAnnotation: (id) => {
-        set((state) => ({
-          annotations: state.annotations.filter((a) => a.id !== id),
-        }));
+        set((state) => {
+          const newAnnotations = state.annotations.filter((a) => a.id !== id);
+          return {
+            annotations: newAnnotations,
+            annotationHistory: {
+              past: [...state.annotationHistory.past, state.annotationHistory.present],
+              present: newAnnotations,
+              future: [], // Clear redo stack
+            },
+          };
+        });
       },
 
       updateAnnotation: (id, updates) => {
-        set((state) => ({
-          annotations: state.annotations.map((a) =>
+        set((state) => {
+          const newAnnotations = state.annotations.map((a) =>
             a.id === id ? { ...a, ...updates } : a
-          ),
+          );
+          return {
+            annotations: newAnnotations,
+            annotationHistory: {
+              past: [...state.annotationHistory.past, state.annotationHistory.present],
+              present: newAnnotations,
+              future: [], // Clear redo stack
+            },
+          };
+        });
+      },
+
+      undoAnnotation: () => {
+        set((state) => {
+          if (state.annotationHistory.past.length === 0) return state;
+
+          const previous = state.annotationHistory.past[state.annotationHistory.past.length - 1];
+          const newPast = state.annotationHistory.past.slice(0, -1);
+
+          return {
+            annotations: previous,
+            annotationHistory: {
+              past: newPast,
+              present: previous,
+              future: [state.annotationHistory.present, ...state.annotationHistory.future],
+            },
+          };
+        });
+      },
+
+      redoAnnotation: () => {
+        set((state) => {
+          if (state.annotationHistory.future.length === 0) return state;
+
+          const next = state.annotationHistory.future[0];
+          const newFuture = state.annotationHistory.future.slice(1);
+
+          return {
+            annotations: next,
+            annotationHistory: {
+              past: [...state.annotationHistory.past, state.annotationHistory.present],
+              present: next,
+              future: newFuture,
+            },
+          };
+        });
+      },
+
+      canUndo: () => {
+        const state = get();
+        return state.annotationHistory.past.length > 0;
+      },
+
+      canRedo: () => {
+        const state = get();
+        return state.annotationHistory.future.length > 0;
+      },
+
+      setSelectedAnnotationColor: (color) => set({ selectedAnnotationColor: color }),
+
+      setSelectedStrokeWidth: (width) => set({ selectedStrokeWidth: width }),
+
+      addStampAnnotation: (stamp, pageNumber, position) => {
+        const stampTexts: Record<AnnotationStamp, string> = {
+          approved: '✓ APPROVED',
+          rejected: '✗ REJECTED',
+          confidential: '🔒 CONFIDENTIAL',
+          draft: '📝 DRAFT',
+          final: '✓ FINAL',
+          reviewed: '👁 REVIEWED',
+        };
+
+        const stampColors: Record<AnnotationStamp, string> = {
+          approved: '#22c55e',
+          rejected: '#ef4444',
+          confidential: '#f59e0b',
+          draft: '#6366f1',
+          final: '#10b981',
+          reviewed: '#3b82f6',
+        };
+
+        const newAnnotation: Annotation = {
+          id: `stamp-${Date.now()}-${Math.random()}`,
+          type: 'text',
+          pageNumber,
+          content: stampTexts[stamp],
+          color: stampColors[stamp],
+          position,
+          timestamp: Date.now(),
+        };
+
+        set((state) => ({
+          annotations: [...state.annotations, newAnnotation],
+          annotationHistory: {
+            past: [...state.annotationHistory.past, state.annotationHistory.present],
+            present: [...state.annotations, newAnnotation],
+            future: [],
+          },
         }));
+      },
+
+      exportAnnotations: () => {
+        const state = get();
+        const exportData = {
+          annotations: state.annotations,
+          bookmarks: state.bookmarks,
+          exportDate: new Date().toISOString(),
+          version: '1.0',
+        };
+        return JSON.stringify(exportData, null, 2);
+      },
+
+      importAnnotations: (data) => {
+        try {
+          const importData = JSON.parse(data);
+          if (importData.annotations && Array.isArray(importData.annotations)) {
+            set((state) => ({
+              annotations: [...state.annotations, ...importData.annotations],
+              bookmarks: importData.bookmarks
+                ? [...state.bookmarks, ...importData.bookmarks]
+                : state.bookmarks,
+              annotationHistory: {
+                past: [...state.annotationHistory.past, state.annotationHistory.present],
+                present: [...state.annotations, ...importData.annotations],
+                future: [],
+              },
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to import annotations:', error);
+        }
       },
 
       addBookmark: (pageNumber, title) => {
@@ -345,15 +590,166 @@ export const usePDFStore = create<PDFState>()(
         annotations: [],
         bookmarks: [],
         readingProgress: 0,
+        activeDocumentId: null,
+        documents: {},
       }),
+
+      openDocumentSession: (id) => {
+        set((state) => {
+          let documents = state.documents;
+
+          if (state.activeDocumentId) {
+            documents = {
+              ...documents,
+              [state.activeDocumentId]: createSnapshotFromState(state),
+            };
+          }
+
+          const existing = documents[id];
+
+          const snapshot: DocumentStateSnapshot =
+            existing || {
+              numPages: 0,
+              currentPage: 1,
+              zoom: 1.0,
+              rotation: 0,
+              viewMode: state.viewMode,
+              fitMode: state.fitMode,
+              isFullscreen: false,
+              showThumbnails: state.showThumbnails,
+              showOutline: state.showOutline,
+              showAnnotations: state.showAnnotations,
+              isDarkMode: state.isDarkMode,
+              isPresentationMode: state.isPresentationMode,
+              showKeyboardShortcuts: state.showKeyboardShortcuts,
+              outline: [],
+              searchQuery: '',
+              searchResults: [],
+              currentSearchIndex: 0,
+              caseSensitiveSearch: state.caseSensitiveSearch,
+              annotations: [],
+              annotationHistory: {
+                past: [],
+                present: [],
+                future: [],
+              },
+              selectedAnnotationColor: state.selectedAnnotationColor,
+              selectedStrokeWidth: state.selectedStrokeWidth,
+              bookmarks: [],
+              readingProgress: 0,
+            };
+
+          return {
+            ...state,
+            documents: {
+              ...documents,
+              [id]: snapshot,
+            },
+            activeDocumentId: id,
+            numPages: snapshot.numPages,
+            currentPage: snapshot.currentPage,
+            zoom: snapshot.zoom,
+            rotation: snapshot.rotation,
+            viewMode: snapshot.viewMode,
+            fitMode: snapshot.fitMode,
+            isFullscreen: snapshot.isFullscreen,
+            showThumbnails: snapshot.showThumbnails,
+            showOutline: snapshot.showOutline,
+            showAnnotations: snapshot.showAnnotations,
+            isDarkMode: snapshot.isDarkMode,
+            isPresentationMode: snapshot.isPresentationMode,
+            showKeyboardShortcuts: snapshot.showKeyboardShortcuts,
+            outline: snapshot.outline,
+            searchQuery: snapshot.searchQuery,
+            searchResults: snapshot.searchResults,
+            currentSearchIndex: snapshot.currentSearchIndex,
+            caseSensitiveSearch: snapshot.caseSensitiveSearch,
+            annotations: snapshot.annotations,
+            annotationHistory: snapshot.annotationHistory,
+            selectedAnnotationColor: snapshot.selectedAnnotationColor,
+            selectedStrokeWidth: snapshot.selectedStrokeWidth,
+            bookmarks: snapshot.bookmarks,
+            readingProgress: snapshot.readingProgress,
+          };
+        });
+      },
+
+      closeDocumentSession: (id) => {
+        set((state) => {
+          const rest = Object.fromEntries(
+            Object.entries(state.documents).filter(([key]) => key !== id)
+          );
+
+          if (state.activeDocumentId !== id) {
+            return {
+              ...state,
+              documents: rest,
+            };
+          }
+
+          const remainingIds = Object.keys(rest);
+
+          if (remainingIds.length === 0) {
+            return {
+              ...state,
+              documents: rest,
+              activeDocumentId: null,
+            };
+          }
+
+          const nextId = remainingIds[0];
+          const nextSnapshot = rest[nextId];
+
+          return {
+            ...state,
+            documents: rest,
+            activeDocumentId: nextId,
+            numPages: nextSnapshot.numPages,
+            currentPage: nextSnapshot.currentPage,
+            zoom: nextSnapshot.zoom,
+            rotation: nextSnapshot.rotation,
+            viewMode: nextSnapshot.viewMode,
+            fitMode: nextSnapshot.fitMode,
+            isFullscreen: nextSnapshot.isFullscreen,
+            showThumbnails: nextSnapshot.showThumbnails,
+            showOutline: nextSnapshot.showOutline,
+            showAnnotations: nextSnapshot.showAnnotations,
+            isDarkMode: nextSnapshot.isDarkMode,
+            isPresentationMode: nextSnapshot.isPresentationMode,
+            showKeyboardShortcuts: nextSnapshot.showKeyboardShortcuts,
+            outline: nextSnapshot.outline,
+            searchQuery: nextSnapshot.searchQuery,
+            searchResults: nextSnapshot.searchResults,
+            currentSearchIndex: nextSnapshot.currentSearchIndex,
+            caseSensitiveSearch: nextSnapshot.caseSensitiveSearch,
+            annotations: nextSnapshot.annotations,
+            annotationHistory: nextSnapshot.annotationHistory,
+            selectedAnnotationColor: nextSnapshot.selectedAnnotationColor,
+            selectedStrokeWidth: nextSnapshot.selectedStrokeWidth,
+            bookmarks: nextSnapshot.bookmarks,
+            readingProgress: nextSnapshot.readingProgress,
+          };
+        });
+      },
     }),
     {
       name: 'pdf-reader-storage',
       partialize: (state) => ({
         recentFiles: state.recentFiles,
         isDarkMode: state.isDarkMode,
-        annotations: state.annotations,
-        bookmarks: state.bookmarks,
+        documents: state.documents,
+        activeDocumentId: state.activeDocumentId,
+        // User preferences
+        viewMode: state.viewMode,
+        fitMode: state.fitMode,
+        zoom: state.zoom,
+        showThumbnails: state.showThumbnails,
+        showOutline: state.showOutline,
+        showAnnotations: state.showAnnotations,
+        isPresentationMode: state.isPresentationMode,
+        caseSensitiveSearch: state.caseSensitiveSearch,
+        selectedAnnotationColor: state.selectedAnnotationColor,
+        selectedStrokeWidth: state.selectedStrokeWidth,
       }),
     }
   )

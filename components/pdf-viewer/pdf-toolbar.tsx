@@ -26,9 +26,19 @@ import {
   Star,
   CaseSensitive,
   MessageSquare,
+  Presentation,
+  Keyboard,
+  Settings,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Tooltip,
   TooltipContent,
@@ -36,8 +46,10 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
+import { ButtonGroup } from '@/components/ui/button-group';
 import { usePDFStore } from '@/lib/pdf-store';
 import { useState, useEffect } from 'react';
+import { PDFSettingsDialog } from './pdf-settings-dialog';
 
 interface PDFToolbarProps {
   onDownload: () => void;
@@ -80,6 +92,10 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
     toggleOutline,
     toggleAnnotations,
     toggleDarkMode,
+    isPresentationMode,
+    togglePresentationMode,
+    showKeyboardShortcuts,
+    toggleKeyboardShortcuts,
     setSearchQuery,
     nextSearchResult,
     previousSearchResult,
@@ -89,6 +105,7 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
   const [pageInput, setPageInput] = useState(currentPage.toString());
   const [showSearch, setShowSearch] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Sync page input with current page
   useEffect(() => {
@@ -120,7 +137,8 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col border-b border-border bg-background">
+      <>
+        <div className="flex flex-col border-b border-border bg-background">
         {/* Main Toolbar */}
         <div className="flex items-center justify-between gap-2 px-4 py-2">
           {/* Left Section */}
@@ -129,338 +147,399 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
               <X className="h-5 w-5" />
             </Button>
             <Separator orientation="vertical" className="h-6" />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleThumbnails}
-                  className={showThumbnails ? 'bg-accent' : ''}
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Toggle Thumbnails</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleOutline}
-                  className={showOutline ? 'bg-accent' : ''}
-                >
-                  <BookOpen className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Toggle Bookmarks</TooltipContent>
-            </Tooltip>
-            {onToggleBookmarks && (
+            <ButtonGroup>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={onToggleBookmarks}
+                    onClick={toggleThumbnails}
+                    className={showThumbnails ? 'bg-accent' : ''}
                   >
-                    <Star className="h-5 w-5" />
+                    <Menu className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>My Bookmarks</TooltipContent>
+                <TooltipContent>Toggle Thumbnails</TooltipContent>
               </Tooltip>
-            )}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleAnnotations}
-                  className={showAnnotations ? 'bg-accent' : ''}
-                >
-                  <MessageSquare className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Toggle Annotations</TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleOutline}
+                    className={showOutline ? 'bg-accent' : ''}
+                  >
+                    <BookOpen className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Toggle Bookmarks</TooltipContent>
+              </Tooltip>
+              {onToggleBookmarks && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={onToggleBookmarks}
+                    >
+                      <Star className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>My Bookmarks</TooltipContent>
+                </Tooltip>
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleAnnotations}
+                    className={showAnnotations ? 'bg-accent' : ''}
+                  >
+                    <MessageSquare className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Toggle Annotations</TooltipContent>
+              </Tooltip>
+            </ButtonGroup>
           </div>
 
           {/* Center Section - Navigation */}
           <div className="flex items-center gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={firstPage}
-                  disabled={currentPage <= 1}
-                >
-                  <ChevronsLeft className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>First Page (Home)</TooltipContent>
-            </Tooltip>
+            <ButtonGroup>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={firstPage}
+                    disabled={currentPage <= 1}
+                  >
+                    <ChevronsLeft className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>First Page (Home)</TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={previousPage}
-                  disabled={currentPage <= 1}
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Previous Page (←)</TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={previousPage}
+                    disabled={currentPage <= 1}
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Previous Page (←)</TooltipContent>
+              </Tooltip>
 
-            <form onSubmit={handlePageInputSubmit} className="flex items-center gap-2">
-              <Input
-                type="text"
-                value={pageInput}
-                onChange={handlePageInputChange}
-                onBlur={() => setPageInput(currentPage.toString())}
-                className="w-16 text-center"
-              />
-              <span className="text-sm text-muted-foreground">/ {numPages}</span>
-            </form>
+              <form onSubmit={handlePageInputSubmit} className="flex items-center gap-2">
+                <Input
+                  type="text"
+                  value={pageInput}
+                  onChange={handlePageInputChange}
+                  onBlur={() => setPageInput(currentPage.toString())}
+                  className="w-16 text-center"
+                />
+                <span className="text-sm text-muted-foreground">/ {numPages}</span>
+              </form>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={nextPage}
-                  disabled={currentPage >= numPages}
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Next Page (→)</TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={nextPage}
+                    disabled={currentPage >= numPages}
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Next Page (→)</TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={lastPage}
-                  disabled={currentPage >= numPages}
-                >
-                  <ChevronsRight className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Last Page (End)</TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={lastPage}
+                    disabled={currentPage >= numPages}
+                  >
+                    <ChevronsRight className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Last Page (End)</TooltipContent>
+              </Tooltip>
+            </ButtonGroup>
 
             <Separator orientation="vertical" className="h-6" />
 
             {/* Zoom Controls */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={zoomOut}>
-                  <ZoomOut className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <div className="text-xs">
-                  <div>Zoom Out</div>
-                  <div className="text-muted-foreground">Ctrl/Cmd + -</div>
-                </div>
-              </TooltipContent>
-            </Tooltip>
+            <ButtonGroup>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={zoomOut}>
+                    <ZoomOut className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="text-xs">
+                    <div>Zoom Out</div>
+                    <div className="text-muted-foreground">Ctrl/Cmd + -</div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <select
-                  value={zoom}
-                  onChange={(e) => setZoom(parseFloat(e.target.value))}
-                  className="h-9 rounded-md border border-input bg-background px-3 text-sm cursor-pointer hover:bg-accent"
-                >
-                  {zoomLevels.map((level) => (
-                    <option key={level} value={level}>
-                      {Math.round(level * 100)}%
-                    </option>
-                  ))}
-                </select>
-              </TooltipTrigger>
-              <TooltipContent>
-                <div className="text-xs">
-                  <div>Zoom Level (50% - 300%)</div>
-                  <div className="text-muted-foreground">Ctrl/Cmd + Scroll to zoom</div>
-                </div>
-              </TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Select
+                    value={zoom.toString()}
+                    onValueChange={(value) => setZoom(parseFloat(value))}
+                  >
+                    <SelectTrigger className="h-9 min-w-[96px]">
+                      <SelectValue>{Math.round(zoom * 100)}%</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {zoomLevels.map((level) => (
+                        <SelectItem key={level} value={level.toString()}>
+                          {Math.round(level * 100)}%
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="text-xs">
+                    <div>Zoom Level (50% - 300%)</div>
+                    <div className="text-muted-foreground">Ctrl/Cmd + Scroll to zoom</div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={zoomIn}>
-                  <ZoomIn className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <div className="text-xs">
-                  <div>Zoom In</div>
-                  <div className="text-muted-foreground">Ctrl/Cmd + +</div>
-                </div>
-              </TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={zoomIn}>
+                    <ZoomIn className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="text-xs">
+                    <div>Zoom In</div>
+                    <div className="text-muted-foreground">Ctrl/Cmd + +</div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </ButtonGroup>
 
             <Separator orientation="vertical" className="h-6" />
 
             {/* Rotation Controls */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={rotateCounterClockwise}>
-                  <RotateCcw className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Rotate Counter-Clockwise</TooltipContent>
-            </Tooltip>
+            <ButtonGroup>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={rotateCounterClockwise}>
+                    <RotateCcw className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Rotate Counter-Clockwise</TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={rotateClockwise}>
-                  <RotateCw className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Rotate Clockwise</TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={rotateClockwise}>
+                    <RotateCw className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Rotate Clockwise</TooltipContent>
+              </Tooltip>
+            </ButtonGroup>
 
             <Separator orientation="vertical" className="h-6" />
 
             {/* View Mode Controls */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setViewMode('single')}
-                  className={viewMode === 'single' ? 'bg-accent' : ''}
-                >
-                  <FileText className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Single Page</TooltipContent>
-            </Tooltip>
+            <ButtonGroup>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setViewMode('single')}
+                    className={viewMode === 'single' ? 'bg-accent' : ''}
+                  >
+                    <FileText className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Single Page</TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setViewMode('continuous')}
-                  className={viewMode === 'continuous' ? 'bg-accent' : ''}
-                >
-                  <Rows3 className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Continuous Scroll</TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setViewMode('continuous')}
+                    className={viewMode === 'continuous' ? 'bg-accent' : ''}
+                  >
+                    <Rows3 className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Continuous Scroll</TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setViewMode('twoPage')}
-                  className={viewMode === 'twoPage' ? 'bg-accent' : ''}
-                >
-                  <Columns2 className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Two Page View</TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setViewMode('twoPage')}
+                    className={viewMode === 'twoPage' ? 'bg-accent' : ''}
+                  >
+                    <Columns2 className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Two Page View</TooltipContent>
+              </Tooltip>
+            </ButtonGroup>
 
             <Separator orientation="vertical" className="h-6" />
 
             {/* Fit Mode Controls */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setFitMode('fitWidth')}
-                  className={fitMode === 'fitWidth' ? 'bg-accent' : ''}
-                >
-                  <Maximize2 className="h-5 w-5 rotate-90" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Fit to Width</TooltipContent>
-            </Tooltip>
+            <ButtonGroup>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setFitMode('fitWidth')}
+                    className={fitMode === 'fitWidth' ? 'bg-accent' : ''}
+                  >
+                    <Maximize2 className="h-5 w-5 rotate-90" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Fit to Width</TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setFitMode('fitPage')}
-                  className={fitMode === 'fitPage' ? 'bg-accent' : ''}
-                >
-                  <Maximize2 className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Fit to Page</TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setFitMode('fitPage')}
+                    className={fitMode === 'fitPage' ? 'bg-accent' : ''}
+                  >
+                    <Maximize2 className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Fit to Page</TooltipContent>
+              </Tooltip>
+            </ButtonGroup>
           </div>
 
           {/* Right Section */}
           <div className="flex items-center gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowSearch(!showSearch)}
-                  className={showSearch ? 'bg-accent' : ''}
-                >
-                  <Search className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Search</TooltipContent>
-            </Tooltip>
+            <ButtonGroup>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowSearch(!showSearch)}
+                    className={showSearch ? 'bg-accent' : ''}
+                  >
+                    <Search className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Search</TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={onPrint}>
-                  <Printer className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Print</TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={onPrint}>
+                    <Printer className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Print</TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={onDownload}>
-                  <Download className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Download</TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={onDownload}>
+                    <Download className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Download</TooltipContent>
+              </Tooltip>
+            </ButtonGroup>
 
             <Separator orientation="vertical" className="h-6" />
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={toggleDarkMode}>
-                  {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Toggle Dark Mode</TooltipContent>
-            </Tooltip>
+            <ButtonGroup>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={togglePresentationMode}
+                    className={isPresentationMode ? 'bg-accent' : ''}
+                  >
+                    <Presentation className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Presentation Mode</TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={toggleFullscreen}>
-                  {isFullscreen ? (
-                    <Minimize className="h-5 w-5" />
-                  ) : (
-                    <Maximize className="h-5 w-5" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Toggle Fullscreen</TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleKeyboardShortcuts}
+                    className={showKeyboardShortcuts ? 'bg-accent' : ''}
+                  >
+                    <Keyboard className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Keyboard Shortcuts (? / H)</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={toggleDarkMode}>
+                    {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Toggle Dark Mode</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowSettings(true)}
+                  >
+                    <Settings className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Viewer Settings</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={toggleFullscreen}>
+                    {isFullscreen ? (
+                      <Minimize className="h-5 w-5" />
+                    ) : (
+                      <Maximize className="h-5 w-5" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Toggle Fullscreen</TooltipContent>
+              </Tooltip>
+            </ButtonGroup>
           </div>
         </div>
 
@@ -522,6 +601,11 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
           </div>
         )}
       </div>
+
+      {showSettings && (
+        <PDFSettingsDialog open={showSettings} onOpenChange={setShowSettings} />
+      )}
+      </>
     </TooltipProvider>
   );
 }

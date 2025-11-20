@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, type ReactNode } from 'react';
 import { usePDFStore } from '@/lib/pdf-store';
 import { loadPDFDocument, searchInPDF, downloadPDF, printPDF, PDFDocumentProxy, PDFPageProxy } from '@/lib/pdf-utils';
 import { PDFToolbar } from './pdf-toolbar';
@@ -13,16 +13,22 @@ import { PDFProgressBar } from './pdf-progress-bar';
 import { PDFAnnotationsToolbar } from './pdf-annotations-toolbar';
 import { PDFTextLayer } from './pdf-text-layer';
 import { PDFAnnotationLayer } from './pdf-annotation-layer';
+import { PDFDrawingLayer } from './pdf-drawing-layer';
+import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useTouchGestures } from '@/hooks/use-touch-gestures';
+import { AnnotationStamp } from '@/lib/pdf-store';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 
 interface PDFViewerProps {
   file: File;
   onClose: () => void;
+  header?: ReactNode;
 }
 
-export function PDFViewer({ file, onClose }: PDFViewerProps) {
+export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
   const {
     currentPage,
     zoom,
@@ -32,12 +38,16 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
     showAnnotations,
     isDarkMode,
     isFullscreen,
+    isPresentationMode,
+    showKeyboardShortcuts,
     numPages,
     viewMode,
     fitMode,
     outline,
     caseSensitiveSearch,
     searchQuery,
+    selectedAnnotationColor,
+    selectedStrokeWidth,
     setNumPages,
     setCurrentPage,
     setZoom,
@@ -48,6 +58,8 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
     addRecentFile,
     setSearchResults,
     updateReadingProgress,
+    addStampAnnotation,
+    toggleKeyboardShortcuts,
   } = usePDFStore();
 
   const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null);
@@ -75,7 +87,8 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
   });
   const [isResizing, setIsResizing] = useState(false);
   const [showBookmarksPanel, setShowBookmarksPanel] = useState(false);
-  const [selectedAnnotationType, setSelectedAnnotationType] = useState<'highlight' | 'comment' | 'shape' | 'text' | null>(null);
+  const [selectedAnnotationType, setSelectedAnnotationType] = useState<'highlight' | 'comment' | 'shape' | 'text' | 'drawing' | null>(null);
+  const [pendingStamp, setPendingStamp] = useState<AnnotationStamp | null>(null);
   const touchContainerRef = useRef<HTMLDivElement>(null);
 
   // Load PDF document
@@ -390,7 +403,41 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
         e.preventDefault();
       }
 
-      const { nextPage, previousPage, firstPage, lastPage, zoomIn, zoomOut, rotateClockwise, rotateCounterClockwise, toggleFullscreen } = usePDFStore.getState();
+      const {
+        nextPage,
+        previousPage,
+        firstPage,
+        lastPage,
+        zoomIn,
+        zoomOut,
+        rotateClockwise,
+        rotateCounterClockwise,
+        toggleFullscreen,
+        undoAnnotation,
+        redoAnnotation,
+        toggleKeyboardShortcuts,
+      } = usePDFStore.getState();
+
+      // Undo/Redo shortcuts
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z' && !e.shiftKey) {
+          e.preventDefault();
+          undoAnnotation();
+          return;
+        }
+        if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
+          e.preventDefault();
+          redoAnnotation();
+          return;
+        }
+      }
+
+      // Help dialog shortcuts
+      if (e.key === '?' || e.key.toLowerCase() === 'h') {
+        e.preventDefault();
+        toggleKeyboardShortcuts();
+        return;
+      }
 
       switch (e.key) {
         case 'ArrowLeft':
@@ -429,12 +476,21 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
           e.preventDefault();
           toggleFullscreen();
           break;
+        case 'Escape':
+          // Cancel any pending stamp or annotation
+          if (pendingStamp) {
+            setPendingStamp(null);
+          }
+          if (selectedAnnotationType) {
+            setSelectedAnnotationType(null);
+          }
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [pendingStamp, selectedAnnotationType]);
 
   // Handle fullscreen
   useEffect(() => {
@@ -747,7 +803,7 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <Spinner className="mx-auto h-12 w-12" />
           <p className="mt-4 text-lg font-medium">Loading PDF...</p>
           {loadingProgress > 0 && (
             <p className="mt-2 text-sm text-muted-foreground">{loadingProgress}%</p>
@@ -762,12 +818,9 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center">
           <p className="text-lg font-medium text-destructive">{error}</p>
-          <button
-            onClick={onClose}
-            className="mt-4 rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
-          >
+          <Button onClick={onClose} className="mt-4">
             Go Back
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -781,6 +834,7 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
         isDarkMode && 'dark'
       )}
     >
+      {header}
       <PDFToolbar
         onDownload={handleDownload}
         onPrint={handlePrint}
@@ -790,9 +844,25 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
       />
       
       {/* Annotations Toolbar */}
-      <PDFAnnotationsToolbar
-        onAnnotationTypeSelect={setSelectedAnnotationType}
-        selectedType={selectedAnnotationType}
+      {!isPresentationMode && (
+        <PDFAnnotationsToolbar
+          onAnnotationTypeSelect={setSelectedAnnotationType}
+          selectedType={selectedAnnotationType}
+          onStampSelect={(stamp) => {
+            setPendingStamp(stamp);
+            setSelectedAnnotationType(null);
+          }}
+        />
+      )}
+      
+      {/* Keyboard Shortcuts Dialog */}
+      <KeyboardShortcutsDialog
+        open={showKeyboardShortcuts}
+        onOpenChange={(open) => {
+          if (open !== showKeyboardShortcuts) {
+            toggleKeyboardShortcuts();
+          }
+        }}
       />
 
       <div className="flex flex-1 overflow-hidden pb-16 sm:pb-20">
@@ -826,34 +896,67 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
           </div>
         )}
 
-        {/* Outline/Bookmarks Sidebar */}
+        {/* Outline Sidebar */}
         {showOutline && (
-          <div className="w-80 border-r border-border bg-muted/30 flex flex-col overflow-hidden">
+          <div
+            className="relative border-r border-border bg-muted/30 flex flex-col overflow-hidden"
+            style={{ width: `${sidebarWidth}px` }}
+          >
             <PDFOutline
               outline={outline}
               onNavigate={handleBookmarkNavigate}
               currentPage={currentPage}
             />
+
+            {/* Resize Handle */}
+            <div
+              className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors group"
+              onMouseDown={handleResizeStart}
+            >
+              <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary/0 group-hover:bg-primary/50 transition-colors" />
+            </div>
           </div>
         )}
 
         {/* User Bookmarks Panel */}
         {showBookmarksPanel && (
-          <div className="w-80 border-r border-border bg-muted/30 flex flex-col overflow-hidden">
+          <div
+            className="relative border-r border-border bg-muted/30 flex flex-col overflow-hidden"
+            style={{ width: `${sidebarWidth}px` }}
+          >
             <PDFBookmarks
               onNavigate={handleBookmarkNavigate}
               currentPage={currentPage}
             />
+
+            {/* Resize Handle */}
+            <div
+              className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors group"
+              onMouseDown={handleResizeStart}
+            >
+              <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary/0 group-hover:bg-primary/50 transition-colors" />
+            </div>
           </div>
         )}
 
         {/* Annotations Panel */}
         {showAnnotations && (
-          <div className="w-80 border-r border-border bg-muted/30 flex flex-col overflow-hidden">
+          <div
+            className="relative border-r border-border bg-muted/30 flex flex-col overflow-hidden"
+            style={{ width: `${sidebarWidth}px` }}
+          >
             <PDFAnnotationsList
               onNavigate={handleAnnotationNavigate}
               currentPage={currentPage}
             />
+
+            {/* Resize Handle */}
+            <div
+              className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors group"
+              onMouseDown={handleResizeStart}
+            >
+              <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary/0 group-hover:bg-primary/50 transition-colors" />
+            </div>
           </div>
         )}
 
@@ -870,7 +973,21 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
         >
           {/* Single Page View */}
           {viewMode === 'single' && (
-            <div className="flex min-h-full items-center justify-center p-8">
+            <div
+              className="flex min-h-full items-center justify-center p-8"
+              onClick={(e) => {
+                if (pendingStamp && currentPageObj) {
+                  const viewport = currentPageObj.getViewport({ scale: zoom, rotation });
+                  const rect = (e.currentTarget.querySelector('canvas') as HTMLCanvasElement)?.getBoundingClientRect();
+                  if (rect) {
+                    const x = (e.clientX - rect.left) / viewport.width;
+                    const y = (e.clientY - rect.top) / viewport.height;
+                    addStampAnnotation(pendingStamp, currentPage, { x, y });
+                    setPendingStamp(null);
+                  }
+                }
+              }}
+            >
               <div className="relative">
                 <PDFPage
                   page={currentPageObj}
@@ -889,8 +1006,18 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
                   page={currentPageObj}
                   scale={zoom}
                   rotation={rotation}
-                  selectedAnnotationType={selectedAnnotationType}
+                  selectedAnnotationType={selectedAnnotationType === 'drawing' ? null : selectedAnnotationType}
                 />
+                {selectedAnnotationType === 'drawing' && (
+                  <PDFDrawingLayer
+                    page={currentPageObj}
+                    scale={zoom}
+                    rotation={rotation}
+                    isDrawingMode={true}
+                    strokeColor={selectedAnnotationColor}
+                    strokeWidth={selectedStrokeWidth}
+                  />
+                )}
               </div>
             </div>
           )}
@@ -932,8 +1059,18 @@ export function PDFViewer({ file, onClose }: PDFViewerProps) {
                       page={page}
                       scale={zoom}
                       rotation={rotation}
-                      selectedAnnotationType={selectedAnnotationType}
+                      selectedAnnotationType={selectedAnnotationType === 'drawing' ? null : selectedAnnotationType}
                     />
+                    {selectedAnnotationType === 'drawing' && index + 1 === currentPage && (
+                      <PDFDrawingLayer
+                        page={page}
+                        scale={zoom}
+                        rotation={rotation}
+                        isDrawingMode={true}
+                        strokeColor={selectedAnnotationColor}
+                        strokeWidth={selectedStrokeWidth}
+                      />
+                    )}
                   </div>
                   <div className="mt-2 text-center text-sm text-muted-foreground">
                     Page {index + 1} of {numPages}

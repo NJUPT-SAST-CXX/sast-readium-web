@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { PDFPageProxy } from '@/lib/pdf-utils';
 import { cn } from '@/lib/utils';
+import { Spinner } from '@/components/ui/spinner';
 
 interface PDFThumbnailProps {
   page: PDFPageProxy | null;
@@ -75,7 +76,7 @@ export function PDFThumbnail({ page, pageNumber, isActive, onClick }: PDFThumbna
         {!page || !isLoaded ? (
           <div className="flex h-32 w-24 items-center justify-center bg-muted">
             {page && !isLoaded && (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <Spinner className="h-4 w-4" />
             )}
             {!page && (
               <div className="text-xs text-muted-foreground">...</div>
