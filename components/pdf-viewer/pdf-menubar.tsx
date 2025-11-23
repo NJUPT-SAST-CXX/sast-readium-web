@@ -70,7 +70,7 @@ interface PDFMenuBarProps {
   onOpenSettings?: () => void;
 }
 
-export function PDFMenuBar({ onDownload, onPrint, onShare, onSave, onSearch, onOpenSettings, onOpenFile, onOpenFolder, onRevealInFileManager, onOpenRecentFile }: PDFMenuBarProps & { onOpenFile?: () => void; onOpenFolder?: () => void; onRevealInFileManager?: () => void; onOpenRecentFile?: (file: File) => void }) {
+export function PDFMenuBar({ onDownload, onPrint, onShare, onSave, onSearch, onOpenSettings, onOpenFile, onOpenFolder, onRevealInFileManager, onOpenRecentFile, onFileUpdate }: PDFMenuBarProps & { onOpenFile?: () => void; onOpenFolder?: () => void; onRevealInFileManager?: () => void; onOpenRecentFile?: (file: File) => void; onFileUpdate?: (newFile: File) => void }) {
   const { t } = useTranslation();
   const {
     currentPDF,
@@ -479,7 +479,8 @@ export function PDFMenuBar({ onDownload, onPrint, onShare, onSave, onSearch, onO
       
       <PDFPropertiesDialog 
         open={showProperties} 
-        onOpenChange={setShowProperties} 
+        onOpenChange={setShowProperties}
+        onFileUpdate={onFileUpdate}
       />
       
       <PDFRecentFilesDialog

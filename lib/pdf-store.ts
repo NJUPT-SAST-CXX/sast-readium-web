@@ -36,7 +36,7 @@ export interface SearchResult {
 
 export interface Annotation {
   id: string;
-  type: 'highlight' | 'comment' | 'shape' | 'text' | 'drawing';
+  type: 'highlight' | 'comment' | 'shape' | 'text' | 'drawing' | 'image';
   pageNumber: number;
   content?: string;
   color: string;
@@ -105,6 +105,9 @@ interface DocumentStateSnapshot {
   watermarkColor: string;
   watermarkOpacity: number;
   watermarkSize: number;
+  watermarkGapX: number;
+  watermarkGapY: number;
+  watermarkRotation: number;
 }
 
 export interface PDFOutlineNode {
@@ -177,6 +180,9 @@ interface PDFState {
   // Recent files
   recentFiles: RecentFile[];
   
+  // Signatures
+  signatures: string[];
+  
   // Reading progress
   readingProgress: number; // 0-100 percentage
 
@@ -201,11 +207,17 @@ interface PDFState {
   watermarkColor: string;
   watermarkOpacity: number;
   watermarkSize: number;
+  watermarkGapX: number;
+  watermarkGapY: number;
+  watermarkRotation: number;
 
   setWatermarkText: (text: string) => void;
   setWatermarkColor: (color: string) => void;
   setWatermarkOpacity: (opacity: number) => void;
   setWatermarkSize: (size: number) => void;
+  setWatermarkGapX: (gap: number) => void;
+  setWatermarkGapY: (gap: number) => void;
+  setWatermarkRotation: (rotation: number) => void;
 
   // App Settings
   enableSplashScreen: boolean;
@@ -264,6 +276,9 @@ interface PDFState {
   setSelectedAnnotationColor: (color: string) => void;
   setSelectedStrokeWidth: (width: number) => void;
   addStampAnnotation: (stamp: AnnotationStamp, pageNumber: number, position: { x: number; y: number }) => void;
+  addImageAnnotation: (imageUrl: string, pageNumber: number, position: { x: number; y: number; width: number; height: number }) => void;
+  addSignature: (signature: string) => void;
+  removeSignature: (index: number) => void;
   exportAnnotations: () => string;
   importAnnotations: (data: string) => void;
   addBookmark: (pageNumber: number, title: string) => void;
@@ -325,6 +340,9 @@ const createSnapshotFromState = (state: PDFState): DocumentStateSnapshot => ({
   watermarkColor: state.watermarkColor,
   watermarkOpacity: state.watermarkOpacity,
   watermarkSize: state.watermarkSize,
+  watermarkGapX: state.watermarkGapX,
+  watermarkGapY: state.watermarkGapY,
+  watermarkRotation: state.watermarkRotation,
 });
 
 export const usePDFStore = create<PDFState>()(
@@ -369,6 +387,7 @@ export const usePDFStore = create<PDFState>()(
       selectedAnnotationColor: '#ffff00',
       selectedStrokeWidth: 2,
       bookmarks: [],
+      signatures: [],
       recentFiles: [],
       readingProgress: 0,
       activeDocumentId: null,
@@ -385,6 +404,9 @@ export const usePDFStore = create<PDFState>()(
       watermarkColor: 'rgba(0, 0, 0, 0.1)',
       watermarkOpacity: 0.2,
       watermarkSize: 48,
+      watermarkGapX: 1.5,
+      watermarkGapY: 4,
+      watermarkRotation: -45,
 
       // Actions
       setCurrentPDF: (file) => set({ currentPDF: file }),
@@ -393,6 +415,9 @@ export const usePDFStore = create<PDFState>()(
       setWatermarkColor: (color: string) => set({ watermarkColor: color }),
       setWatermarkOpacity: (opacity: number) => set({ watermarkOpacity: opacity }),
       setWatermarkSize: (size: number) => set({ watermarkSize: size }),
+      setWatermarkGapX: (gap: number) => set({ watermarkGapX: gap }),
+      setWatermarkGapY: (gap: number) => set({ watermarkGapY: gap }),
+      setWatermarkRotation: (rotation: number) => set({ watermarkRotation: rotation }),
 
       setPdfUrl: (url) => set({ pdfUrl: url }),
 
@@ -737,6 +762,33 @@ export const usePDFStore = create<PDFState>()(
         }));
       },
 
+      addImageAnnotation: (imageUrl: string, pageNumber: number, position: { x: number; y: number; width: number; height: number }) => {
+        const newAnnotation: Annotation = {
+          id: `image-${Date.now()}-${Math.random()}`,
+          type: 'image',
+          pageNumber,
+          content: imageUrl,
+          color: '#000000', // Not used for images but required by type
+          position,
+          timestamp: Date.now(),
+        };
+
+        set((state) => ({
+          annotations: [...state.annotations, newAnnotation],
+          annotationHistory: {
+            past: [...state.annotationHistory.past, state.annotationHistory.present],
+            present: [...state.annotations, newAnnotation],
+            future: [],
+          },
+        }));
+      },
+
+      addSignature: (signature: string) => set((state) => ({ signatures: [...state.signatures, signature] })),
+
+      removeSignature: (index: number) => set((state) => ({
+        signatures: state.signatures.filter((_, i) => i !== index),
+      })),
+
       exportAnnotations: () => {
         const state = get();
         const exportData = {
@@ -848,6 +900,9 @@ export const usePDFStore = create<PDFState>()(
         watermarkColor: 'rgba(0, 0, 0, 0.1)',
         watermarkOpacity: 0.2,
         watermarkSize: 48,
+        watermarkGapX: 1.5,
+        watermarkGapY: 4,
+        watermarkRotation: -45,
       }),
 
       openDocumentSession: (id) => {

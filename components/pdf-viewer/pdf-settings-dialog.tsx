@@ -15,6 +15,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -78,10 +84,16 @@ export function PDFSettingsDialog({ open, onOpenChange }: PDFSettingsDialogProps
     watermarkColor,
     watermarkOpacity,
     watermarkSize,
+    watermarkGapX,
+    watermarkGapY,
+    watermarkRotation,
     setWatermarkText,
     setWatermarkColor,
     setWatermarkOpacity,
     setWatermarkSize,
+    setWatermarkGapX,
+    setWatermarkGapY,
+    setWatermarkRotation,
     autoCheckUpdate,
     toggleAutoCheckUpdate,
   } = usePDFStore();
@@ -107,6 +119,9 @@ export function PDFSettingsDialog({ open, onOpenChange }: PDFSettingsDialogProps
   const [localWatermarkColor, setLocalWatermarkColor] = useState<string>(watermarkColor);
   const [localWatermarkOpacity, setLocalWatermarkOpacity] = useState<number>(watermarkOpacity);
   const [localWatermarkSize, setLocalWatermarkSize] = useState<number>(watermarkSize);
+  const [localWatermarkGapX, setLocalWatermarkGapX] = useState<number>(watermarkGapX);
+  const [localWatermarkGapY, setLocalWatermarkGapY] = useState<number>(watermarkGapY);
+  const [localWatermarkRotation, setLocalWatermarkRotation] = useState<number>(watermarkRotation);
   
   const [localAutoCheckUpdate, setLocalAutoCheckUpdate] = useState<boolean>(autoCheckUpdate);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
@@ -179,6 +194,15 @@ export function PDFSettingsDialog({ open, onOpenChange }: PDFSettingsDialogProps
     if (localWatermarkSize !== watermarkSize) {
       setWatermarkSize(localWatermarkSize);
     }
+    if (localWatermarkGapX !== watermarkGapX) {
+      setWatermarkGapX(localWatermarkGapX);
+    }
+    if (localWatermarkGapY !== watermarkGapY) {
+      setWatermarkGapY(localWatermarkGapY);
+    }
+    if (localWatermarkRotation !== watermarkRotation) {
+      setWatermarkRotation(localWatermarkRotation);
+    }
 
     if (localAutoCheckUpdate !== autoCheckUpdate) {
       toggleAutoCheckUpdate();
@@ -216,6 +240,9 @@ export function PDFSettingsDialog({ open, onOpenChange }: PDFSettingsDialogProps
     setLocalWatermarkColor(watermarkColor);
     setLocalWatermarkOpacity(watermarkOpacity);
     setLocalWatermarkSize(watermarkSize);
+    setLocalWatermarkGapX(watermarkGapX);
+    setLocalWatermarkGapY(watermarkGapY);
+    setLocalWatermarkRotation(watermarkRotation);
     setLocalAutoCheckUpdate(autoCheckUpdate);
     setUpdateStatus(null);
     
@@ -238,6 +265,13 @@ export function PDFSettingsDialog({ open, onOpenChange }: PDFSettingsDialogProps
     setLocalThemeMode('auto');
     setLocalEnableSplashScreen(true);
     setLocalPdfLoadingAnimation('spinner');
+    setLocalWatermarkText('');
+    setLocalWatermarkColor('rgba(0, 0, 0, 0.1)');
+    setLocalWatermarkOpacity(0.2);
+    setLocalWatermarkSize(48);
+    setLocalWatermarkGapX(1.5);
+    setLocalWatermarkGapY(4.0);
+    setLocalWatermarkRotation(-45);
     setLocalAutoCheckUpdate(false);
   };
 
@@ -662,6 +696,34 @@ export function PDFSettingsDialog({ open, onOpenChange }: PDFSettingsDialogProps
                       step={4}
                       value={[localWatermarkSize]}
                       onValueChange={(values) => setLocalWatermarkSize(values[0])}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span>{t('settings.option.watermark_gap_x')}</span>
+                      <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">x{localWatermarkGapX}</span>
+                    </div>
+                    <Slider
+                      min={0.5}
+                      max={5.0}
+                      step={0.1}
+                      value={[localWatermarkGapX]}
+                      onValueChange={(values) => setLocalWatermarkGapX(values[0])}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span>{t('settings.option.watermark_gap_y')}</span>
+                      <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">x{localWatermarkGapY}</span>
+                    </div>
+                    <Slider
+                      min={1.0}
+                      max={10.0}
+                      step={0.5}
+                      value={[localWatermarkGapY]}
+                      onValueChange={(values) => setLocalWatermarkGapY(values[0])}
                     />
                   </div>
                 </div>

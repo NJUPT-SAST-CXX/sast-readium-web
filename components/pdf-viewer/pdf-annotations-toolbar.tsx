@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Highlighter, MessageSquare, Square, Type, Trash2, Pen, Undo2, Redo2, Download, Upload, Stamp } from 'lucide-react';
+import { Highlighter, MessageSquare, Square, Type, Trash2, Pen, Undo2, Redo2, Download, Upload, Stamp, PenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -21,6 +21,7 @@ interface PDFAnnotationsToolbarProps {
   selectedType: 'highlight' | 'comment' | 'shape' | 'text' | 'drawing' | null;
   onStampSelect: (stamp: AnnotationStamp) => void;
   className?: string;
+  onOpenSignatureDialog?: () => void;
 }
 
 export function PDFAnnotationsToolbar({
@@ -28,6 +29,7 @@ export function PDFAnnotationsToolbar({
   selectedType,
   onStampSelect,
   className,
+  onOpenSignatureDialog,
 }: PDFAnnotationsToolbarProps) {
   const {
     annotations,
@@ -247,6 +249,20 @@ export function PDFAnnotationsToolbar({
             </Button>
           </TooltipTrigger>
           <TooltipContent>Stamps</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onOpenSignatureDialog}
+              className="h-8 w-8"
+            >
+              <PenLine className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Signature</TooltipContent>
         </Tooltip>
 
         <Separator orientation="vertical" className="h-6" />

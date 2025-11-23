@@ -222,6 +222,9 @@
       "watermark_color": "Watermark Color",
       "watermark_opacity": "Opacity",
       "watermark_size": "Font Size",
+      "watermark_gap_x": "Horizontal Spacing",
+      "watermark_gap_y": "Vertical Spacing",
+      "watermark_rotation": "Rotation Angle",
       "check_update": "Check for Updates",
       "test_notification": "Test Notification",
       "auto_check_update": "Automatically check for updates"

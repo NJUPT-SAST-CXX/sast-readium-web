@@ -7,6 +7,9 @@ interface PDFWatermarkProps {
   size: number;
   width: number;
   height: number;
+  gapX: number;
+  gapY: number;
+  rotation: number;
 }
 
 const PDFWatermarkComponent = ({
@@ -16,12 +19,15 @@ const PDFWatermarkComponent = ({
   size,
   width,
   height,
+  gapX = 1.5,
+  gapY = 4,
+  rotation = -45,
 }: PDFWatermarkProps) => {
   if (!text) return null;
 
   // Calculate spacing based on text length and size to ensure good coverage
-  const spacingX = size * text.length * 1.5;
-  const spacingY = size * 4;
+  const spacingX = size * text.length * gapX;
+  const spacingY = size * gapY;
   
   // Calculate number of repetitions needed to cover the area
   const cols = Math.ceil(width / spacingX) + 1;
@@ -42,7 +48,7 @@ const PDFWatermarkComponent = ({
         {Array.from({ length: cols * rows }).map((_, i) => (
           <div
             key={i}
-            className="whitespace-nowrap transform -rotate-45 origin-center flex items-center justify-center"
+            className="whitespace-nowrap origin-center flex items-center justify-center"
             style={{
               color: color,
               opacity: opacity,
@@ -51,6 +57,7 @@ const PDFWatermarkComponent = ({
               height: spacingY,
               fontFamily: 'sans-serif',
               fontWeight: 'bold',
+              transform: `rotate(${rotation}deg)`,
             }}
           >
             {text}

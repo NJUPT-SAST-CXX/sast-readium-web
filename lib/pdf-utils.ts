@@ -28,11 +28,19 @@ export interface PDFDocumentProxy {
   destroy: () => Promise<void>;
 }
 
+export interface PDFAnnotationData {
+  subtype: string;
+  rect: number[];
+  url?: string;
+  dest?: string | unknown[];
+  [key: string]: unknown;
+}
+
 export interface PDFPageProxy {
   getViewport: (params: { scale: number; rotation?: number }) => PDFPageViewport;
   render: (params: { canvasContext: CanvasRenderingContext2D; viewport: PDFPageViewport }) => PDFRenderTask;
   getTextContent: () => Promise<TextContent>;
-  getAnnotations: () => Promise<any[]>;
+  getAnnotations: () => Promise<PDFAnnotationData[]>;
 }
 
 export interface PDFPageViewport {
@@ -348,6 +356,33 @@ export async function savePDF(
                  });
                }
              }
+          } else if (annotation.type === 'image' && annotation.content) {
+            try {
+              // Check if content is a data URL
+              const isDataUrl = annotation.content.startsWith('data:image/');
+              if (isDataUrl) {
+                let image;
+                if (annotation.content.startsWith('data:image/png')) {
+                  image = await newPdfDoc.embedPng(annotation.content);
+                } else if (annotation.content.startsWith('data:image/jpeg') || annotation.content.startsWith('data:image/jpg')) {
+                  image = await newPdfDoc.embedJpg(annotation.content);
+                }
+
+                if (image) {
+                  const w = (annotation.position.width || 0) * width;
+                  const h = (annotation.position.height || 0) * height;
+                  
+                  page.drawImage(image, {
+                    x,
+                    y: y - h, // PDF y is bottom-left, so subtract height to get top-left of image
+                    width: w,
+                    height: h,
+                  });
+                }
+              }
+            } catch (embedErr) {
+              console.error('Failed to embed image annotation:', embedErr);
+            }
           }
         }
       }
@@ -369,5 +404,34 @@ export async function savePDF(
     alert('Failed to save PDF with annotations. Downloading original instead.');
     downloadPDF(file);
   }
+}
+
+export interface PDFMetadataUpdate {
+  title?: string;
+  author?: string;
+  subject?: string;
+  keywords?: string[];
+  creator?: string;
+  producer?: string;
+  creationDate?: Date;
+  modificationDate?: Date;
+}
+
+export async function updatePDFMetadata(file: File, metadata: PDFMetadataUpdate): Promise<File> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdfDoc = await PDFDocument.load(arrayBuffer);
+  
+  if (metadata.title !== undefined) pdfDoc.setTitle(metadata.title);
+  if (metadata.author !== undefined) pdfDoc.setAuthor(metadata.author);
+  if (metadata.subject !== undefined) pdfDoc.setSubject(metadata.subject);
+  if (metadata.keywords !== undefined) pdfDoc.setKeywords(metadata.keywords);
+  if (metadata.creator !== undefined) pdfDoc.setCreator(metadata.creator);
+  if (metadata.producer !== undefined) pdfDoc.setProducer(metadata.producer);
+  if (metadata.creationDate !== undefined) pdfDoc.setCreationDate(metadata.creationDate);
+  if (metadata.modificationDate !== undefined) pdfDoc.setModificationDate(metadata.modificationDate);
+  else pdfDoc.setModificationDate(new Date());
+
+  const pdfBytes = await pdfDoc.save();
+  return new File([pdfBytes as unknown as BlobPart], file.name, { type: 'application/pdf', lastModified: Date.now() });
 }
 

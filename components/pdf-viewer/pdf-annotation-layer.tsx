@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import { usePDFStore, Annotation } from '@/lib/pdf-store';
-import { PDFPageProxy } from '@/lib/pdf-utils';
+import { PDFPageProxy, PDFAnnotationData } from '@/lib/pdf-utils';
 import { X, MessageSquare, GripHorizontal } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -233,20 +233,20 @@ export function PDFAnnotationLayer({
     x: number;
     y: number;
   } | null>(null);
-  const [nativeAnnotations, setNativeAnnotations] = useState<any[]>([]);
+  const [nativeAnnotations, setNativeAnnotations] = useState<PDFAnnotationData[]>([]);
 
   useEffect(() => {
-    if (!page) {
-      setNativeAnnotations([]);
-      return;
-    }
+    if (!page) return;
     
     let mounted = true;
     page.getAnnotations().then((annots) => {
       if (mounted) setNativeAnnotations(annots);
     }).catch(err => console.error('Error loading annotations:', err));
 
-    return () => { mounted = false; };
+    return () => { 
+      mounted = false; 
+      setNativeAnnotations([]);
+    };
   }, [page]);
 
   // Filter annotations for current page
@@ -482,6 +482,25 @@ export function PDFAnnotationLayer({
             >
               <X className="h-3 w-3" />
             </button>
+          )}
+          {annotation.type === 'image' && annotation.content && (
+            <div className="relative group w-full h-full">
+              <img 
+                src={annotation.content} 
+                alt="Annotation" 
+                className="w-full h-full object-contain select-none pointer-events-none"
+                draggable={false}
+              />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeAnnotation(annotation.id);
+                }}
+                className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto bg-destructive text-destructive-foreground rounded-full p-0.5 z-10"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
           )}
         </div>
       ))}

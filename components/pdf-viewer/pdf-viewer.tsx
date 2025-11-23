@@ -42,15 +42,17 @@ import { Button } from '@/components/ui/button';
 import { PDFLoadingAnimation } from './loading-animations';
 import { useTranslation } from 'react-i18next';
 import { revealInFileManager } from '@/lib/tauri-bridge';
+import { SignatureDialog } from './signature-dialog';
 
 interface PDFViewerProps {
   file: File;
   onClose: () => void;
   header?: ReactNode;
   onOpenFileFromMenu?: (file: File | File[]) => void;
+  onFileUpdate?: (newFile: File) => void;
 }
 
-export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFViewerProps) {
+export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpdate }: PDFViewerProps) {
   const { t } = useTranslation();
   const {
     currentPage,
@@ -77,6 +79,7 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
     setZoom,
     setOutline,
     setMetadata,
+    setCurrentPDF,
     goToPage,
     nextPage,
     previousPage,
@@ -84,6 +87,7 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
     setSearchResults,
     updateReadingProgress,
     addStampAnnotation,
+    addImageAnnotation,
     toggleKeyboardShortcuts,
     pageOrder,
     reorderPages,
@@ -110,8 +114,10 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
   const lastScrollTop = useRef<number>(0);
   const isScrollingProgrammatically = useRef<boolean>(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastThrottleTimeRef = useRef<number>(0);
   const shouldScrollToBottomRef = useRef(false);
   const pageRefsMap = useRef<Map<number, HTMLDivElement>>(new Map());
+  const pageDimensionsRef = useRef<Map<number, { width: number; height: number }>>(new Map());
   const recentFileUrlRef = useRef<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
     // Load saved width from localStorage or use default
@@ -127,6 +133,7 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
   const [showBookmarksPanel, setShowBookmarksPanel] = useState(false);
   const [selectedAnnotationType, setSelectedAnnotationType] = useState<'highlight' | 'comment' | 'shape' | 'text' | 'drawing' | null>(null);
   const [pendingStamp, setPendingStamp] = useState<AnnotationStamp | null>(null);
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
   const touchContainerRef = useRef<HTMLDivElement>(null);
   const previousPageRef = useRef<number>(currentPage);
   const [pageDirection, setPageDirection] = useState<'forward' | 'backward' | 'none'>('none');
@@ -139,6 +146,7 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
   const [passwordError, setPasswordError] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   
   const handleRenderSuccess = useCallback(() => {
     if (shouldScrollToBottomRef.current && scrollContainerRef.current) {
@@ -199,6 +207,21 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
 
         setPdfDocument(pdf);
         setNumPages(pdf.numPages);
+        setCurrentPDF(file);
+        
+        // Load metadata
+        try {
+          const metadata = await pdf.getMetadata();
+          if (metadata) {
+            setMetadata({
+              info: metadata.info,
+              metadata: metadata.metadata,
+              contentLength: file.size,
+            });
+          }
+        } catch (err) {
+          console.error('Error loading metadata:', err);
+        }
         
         // Close password dialog if it was open
         setShowPasswordDialog(false);
@@ -310,7 +333,7 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
         recentFileUrlRef.current = null;
       }
     };
-  }, [file, setNumPages, addRecentFile, setOutline, setMetadata, password]);
+  }, [file, setNumPages, addRecentFile, setOutline, setMetadata, password, setCurrentPDF]);
 
   // Reset password state when file changes
   useEffect(() => {
@@ -383,6 +406,11 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
           try {
             const originalPageNum = pageOrder.length > 0 ? pageOrder[visualPageNum - 1] : visualPageNum;
             const page = await pdfDocument.getPage(originalPageNum);
+            
+            // Store page dimensions
+            const viewport = page.getViewport({ scale: 1 });
+            pageDimensionsRef.current.set(visualPageNum, { width: viewport.width, height: viewport.height });
+            
             return { index: visualPageNum - 1, page };
           } catch (err) {
             console.error(`Error loading page ${visualPageNum}:`, err);
@@ -651,6 +679,11 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
     const WHEEL_THRESHOLD = 150; // Increased threshold for better control
 
     const handleWheel = (e: WheelEvent) => {
+      // Skip if scrolling programmatically (during page change)
+      if (isScrollingProgrammatically.current) {
+        return;
+      }
+
       // Check if Ctrl/Cmd key is pressed for zoom
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
@@ -701,16 +734,30 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
         
         // Debounce the page change
         wheelTimeout = setTimeout(() => {
+          if (isScrollingProgrammatically.current) return;
+
           if (Math.abs(accumulatedDelta) >= WHEEL_THRESHOLD) {
             if (accumulatedDelta > 0 && currentPage < numPages) {
               // Scrolling down - next page
+              isScrollingProgrammatically.current = true;
               nextPage();
               // Reset scroll to top
               if (scrollContainer) scrollContainer.scrollTop = 0;
+              
+              // Reset flag after delay
+              setTimeout(() => {
+                isScrollingProgrammatically.current = false;
+              }, 500);
             } else if (accumulatedDelta < 0 && currentPage > 1) {
               // Scrolling up - previous page
+              isScrollingProgrammatically.current = true;
               shouldScrollToBottomRef.current = true;
               previousPage();
+              
+              // Reset flag after delay
+              setTimeout(() => {
+                isScrollingProgrammatically.current = false;
+              }, 500);
             }
           }
           accumulatedDelta = 0;
@@ -737,6 +784,40 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
     const handleScroll = () => {
       // Skip if scrolling programmatically (during page change)
       if (isScrollingProgrammatically.current) {
+        return;
+      }
+
+      // Continuous mode: Update current page based on scroll position
+      if (viewMode === 'continuous' || viewMode === 'twoPage') {
+        const now = Date.now();
+        if (now - lastThrottleTimeRef.current >= 100) {
+          lastThrottleTimeRef.current = now;
+          
+          requestAnimationFrame(() => {
+            const containerRect = scrollContainer.getBoundingClientRect();
+            // Find the page that is most visible in the container
+            let maxVisibleHeight = 0;
+            let bestPage = currentPage;
+
+            pageRefsMap.current.forEach((element, pageNum) => {
+              const rect = element.getBoundingClientRect();
+              
+              // Calculate intersection height
+              const intersectionTop = Math.max(containerRect.top, rect.top);
+              const intersectionBottom = Math.min(containerRect.bottom, rect.bottom);
+              const visibleHeight = Math.max(0, intersectionBottom - intersectionTop);
+
+              if (visibleHeight > maxVisibleHeight) {
+                maxVisibleHeight = visibleHeight;
+                bestPage = pageNum;
+              }
+            });
+
+            if (bestPage !== currentPage) {
+              setCurrentPage(bestPage);
+            }
+          });
+        }
         return;
       }
 
@@ -784,7 +865,7 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
                 // Keep flag set for a bit longer to ensure all scroll events are ignored
                 setTimeout(() => {
                   isScrollingProgrammatically.current = false;
-                }, 150);
+                }, 500);
               }
             }, 100);
           }
@@ -810,7 +891,7 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
                 // Keep flag set for a bit longer to ensure all scroll events are ignored
                 setTimeout(() => {
                   isScrollingProgrammatically.current = false;
-                }, 150);
+                }, 500);
               }
             }, 100);
           }
@@ -830,7 +911,7 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
         clearTimeout(scrollTimeoutRef.current);
       }
     };
-  }, [currentPage, numPages, nextPage, previousPage]);
+  }, [currentPage, numPages, nextPage, previousPage, viewMode, setCurrentPage, isLoading]);
 
   // Handle sidebar resize
   const handleResizeStart = (e: React.MouseEvent) => {
@@ -930,35 +1011,6 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
   };
 
   const visibleRange = getVisiblePageRange();
-
-  const handleLinkNavigate = async (dest: string | unknown[]) => {
-    if (!pdfDocument) return;
-    
-    try {
-      let pageNumber = -1;
-      
-      if (typeof dest === 'string') {
-        // Named destination
-        const explicitDest = await pdfDocument.getDestination(dest);
-        if (explicitDest) {
-          const pageRef = explicitDest[0];
-          const pageIndex = await pdfDocument.getPageIndex(pageRef);
-          pageNumber = pageIndex + 1;
-        }
-      } else if (Array.isArray(dest) && dest.length > 0) {
-        // Explicit destination
-        const pageRef = dest[0];
-        const pageIndex = await pdfDocument.getPageIndex(pageRef);
-        pageNumber = pageIndex + 1;
-      }
-      
-      if (pageNumber > 0) {
-        goToPage(pageNumber);
-      }
-    } catch (err) {
-      console.error('Error navigating to link:', err);
-    }
-  };
 
   const handleSearch = async (query: string) => {
     if (!pdfDocument || !query) {
@@ -1170,6 +1222,8 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
         onShowSearchChange={setShowSearch}
         showSettings={showSettings}
         onShowSettingsChange={setShowSettings}
+        onOpenSignatureDialog={() => setShowSignatureDialog(true)}
+        onFileUpdate={onFileUpdate}
       />
 
       <PDFTTSReader currentPageObj={currentPageObj} />
@@ -1181,6 +1235,15 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
             toggleKeyboardShortcuts();
           }
         }}
+      />
+
+      <SignatureDialog
+        open={showSignatureDialog}
+        onSelect={(signature) => {
+          setPendingImage(signature);
+          setShowSignatureDialog(false);
+        }}
+        onCancel={() => setShowSignatureDialog(false)}
       />
 
       <PasswordDialog
@@ -1348,14 +1411,27 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
             <div
               className="flex min-h-full items-center justify-center p-8 transition-all duration-300 ease-in-out"
               onClick={(e) => {
-                if (pendingStamp && currentPageObj) {
+                if (currentPageObj) {
                   const viewport = currentPageObj.getViewport({ scale: zoom, rotation });
                   const rect = (e.currentTarget.querySelector('canvas') as HTMLCanvasElement)?.getBoundingClientRect();
+                  
                   if (rect) {
                     const x = (e.clientX - rect.left) / viewport.width;
                     const y = (e.clientY - rect.top) / viewport.height;
-                    addStampAnnotation(pendingStamp, currentPage, { x, y });
-                    setPendingStamp(null);
+
+                    if (pendingStamp) {
+                      addStampAnnotation(pendingStamp, currentPage, { x, y });
+                      setPendingStamp(null);
+                    } else if (pendingImage) {
+                      // Default width/height for signatures/images
+                      // We'll assume a reasonable default size, e.g., 150x75 in PDF units
+                      // Since x,y are normalized (0-1), we need to normalize width/height too
+                      const w = 150 / viewport.width;
+                      const h = 75 / viewport.height;
+                      
+                      addImageAnnotation(pendingImage, currentPage, { x, y, width: w, height: h });
+                      setPendingImage(null);
+                    }
                   }
                 }
               }}
@@ -1413,11 +1489,21 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
 
           {viewMode === 'continuous' && (
             <div className="flex flex-col items-center gap-4 p-8">
-              {allPages.map((page, index) => {
+              {Array.from({ length: numPages }).map((_, index) => {
                 const pageNumber = index + 1;
-                if (pageNumber < visibleRange.start || pageNumber > visibleRange.end) {
+                const page = allPages[index];
+                const dimensions = pageDimensionsRef.current.get(pageNumber);
+                
+                // If page is not loaded and we don't have dimensions, and it's not in visible range, skip it
+                // But if we HAVE dimensions, render a placeholder to maintain scroll height
+                if (!page && !dimensions && (pageNumber < visibleRange.start || pageNumber > visibleRange.end)) {
                   return null;
                 }
+
+                // If we have dimensions but page is not loaded, render placeholder
+                // If page is loaded (page variable is truthy), render normally
+                // If page is not loaded but in visible range (loading...), render normally (PDFPage handles null)
+                
                 return (
                   <div
                     key={pageNumber}
@@ -1435,7 +1521,14 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
                     )}
                   >
                     <div className="relative">
-                      <PDFPage page={page} scale={zoom} rotation={(rotation + (pageRotations[pageNumber] || 0)) % 360} className="shadow-lg" />
+                      <PDFPage 
+                        page={page} 
+                        scale={zoom} 
+                        rotation={(rotation + (pageRotations[pageNumber] || 0)) % 360} 
+                        className="shadow-lg"
+                        width={dimensions ? dimensions.width * zoom : undefined}
+                        height={dimensions ? dimensions.height * zoom : undefined}
+                      />
                       <PDFTextLayer
                         page={page}
                         scale={zoom}
@@ -1485,14 +1578,19 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
               {Array.from({ length: Math.ceil(numPages / 2) }).map((_, pairIndex) => {
                 const leftPageNumber = pairIndex * 2 + 1;
                 const rightPageNumber = leftPageNumber + 1;
+                
+                const leftPage = allPages[leftPageNumber - 1];
+                const rightPage = allPages[rightPageNumber - 1];
+                
+                const leftDim = pageDimensionsRef.current.get(leftPageNumber);
+                const rightDim = pageDimensionsRef.current.get(rightPageNumber);
 
-                if (
-                  leftPageNumber < visibleRange.start &&
-                  rightPageNumber < visibleRange.start
-                ) {
-                  return null;
-                }
-                if (leftPageNumber > visibleRange.end && rightPageNumber > visibleRange.end) {
+                // Check visibility
+                const isLeftVisible = leftPageNumber >= visibleRange.start && leftPageNumber <= visibleRange.end;
+                const isRightVisible = rightPageNumber >= visibleRange.start && rightPageNumber <= visibleRange.end;
+
+                // If neither page is visible AND neither has dimensions, skip
+                if (!isLeftVisible && !isRightVisible && !leftDim && !rightDim) {
                   return null;
                 }
 
@@ -1501,7 +1599,7 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
                     key={pairIndex}
                     className="flex gap-4 transition-all duration-300 ease-in-out"
                   >
-                    {allPages[leftPageNumber - 1] && (
+                    {(leftPage || leftDim || isLeftVisible) && (
                       <div
                         ref={(el) => {
                           if (el) {
@@ -1518,13 +1616,15 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
                       >
                         <div className="relative">
                           <PDFPage
-                            page={allPages[leftPageNumber - 1]}
+                            page={leftPage}
                             scale={zoom}
                             rotation={(rotation + (pageRotations[getOriginalPageNumber(leftPageNumber)] || 0)) % 360}
                             className="shadow-lg"
+                            width={leftDim ? leftDim.width * zoom : undefined}
+                            height={leftDim ? leftDim.height * zoom : undefined}
                           />
                           <PDFTextLayer
-                            page={allPages[leftPageNumber - 1]}
+                            page={leftPage}
                             scale={zoom}
                             rotation={(rotation + (pageRotations[getOriginalPageNumber(leftPageNumber)] || 0)) % 360}
                             searchQuery={searchQuery}
@@ -1532,14 +1632,14 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
                             pageNumber={getOriginalPageNumber(leftPageNumber)}
                           />
                           <PDFAnnotationLayer
-                            page={allPages[leftPageNumber - 1]}
+                            page={leftPage}
                             scale={zoom}
                             rotation={(rotation + (pageRotations[getOriginalPageNumber(leftPageNumber)] || 0)) % 360}
                             selectedAnnotationType={selectedAnnotationType}
                           />
                           {isSelectionMode && (
                             <PDFSelectionLayer
-                              page={allPages[leftPageNumber - 1]}
+                              page={leftPage}
                               scale={zoom}
                               rotation={(rotation + (pageRotations[getOriginalPageNumber(leftPageNumber)] || 0)) % 360}
                               pageNumber={getOriginalPageNumber(leftPageNumber)}
@@ -1552,7 +1652,7 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
                       </div>
                     )}
 
-                    {allPages[rightPageNumber - 1] && (
+                    {(rightPage || rightDim || isRightVisible) && rightPageNumber <= numPages && (
                       <div
                         ref={(el) => {
                           if (el) {
@@ -1569,13 +1669,15 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
                       >
                         <div className="relative">
                           <PDFPage
-                            page={allPages[rightPageNumber - 1]}
+                            page={rightPage}
                             scale={zoom}
                             rotation={(rotation + (pageRotations[getOriginalPageNumber(rightPageNumber)] || 0)) % 360}
                             className="shadow-lg"
+                            width={rightDim ? rightDim.width * zoom : undefined}
+                            height={rightDim ? rightDim.height * zoom : undefined}
                           />
                           <PDFTextLayer
-                            page={allPages[rightPageNumber - 1]}
+                            page={rightPage}
                             scale={zoom}
                             rotation={(rotation + (pageRotations[getOriginalPageNumber(rightPageNumber)] || 0)) % 360}
                             searchQuery={searchQuery}
@@ -1583,14 +1685,14 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFView
                             pageNumber={getOriginalPageNumber(rightPageNumber)}
                           />
                           <PDFAnnotationLayer
-                            page={allPages[rightPageNumber - 1]}
+                            page={rightPage}
                             scale={zoom}
                             rotation={(rotation + (pageRotations[getOriginalPageNumber(rightPageNumber)] || 0)) % 360}
                             selectedAnnotationType={selectedAnnotationType}
                           />
                           {isSelectionMode && (
                             <PDFSelectionLayer
-                              page={allPages[rightPageNumber - 1]}
+                              page={rightPage}
                               scale={zoom}
                               rotation={(rotation + (pageRotations[getOriginalPageNumber(rightPageNumber)] || 0)) % 360}
                               pageNumber={getOriginalPageNumber(rightPageNumber)}

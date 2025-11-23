@@ -69,6 +69,24 @@ export default function Home() {
     openDocumentSession(id);
   }, [openDocumentSession]);
 
+  const handleFileUpdate = useCallback((newFile: File) => {
+    if (!activeDocumentId) return;
+    
+    const newId = getDocumentId(newFile);
+    
+    setOpenDocuments(prev => prev.map(doc => {
+      if (doc.id === activeDocumentId) {
+        return { ...doc, id: newId, file: newFile, title: newFile.name };
+      }
+      return doc;
+    }));
+    
+    if (activeDocumentId !== newId) {
+      setActiveDocumentId(newId);
+      openDocumentSession(newId);
+    }
+  }, [activeDocumentId, openDocumentSession]);
+
   // Handle closing PDF viewer / active document
   const handleClose = useCallback((id?: string) => {
     const targetId = id || activeDocumentId;
@@ -186,6 +204,7 @@ export default function Home() {
               onClose={handleClose}
               header={header}
               onOpenFileFromMenu={handleFileSelect}
+              onFileUpdate={handleFileUpdate}
             />
           );
         })()

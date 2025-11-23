@@ -76,9 +76,11 @@ interface PDFToolbarProps {
   onShowSearchChange?: (show: boolean) => void;
   showSettings?: boolean;
   onShowSettingsChange?: (show: boolean) => void;
+  onOpenSignatureDialog?: () => void;
+  onFileUpdate?: (newFile: File) => void;
 }
 
-export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBookmarks, onAnnotationTypeSelect, selectedAnnotationType, onStampSelect, onExtractCurrentPageText, onExtractAllText, onOpenFileFromMenu, onRevealInFileManager, showSearch, onShowSearchChange, showSettings, onShowSettingsChange }: PDFToolbarProps) {
+export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBookmarks, onAnnotationTypeSelect, selectedAnnotationType, onStampSelect, onExtractCurrentPageText, onExtractAllText, onOpenFileFromMenu, onRevealInFileManager, showSearch, onShowSearchChange, showSettings, onShowSettingsChange, onOpenSignatureDialog, onFileUpdate }: PDFToolbarProps) {
   const { t } = useTranslation();
   const {
     zoom,
@@ -205,6 +207,7 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
           onOpenFolder={onOpenFileFromMenu ? handleMenuOpenFolder : undefined}
           onRevealInFileManager={onRevealInFileManager}
           onOpenRecentFile={onOpenFileFromMenu}
+          onFileUpdate={onFileUpdate}
         />
         
         {/* Main PDF Toolbar */}
@@ -702,6 +705,7 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
             onAnnotationTypeSelect={onAnnotationTypeSelect || (() => {})}
             selectedType={selectedAnnotationType || null}
             onStampSelect={onStampSelect || (() => {})}
+            onOpenSignatureDialog={onOpenSignatureDialog}
           />
         )}
 

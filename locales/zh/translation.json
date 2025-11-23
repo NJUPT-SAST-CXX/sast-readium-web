@@ -220,6 +220,9 @@
       "watermark_color": "水印颜色",
       "watermark_opacity": "不透明度",
       "watermark_size": "字体大小",
+      "watermark_gap_x": "水平间距",
+      "watermark_gap_y": "垂直间距",
+      "watermark_rotation": "旋转角度",
       "check_update": "检查更新",
       "test_notification": "测试通知",
       "auto_check_update": "自动检查更新"
