@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
 import { useTranslation } from "react-i18next";
 import { WelcomePage } from "@/components/welcome-page/welcome-page";
 import { PDFViewer } from "@/components/pdf-viewer/pdf-viewer";
 import { PDFTabBar } from "@/components/pdf-viewer/pdf-tab-bar";
 import { usePDFStore } from "@/lib/pdf-store";
-import { cn } from "@/lib/utils";
 import { unloadPDFDocument } from "@/lib/pdf-utils";
 
 interface OpenDocument {
@@ -23,22 +21,6 @@ export default function Home() {
   const [isDragging, setIsDragging] = useState(false);
   const { resetPDF, isDarkMode, openDocumentSession, closeDocumentSession } = usePDFStore();
 
-  const [isSplashVisible, setIsSplashVisible] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const hasShown = sessionStorage.getItem("sast-readium-splash-shown");
-    if (hasShown) return;
-
-    sessionStorage.setItem("sast-readium-splash-shown", "1");
-    const id = window.setTimeout(() => {
-      setIsSplashVisible(true);
-    }, 0);
-
-    return () => window.clearTimeout(id);
-  }, []);
-
   // Apply dark mode class to document
   useEffect(() => {
     if (isDarkMode) {
@@ -47,12 +29,6 @@ export default function Home() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
-
-  useEffect(() => {
-    if (!isSplashVisible) return;
-    const timeout = setTimeout(() => setIsSplashVisible(false), 1600);
-    return () => clearTimeout(timeout);
-  }, [isSplashVisible]);
 
   // Compute a stable-ish document id from file metadata
   const getDocumentId = (file: File) => `${file.name}-${file.size}-${file.lastModified}`;
@@ -176,33 +152,6 @@ export default function Home() {
 
   return (
     <>
-      {(
-        <div
-          className={cn(
-            "fixed inset-0 z-[60] flex items-center justify-center bg-background transition-opacity duration-500",
-            isSplashVisible ? "opacity-100 pointer-events-auto" : "pointer-events-none opacity-0",
-          )}
-          onClick={() => setIsSplashVisible(false)}
-        >
-          <div className="flex flex-col items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 shadow-sm">
-              <Image
-                src="/window.svg"
-                alt="SAST Readium splash logo"
-                width={40}
-                height={40}
-                className="h-10 w-10"
-                priority
-              />
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-semibold">{t('app.title')}</p>
-              <p className="text-xs text-muted-foreground">{t('home.splash_loading')}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Drag and Drop Overlay */}
       {isDragging && openDocuments.length === 0 && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">

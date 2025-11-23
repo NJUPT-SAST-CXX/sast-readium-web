@@ -8,10 +8,17 @@ i18n
   .use(initReactI18next)
   .use(
     resourcesToBackend((language: string, namespace: string) => {
-      return import(`@/locales/${language}/${namespace}.json`);
+      let lang = language;
+      if (language.startsWith('zh')) {
+        lang = 'zh';
+      } else if (language.startsWith('en')) {
+        lang = 'en';
+      }
+      return import(`@/locales/${lang}/${namespace}.json`);
     })
   )
   .init({
+    supportedLngs: ['en', 'zh'],
     fallbackLng: 'zh',
     debug: process.env.NODE_ENV === 'development',
     interpolation: {

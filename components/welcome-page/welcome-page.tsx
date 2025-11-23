@@ -1,6 +1,6 @@
 'use client';
 
-import JSZip from 'jszip';
+import { processArchive } from '@/lib/archive-utils';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -329,16 +329,8 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
 
     setIsExtractingArchive(true);
     try {
-      const zip = await JSZip.loadAsync(archive);
-      const pdfEntries: File[] = [];
-      const tasks = Object.keys(zip.files).map(async (key) => {
-        const entry = zip.files[key];
-        if (entry.dir || !key.toLowerCase().endsWith('.pdf')) return;
-        const blob = await entry.async('blob');
-        pdfEntries.push(new File([blob], key.split('/').pop() ?? key, { type: 'application/pdf' }));
-      });
-      await Promise.all(tasks);
-      handleFilesSelected(pdfEntries, `${archive.name} 压缩包`);
+      const files = await processArchive(archive);
+      handleFilesSelected(files, `${archive.name} 压缩包`);
     } catch (error) {
       console.error('Failed to extract archive', error);
       alert('解析压缩包失败，请确认文件是否有效');
