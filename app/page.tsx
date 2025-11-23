@@ -1,10 +1,14 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { WelcomePage } from '@/components/welcome-page/welcome-page';
-import { PDFViewer } from '@/components/pdf-viewer/pdf-viewer';
-import { usePDFStore } from '@/lib/pdf-store';
-import { cn } from '@/lib/utils';
+import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
+import { useTranslation } from "react-i18next";
+import { WelcomePage } from "@/components/welcome-page/welcome-page";
+import { PDFViewer } from "@/components/pdf-viewer/pdf-viewer";
+import { PDFTabBar } from "@/components/pdf-viewer/pdf-tab-bar";
+import { usePDFStore } from "@/lib/pdf-store";
+import { cn } from "@/lib/utils";
+import { unloadPDFDocument } from "@/lib/pdf-utils";
 
 interface OpenDocument {
   id: string;
@@ -13,10 +17,27 @@ interface OpenDocument {
 }
 
 export default function Home() {
+  const { t } = useTranslation();
   const [openDocuments, setOpenDocuments] = useState<OpenDocument[]>([]);
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const { resetPDF, isDarkMode, openDocumentSession } = usePDFStore();
+  const { resetPDF, isDarkMode, openDocumentSession, closeDocumentSession } = usePDFStore();
+
+  const [isSplashVisible, setIsSplashVisible] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const hasShown = sessionStorage.getItem("sast-readium-splash-shown");
+    if (hasShown) return;
+
+    sessionStorage.setItem("sast-readium-splash-shown", "1");
+    const id = window.setTimeout(() => {
+      setIsSplashVisible(true);
+    }, 0);
+
+    return () => window.clearTimeout(id);
+  }, []);
 
   // Apply dark mode class to document
   useEffect(() => {
@@ -27,54 +48,87 @@ export default function Home() {
     }
   }, [isDarkMode]);
 
+  useEffect(() => {
+    if (!isSplashVisible) return;
+    const timeout = setTimeout(() => setIsSplashVisible(false), 1600);
+    return () => clearTimeout(timeout);
+  }, [isSplashVisible]);
+
   // Compute a stable-ish document id from file metadata
   const getDocumentId = (file: File) => `${file.name}-${file.size}-${file.lastModified}`;
 
   // Handle file selection
-  const handleFileSelect = useCallback((file: File) => {
-    if (file.type !== "application/pdf") {
-      alert("Please select a valid PDF file");
+  const handleFileSelect = useCallback((input: File | File[]) => {
+    const files = Array.isArray(input) ? input : [input];
+    const validFiles = files.filter(file => file.type === "application/pdf");
+
+    if (validFiles.length === 0) {
+      alert(t('home.invalid_pdf'));
       return;
     }
 
-    const id = getDocumentId(file);
+    let lastId: string | null = null;
 
     setOpenDocuments((prev) => {
-      const exists = prev.find((doc) => doc.id === id);
-      if (exists) {
-        return prev;
-      }
-      return [...prev, { id, file, title: file.name }];
+      const newDocs = [...prev];
+      validFiles.forEach(file => {
+        const id = getDocumentId(file);
+        lastId = id;
+        if (!newDocs.find((doc) => doc.id === id)) {
+          newDocs.push({ id, file, title: file.name });
+        }
+      });
+      return newDocs;
     });
 
+    // Switch to the last opened document (existing or new) after state update
+    if (lastId) {
+      setActiveDocumentId(lastId);
+      openDocumentSession(lastId);
+    }
+  }, [openDocumentSession, t]);
+
+  const handleSwitchDocument = useCallback((id: string) => {
     setActiveDocumentId(id);
     openDocumentSession(id);
   }, [openDocumentSession]);
 
-  const handleSwitchDocument = (id: string) => {
-    setActiveDocumentId(id);
-    openDocumentSession(id);
-  };
-
   // Handle closing PDF viewer / active document
-  const handleClose = () => {
-    if (!activeDocumentId) return;
+  const handleClose = useCallback((id?: string) => {
+    const targetId = id || activeDocumentId;
+    if (!targetId) return;
+
+    // Unload the PDF document to clean up cache and resources
+    const doc = openDocuments.find((d) => d.id === targetId);
+    if (doc) {
+      unloadPDFDocument(doc.file);
+    }
+
+    // Close the document session to clean up state
+    closeDocumentSession(targetId);
 
     setOpenDocuments((prev) => {
-      const remaining = prev.filter((doc) => doc.id !== activeDocumentId);
+      const remaining = prev.filter((doc) => doc.id !== targetId);
 
-      if (remaining.length === 0) {
-        setActiveDocumentId(null);
-        resetPDF();
-      } else {
-        const next = remaining[0];
-        setActiveDocumentId(next.id);
-        openDocumentSession(next.id);
+      // If we closed the ACTIVE document, switch to another
+      if (activeDocumentId === targetId) {
+        if (remaining.length === 0) {
+          setActiveDocumentId(null);
+          // Schedule resetPDF to run after state update completes
+          setTimeout(() => resetPDF(), 0);
+        } else {
+          // Try to stay near the closed tab, or go to the last used?
+          // Simple behavior: go to the first available or previous
+          // For now, mimicking previous behavior: go to remaining[0]
+          const next = remaining[0];
+          setActiveDocumentId(next.id);
+          openDocumentSession(next.id);
+        }
       }
 
       return remaining;
     });
-  };
+  }, [activeDocumentId, closeDocumentSession, openDocumentSession, resetPDF, openDocuments]);
 
   // Handle drag and drop
   useEffect(() => {
@@ -94,11 +148,17 @@ export default function Home() {
 
       const files = e.dataTransfer?.files;
       if (files && files.length > 0) {
-        const file = files[0];
-        if (file.type === 'application/pdf') {
-          handleFileSelect(file);
+        const pdfFiles: File[] = [];
+        for (let i = 0; i < files.length; i++) {
+          if (files[i].type === 'application/pdf') {
+            pdfFiles.push(files[i]);
+          }
+        }
+        
+        if (pdfFiles.length > 0) {
+          handleFileSelect(pdfFiles);
         } else {
-          alert('Please drop a valid PDF file');
+          alert(t('home.drop_invalid'));
         }
       }
     };
@@ -112,17 +172,44 @@ export default function Home() {
       window.removeEventListener('dragleave', handleDragLeave);
       window.removeEventListener('drop', handleDrop);
     };
-  }, [handleFileSelect]);
+  }, [handleFileSelect, t]);
 
   return (
     <>
+      {(
+        <div
+          className={cn(
+            "fixed inset-0 z-[60] flex items-center justify-center bg-background transition-opacity duration-500",
+            isSplashVisible ? "opacity-100 pointer-events-auto" : "pointer-events-none opacity-0",
+          )}
+          onClick={() => setIsSplashVisible(false)}
+        >
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 shadow-sm">
+              <Image
+                src="/window.svg"
+                alt="SAST Readium splash logo"
+                width={40}
+                height={40}
+                className="h-10 w-10"
+                priority
+              />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-semibold">{t('app.title')}</p>
+              <p className="text-xs text-muted-foreground">{t('home.splash_loading')}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Drag and Drop Overlay */}
       {isDragging && openDocuments.length === 0 && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <div className="rounded-lg border-4 border-dashed border-primary bg-background p-12 text-center">
             <div className="text-6xl">📄</div>
-            <p className="mt-4 text-2xl font-semibold">Drop PDF file here</p>
-            <p className="mt-2 text-muted-foreground">Release to open the document</p>
+            <p className="mt-4 text-2xl font-semibold">{t('home.drag_title')}</p>
+            <p className="mt-2 text-muted-foreground">{t('home.drag_subtitle')}</p>
           </div>
         </div>
       )}
@@ -135,29 +222,23 @@ export default function Home() {
             openDocuments[0];
 
           const header = (
-            <div className="flex items-center gap-2 overflow-x-auto border-b border-border bg-background px-4 py-2">
-              {openDocuments.map((doc) => {
-                const isActive = doc.id === activeDoc.id;
-                return (
-                  <button
-                    key={doc.id}
-                    type="button"
-                    onClick={() => handleSwitchDocument(doc.id)}
-                    className={cn(
-                      "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm border",
-                      isActive
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-muted text-muted-foreground border-transparent hover:bg-muted/80",
-                    )}
-                  >
-                    <span className="max-w-[160px] truncate">{doc.title}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <PDFTabBar
+              documents={openDocuments}
+              activeDocumentId={activeDocumentId}
+              onSwitch={handleSwitchDocument}
+              onClose={handleClose}
+            />
           );
 
-          return <PDFViewer file={activeDoc.file} onClose={handleClose} header={header} />;
+          return (
+            <PDFViewer
+              key={activeDoc.id}
+              file={activeDoc.file}
+              onClose={handleClose}
+              header={header}
+              onOpenFileFromMenu={handleFileSelect}
+            />
+          );
         })()
       ) : (
         <WelcomePage onFileSelect={handleFileSelect} />

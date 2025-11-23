@@ -50,7 +50,7 @@ Before you begin, ensure you have the following installed:
 
    ```bash
    git clone <your-repo-url>
-   cd react-quick-starter
+   cd sast-readium-web
    ```
 
 2. **Install dependencies**
@@ -151,7 +151,7 @@ pnpm dlx shadcn@latest add button card dialog
 ## Project Structure
 
 ```
-react-quick-starter/
+sast-readium-web/
 ├── app/                      # Next.js App Router
 │   ├── layout.tsx           # Root layout with fonts and metadata
 │   ├── page.tsx             # Main landing page
@@ -205,7 +205,7 @@ Edit `src-tauri/tauri.conf.json` to customize your desktop app:
 
 ```json
 {
-  "productName": "react-quick-starter",    // App name
+  "productName": "sast-readium-web",    // App name
   "version": "0.1.0",                      // App version
   "identifier": "com.tauri.dev",          // Unique app identifier
   "build": {
@@ -214,7 +214,7 @@ Edit `src-tauri/tauri.conf.json` to customize your desktop app:
   },
   "app": {
     "windows": [{
-      "title": "react-quick-starter",      // Window title
+      "title": "sast-readium-web",      // Window title
       "width": 800,                        // Default width
       "height": 600,                       // Default height
       "resizable": true,                   // Allow resizing

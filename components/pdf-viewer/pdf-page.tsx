@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState, memo } from 'react';
+import { useEffect, useRef, useState, memo, useMemo } from 'react';
 import { PDFPageProxy } from '@/lib/pdf-utils';
 import { usePDFStore } from '@/lib/pdf-store';
+import { PDFWatermark } from './pdf-watermark';
 
 interface PDFPageProps {
   page: PDFPageProxy | null;
@@ -10,15 +11,22 @@ interface PDFPageProps {
   rotation: number;
   className?: string;
   onDoubleClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
+  onRenderSuccess?: () => void;
 }
 
-const PDFPageComponent = ({ page, scale, rotation, className = '', onDoubleClick }: PDFPageProps) => {
+const PDFPageComponent = ({ page, scale, rotation, className = '', onDoubleClick, onRenderSuccess }: PDFPageProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const renderTaskRef = useRef<{ cancel: () => void; promise: Promise<void> } | null>(null);
   const renderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isZooming, setIsZooming] = useState(false);
-  const { setZoom, zoom } = usePDFStore();
+  const { setZoom, zoom, watermarkText, watermarkColor, watermarkOpacity, watermarkSize } = usePDFStore();
+  
+  const dimensions = useMemo(() => {
+    if (!page) return { width: 0, height: 0 };
+    const viewport = page.getViewport({ scale, rotation });
+    return { width: viewport.width, height: viewport.height };
+  }, [page, scale, rotation]);
 
   useEffect(() => {
     if (!page || !canvasRef.current) return;
@@ -86,6 +94,7 @@ const PDFPageComponent = ({ page, scale, rotation, className = '', onDoubleClick
         .then(() => {
           if (isMounted) {
             // Rendering complete
+            onRenderSuccess?.();
           }
         })
         .catch((error: Error) => {
@@ -104,7 +113,7 @@ const PDFPageComponent = ({ page, scale, rotation, className = '', onDoubleClick
         clearTimeout(renderTimeoutRef.current);
       }
     };
-  }, [page, scale, rotation]);
+  }, [page, scale, rotation, onRenderSuccess]);
 
   // Handle double-click zoom
   const handleDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -189,6 +198,18 @@ const PDFPageComponent = ({ page, scale, rotation, className = '', onDoubleClick
           height: 'auto',
         }}
       />
+      {watermarkText && dimensions.width > 0 && (
+        <div className="absolute inset-0 pointer-events-none" style={{ width: dimensions.width, height: dimensions.height, left: '50%', transform: 'translateX(-50%)' }}>
+          <PDFWatermark
+            text={watermarkText}
+            color={watermarkColor}
+            opacity={watermarkOpacity}
+            size={watermarkSize}
+            width={dimensions.width}
+            height={dimensions.height}
+          />
+        </div>
+      )}
     </div>
   );
 };

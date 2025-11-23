@@ -1,34 +1,57 @@
 'use client';
 
-import { useEffect, useState, useRef, type ReactNode } from 'react';
+import { useEffect, useState, useRef, useCallback, type ReactNode } from 'react';
 import { usePDFStore } from '@/lib/pdf-store';
-import { loadPDFDocument, searchInPDF, downloadPDF, printPDF, PDFDocumentProxy, PDFPageProxy } from '@/lib/pdf-utils';
+import { loadPDFDocument, searchInPDF, downloadPDF, printPDF, savePDF, PDFDocumentProxy, PDFPageProxy } from '@/lib/pdf-utils';
 import { PDFToolbar } from './pdf-toolbar';
+import { PDFMobileToolbar } from './pdf-mobile-toolbar';
+import { PDFTTSReader } from './pdf-tts-reader';
 import { PDFPage } from './pdf-page';
-import { PDFThumbnail } from './pdf-thumbnail';
+import { PasswordDialog } from './password-dialog';
+import { PDFDraggableThumbnail } from './pdf-draggable-thumbnail';
 import { PDFOutline } from './pdf-outline';
 import { PDFBookmarks } from './pdf-bookmarks';
 import { PDFAnnotationsList } from './pdf-annotations-list';
 import { PDFProgressBar } from './pdf-progress-bar';
-import { PDFAnnotationsToolbar } from './pdf-annotations-toolbar';
 import { PDFTextLayer } from './pdf-text-layer';
 import { PDFAnnotationLayer } from './pdf-annotation-layer';
 import { PDFDrawingLayer } from './pdf-drawing-layer';
+import { PDFSelectionLayer } from './pdf-selection-layer';
 import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useTouchGestures } from '@/hooks/use-touch-gestures';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { AnnotationStamp } from '@/lib/pdf-store';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { PDFLoadingAnimation } from './loading-animations';
+import { useTranslation } from 'react-i18next';
+import { revealInFileManager } from '@/lib/tauri-bridge';
 
 interface PDFViewerProps {
   file: File;
   onClose: () => void;
   header?: ReactNode;
+  onOpenFileFromMenu?: (file: File | File[]) => void;
 }
 
-export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
+export function PDFViewer({ file, onClose, header, onOpenFileFromMenu }: PDFViewerProps) {
+  const { t } = useTranslation();
   const {
     currentPage,
     zoom,
@@ -37,13 +60,14 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
     showOutline,
     showAnnotations,
     isDarkMode,
+    themeMode,
     isFullscreen,
-    isPresentationMode,
     showKeyboardShortcuts,
     numPages,
     viewMode,
     fitMode,
     outline,
+    annotations,
     caseSensitiveSearch,
     searchQuery,
     selectedAnnotationColor,
@@ -52,6 +76,7 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
     setCurrentPage,
     setZoom,
     setOutline,
+    setMetadata,
     goToPage,
     nextPage,
     previousPage,
@@ -60,6 +85,14 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
     updateReadingProgress,
     addStampAnnotation,
     toggleKeyboardShortcuts,
+    pageOrder,
+    reorderPages,
+    pageRotations,
+    removePage,
+    rotatePage,
+    isSelectionMode,
+    pdfLoadingAnimation,
+    updateRecentFileByUrl,
   } = usePDFStore();
 
   const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null);
@@ -73,15 +106,20 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
   const viewerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const loadedPagesRef = useRef<Set<number>>(new Set());
   const lastScrollTop = useRef<number>(0);
   const isScrollingProgrammatically = useRef<boolean>(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const shouldScrollToBottomRef = useRef(false);
   const pageRefsMap = useRef<Map<number, HTMLDivElement>>(new Map());
+  const recentFileUrlRef = useRef<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
     // Load saved width from localStorage or use default
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('pdf-sidebar-width');
-      return saved ? parseInt(saved, 10) : 240;
+      if (saved) return parseInt(saved, 10);
+      // Responsive default: smaller on mobile
+      return window.innerWidth < 640 ? 200 : 240;
     }
     return 240;
   });
@@ -90,6 +128,56 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
   const [selectedAnnotationType, setSelectedAnnotationType] = useState<'highlight' | 'comment' | 'shape' | 'text' | 'drawing' | null>(null);
   const [pendingStamp, setPendingStamp] = useState<AnnotationStamp | null>(null);
   const touchContainerRef = useRef<HTMLDivElement>(null);
+  const previousPageRef = useRef<number>(currentPage);
+  const [pageDirection, setPageDirection] = useState<'forward' | 'backward' | 'none'>('none');
+  const [isExtractingText, setIsExtractingText] = useState(false);
+  const [extractedText, setExtractedText] = useState('');
+  const [extractedTextTitle, setExtractedTextTitle] = useState('');
+  const [showExtractDialog, setShowExtractDialog] = useState(false);
+  const [password, setPassword] = useState<string | undefined>(undefined);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordError, setPasswordError] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  
+  const handleRenderSuccess = useCallback(() => {
+    if (shouldScrollToBottomRef.current && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      shouldScrollToBottomRef.current = false;
+    }
+  }, []);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+  
+  // Handle drag end for page reordering
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const oldIndex = pageOrder.indexOf(Number(active.id));
+      const newIndex = pageOrder.indexOf(Number(over.id));
+      
+      const newOrder = arrayMove(pageOrder, oldIndex, newIndex);
+      reorderPages(newOrder);
+    }
+  };
+
+  const handleRevealInFileManager = () => {
+    const nativePath = (file as File & { __nativePath?: string | null }).__nativePath ?? null;
+    if (!nativePath) return;
+    void revealInFileManager(nativePath);
+  };
+
+  const handlePasswordSubmit = (newPassword: string) => {
+    setPassword(newPassword);
+    setPasswordError(false);
+  };
 
   // Load PDF document
   useEffect(() => {
@@ -105,20 +193,33 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
           if (mounted) {
             setLoadingProgress(Math.round((progress.loaded / progress.total) * 100));
           }
-        });
+        }, password);
         
         if (!mounted) return;
 
         setPdfDocument(pdf);
         setNumPages(pdf.numPages);
         
+        // Close password dialog if it was open
+        setShowPasswordDialog(false);
+        setPasswordError(false);
+        
+        // Initialize page order for drag-and-drop
+        const { initializePageOrder: initOrder } = usePDFStore.getState();
+        initOrder(pdf.numPages);
+        
         // Add to recent files
         const url = URL.createObjectURL(file);
+        recentFileUrlRef.current = url;
+        const relPath = (file as File & { webkitRelativePath?: string }).webkitRelativePath;
+        const nativePath = (file as File & { __nativePath?: string | null }).__nativePath ?? null;
+        const displayName = relPath && relPath.length > 0 ? relPath : file.name;
         addRecentFile({
-          name: file.name,
+          name: displayName,
           url,
           lastOpened: Date.now(),
           numPages: pdf.numPages,
+          path: nativePath,
         });
 
         // Load outline/bookmarks
@@ -185,9 +286,16 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
       } catch (err) {
         console.error('Error loading PDF:', err);
         if (mounted) {
-          const errorMessage = err instanceof Error ? err.message : 'Failed to load PDF. The file may be corrupted or invalid.';
-          setError(errorMessage);
-          setIsLoading(false);
+          const errorName = (err as { name?: string }).name;
+          if (errorName === 'PasswordException') {
+            setShowPasswordDialog(true);
+            setPasswordError(!!password); // Set error if we already tried a password
+            setIsLoading(false);
+          } else {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to load PDF. The file may be corrupted or invalid.';
+            setError(errorMessage);
+            setIsLoading(false);
+          }
         }
       }
     };
@@ -196,8 +304,20 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
 
     return () => {
       mounted = false;
+      const url = recentFileUrlRef.current;
+      if (url) {
+        URL.revokeObjectURL(url);
+        recentFileUrlRef.current = null;
+      }
     };
-  }, [file, setNumPages, addRecentFile, setOutline]);
+  }, [file, setNumPages, addRecentFile, setOutline, setMetadata, password]);
+
+  // Reset password state when file changes
+  useEffect(() => {
+    setPassword(undefined);
+    setShowPasswordDialog(false);
+    setPasswordError(false);
+  }, [file]);
 
   // Load current page
   useEffect(() => {
@@ -207,7 +327,8 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
 
     const loadPage = async () => {
       try {
-        const page = await pdfDocument.getPage(currentPage);
+        const originalPageNum = pageOrder.length > 0 ? pageOrder[currentPage - 1] : currentPage;
+        const page = await pdfDocument.getPage(originalPageNum);
         if (mounted) {
           setCurrentPageObj(page);
         }
@@ -221,63 +342,76 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
     return () => {
       mounted = false;
     };
-  }, [pdfDocument, currentPage]);
+  }, [pdfDocument, currentPage, pageOrder]);
 
-  // Load all pages for continuous and two-page views
+  // Load visible pages for continuous and two-page views (Lazy Loading)
   useEffect(() => {
     if (!pdfDocument || viewMode === 'single') {
       setAllPages([]);
+      loadedPagesRef.current.clear();
       return;
     }
 
-    let mounted = true;
-    const CHUNK_SIZE = 3;
-
-    const loadAllPages = async () => {
-      const pages: (PDFPageProxy | null)[] = new Array(pdfDocument.numPages).fill(null);
-      setAllPages(pages);
-
-      for (let start = 1; start <= pdfDocument.numPages; start += CHUNK_SIZE) {
-        if (!mounted) break;
-
-        const end = Math.min(start + CHUNK_SIZE - 1, pdfDocument.numPages);
-        const chunkPromises = [];
-
-        for (let i = start; i <= end; i++) {
-          chunkPromises.push(
-            pdfDocument.getPage(i)
-              .then((page) => ({ index: i - 1, page }))
-              .catch((err) => {
-                console.error(`Error loading page ${i}:`, err);
-                return { index: i - 1, page: null };
-              })
-          );
-        }
-
-        const results = await Promise.all(chunkPromises);
-        
-        if (!mounted) break;
-
-        setAllPages((prev) => {
-          const updated = [...prev];
-          results.forEach(({ index, page }) => {
-            updated[index] = page;
-          });
-          return updated;
-        });
-
-        if (end < pdfDocument.numPages) {
-          await new Promise((resolve) => setTimeout(resolve, 30));
-        }
+    // Initialize array if needed
+    setAllPages(prev => {
+      if (prev.length !== pdfDocument.numPages) {
+        return new Array(pdfDocument.numPages).fill(null);
       }
+      return prev;
+    });
+
+    // Determine range to load based on current page and view mode
+    const buffer = viewMode === 'continuous' ? 4 : viewMode === 'twoPage' ? 3 : 0;
+    const start = Math.max(1, currentPage - buffer);
+    const end = Math.min(pdfDocument.numPages, currentPage + buffer);
+    
+    const pagesToLoad: number[] = [];
+    for (let i = start; i <= end; i++) {
+      if (!loadedPagesRef.current.has(i)) {
+        pagesToLoad.push(i);
+        loadedPagesRef.current.add(i);
+      }
+    }
+
+    if (pagesToLoad.length === 0) return;
+
+    let mounted = true;
+    
+    const loadPages = async () => {
+      const results = await Promise.all(
+        pagesToLoad.map(async (visualPageNum) => {
+          try {
+            const originalPageNum = pageOrder.length > 0 ? pageOrder[visualPageNum - 1] : visualPageNum;
+            const page = await pdfDocument.getPage(originalPageNum);
+            return { index: visualPageNum - 1, page };
+          } catch (err) {
+            console.error(`Error loading page ${visualPageNum}:`, err);
+            return null;
+          }
+        })
+      );
+
+      if (!mounted) return;
+
+      setAllPages((prev) => {
+        const updated = [...prev];
+        let hasChanges = false;
+        results.forEach((result) => {
+          if (result) {
+            updated[result.index] = result.page;
+            hasChanges = true;
+          }
+        });
+        return hasChanges ? updated : prev;
+      });
     };
 
-    loadAllPages();
+    loadPages();
 
     return () => {
       mounted = false;
     };
-  }, [pdfDocument, viewMode]);
+  }, [pdfDocument, viewMode, currentPage, numPages, pageOrder]);
 
   // Measure container width and apply fit modes with throttling for better performance
   useEffect(() => {
@@ -507,10 +641,14 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
     }
   }, [isFullscreen]);
 
-  // Mouse wheel zoom functionality
+  // Mouse wheel zoom and page turning functionality
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
     if (!scrollContainer) return;
+
+    let wheelTimeout: NodeJS.Timeout | null = null;
+    let accumulatedDelta = 0;
+    const WHEEL_THRESHOLD = 150; // Increased threshold for better control
 
     const handleWheel = (e: WheelEvent) => {
       // Check if Ctrl/Cmd key is pressed for zoom
@@ -528,6 +666,55 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
 
         // Apply the new zoom
         setZoom(newZoom);
+      } 
+      // In single page mode, use wheel for direct page turning
+      else if (viewMode === 'single') {
+        const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+        const isAtTop = scrollTop <= 0;
+        const isAtBottom = Math.abs(scrollHeight - clientHeight - scrollTop) < 2;
+        const contentOverflows = scrollHeight > clientHeight;
+
+        // If content overflows and we're not at the edges, let native scroll happen
+        if (contentOverflows && !isAtTop && !isAtBottom) {
+          return;
+        }
+
+        // If we are at top but scrolling down (positive delta), let native scroll happen
+        if (isAtTop && e.deltaY > 0 && contentOverflows) {
+          return;
+        }
+
+        // If we are at bottom but scrolling up (negative delta), let native scroll happen
+        if (isAtBottom && e.deltaY < 0 && contentOverflows) {
+          return;
+        }
+
+        e.preventDefault();
+        
+        // Accumulate wheel delta to handle trackpad/smooth scrolling
+        accumulatedDelta += e.deltaY;
+        
+        // Clear existing timeout
+        if (wheelTimeout) {
+          clearTimeout(wheelTimeout);
+        }
+        
+        // Debounce the page change
+        wheelTimeout = setTimeout(() => {
+          if (Math.abs(accumulatedDelta) >= WHEEL_THRESHOLD) {
+            if (accumulatedDelta > 0 && currentPage < numPages) {
+              // Scrolling down - next page
+              nextPage();
+              // Reset scroll to top
+              if (scrollContainer) scrollContainer.scrollTop = 0;
+            } else if (accumulatedDelta < 0 && currentPage > 1) {
+              // Scrolling up - previous page
+              shouldScrollToBottomRef.current = true;
+              previousPage();
+            }
+          }
+          accumulatedDelta = 0;
+        }, 150); // 150ms debounce
       }
     };
 
@@ -536,8 +723,11 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
 
     return () => {
       scrollContainer.removeEventListener('wheel', handleWheel);
+      if (wheelTimeout) {
+        clearTimeout(wheelTimeout);
+      }
     };
-  }, [zoom, setZoom]);
+  }, [zoom, setZoom, viewMode, currentPage, numPages, nextPage, previousPage]);
 
   // Auto page turn on vertical scroll
   useEffect(() => {
@@ -547,6 +737,11 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
     const handleScroll = () => {
       // Skip if scrolling programmatically (during page change)
       if (isScrollingProgrammatically.current) {
+        return;
+      }
+
+      // Skip if content fits in viewport (handleWheel takes care of this)
+      if (scrollContainer.scrollHeight <= scrollContainer.clientHeight) {
         return;
       }
 
@@ -567,7 +762,7 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
         const clientHeight = scrollContainer.clientHeight;
 
         // Threshold for triggering page turn (in pixels)
-        const threshold = 50;
+        const threshold = 10;
 
         // Check if scrolled to the bottom
         if (scrollTop + clientHeight >= scrollHeight - threshold) {
@@ -602,6 +797,7 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
           if (scrollDirection < 0 && currentPage > 1) {
             // Set flag BEFORE any async operations
             isScrollingProgrammatically.current = true;
+            shouldScrollToBottomRef.current = true;
 
             // Go to previous page
             previousPage();
@@ -622,7 +818,7 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
 
         // Update last scroll position
         lastScrollTop.current = scrollTop;
-      }, 50); // 50ms debounce delay
+      }, 150); // 150ms debounce delay
     };
 
     scrollContainer.addEventListener('scroll', handleScroll);
@@ -681,10 +877,27 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
     if (numPages > 0) {
       const progress = ((currentPage - 1) / (numPages - 1)) * 100;
       updateReadingProgress(progress);
-    }
-  }, [currentPage, numPages, updateReadingProgress]);
 
-  // Touch gestures support
+      const url = recentFileUrlRef.current;
+      if (url) {
+        const clamped = Math.min(100, Math.max(0, progress));
+        updateRecentFileByUrl(url, { readingProgress: clamped, lastOpened: Date.now() });
+      }
+    }
+  }, [currentPage, numPages, updateReadingProgress, updateRecentFileByUrl]);
+
+  useEffect(() => {
+    const previous = previousPageRef.current;
+    if (currentPage > previous) {
+      setPageDirection('forward');
+    } else if (currentPage < previous) {
+      setPageDirection('backward');
+    } else {
+      setPageDirection('none');
+    }
+    previousPageRef.current = currentPage;
+  }, [currentPage]);
+
   useTouchGestures(touchContainerRef, {
     onSwipeLeft: () => {
       if (viewMode === 'single') {
@@ -703,21 +916,63 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
     },
   });
 
+  const getVisiblePageRange = () => {
+    if (numPages <= 0) {
+      return { start: 1, end: 0 };
+    }
+    const buffer = viewMode === 'continuous' ? 4 : viewMode === 'twoPage' ? 3 : 0;
+    if (!buffer) {
+      return { start: 1, end: numPages };
+    }
+    const start = Math.max(1, currentPage - buffer);
+    const end = Math.min(numPages, currentPage + buffer);
+    return { start, end };
+  };
+
+  const visibleRange = getVisiblePageRange();
+
+  const handleLinkNavigate = async (dest: string | unknown[]) => {
+    if (!pdfDocument) return;
+    
+    try {
+      let pageNumber = -1;
+      
+      if (typeof dest === 'string') {
+        // Named destination
+        const explicitDest = await pdfDocument.getDestination(dest);
+        if (explicitDest) {
+          const pageRef = explicitDest[0];
+          const pageIndex = await pdfDocument.getPageIndex(pageRef);
+          pageNumber = pageIndex + 1;
+        }
+      } else if (Array.isArray(dest) && dest.length > 0) {
+        // Explicit destination
+        const pageRef = dest[0];
+        const pageIndex = await pdfDocument.getPageIndex(pageRef);
+        pageNumber = pageIndex + 1;
+      }
+      
+      if (pageNumber > 0) {
+        goToPage(pageNumber);
+      }
+    } catch (err) {
+      console.error('Error navigating to link:', err);
+    }
+  };
+
   const handleSearch = async (query: string) => {
     if (!pdfDocument || !query) {
       setSearchResults([]);
       return;
     }
 
-    // Cancel previous search
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
 
     try {
-      // Create new abort controller for this search
       abortControllerRef.current = new AbortController();
-      
+
       const results = await searchInPDF(pdfDocument, query, {
         signal: abortControllerRef.current.signal,
         caseSensitive: caseSensitiveSearch,
@@ -725,7 +980,7 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
           console.log(`Searching... ${current}/${total} pages`);
         },
       });
-      
+
       setSearchResults(results);
     } catch (err) {
       if (err instanceof Error && err.message !== 'Search cancelled') {
@@ -735,64 +990,121 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
   };
 
   const handleDownload = () => {
-    downloadPDF(file);
+    if (annotations.length > 0 || pageOrder.length > 0 || Object.keys(pageRotations).length > 0) {
+      savePDF(file, annotations, {
+        pageOrder: pageOrder.length > 0 ? pageOrder : undefined,
+        pageRotations: Object.keys(pageRotations).length > 0 ? pageRotations : undefined,
+      });
+    } else {
+      downloadPDF(file);
+    }
   };
 
   const handlePrint = () => {
     printPDF(file);
   };
 
-  /**
-   * Handle bookmark navigation with proper scrolling for continuous and two-page modes
-   */
+  const extractPageText = async (pageNumber: number) => {
+    if (!pdfDocument) return;
+    setIsExtractingText(true);
+    try {
+      const page = await pdfDocument.getPage(pageNumber);
+      const textContent = await page.getTextContent();
+      const text = textContent.items
+        .map((item) => (item as { str?: string }).str || '')
+        .join(' ');
+      setExtractedTextTitle(t('viewer.extract_dialog.page_title', { page: pageNumber }));
+      setExtractedText(text);
+      setShowExtractDialog(true);
+    } catch (err) {
+      console.error('Error extracting page text:', err);
+    } finally {
+      setIsExtractingText(false);
+    }
+  };
+
+  const extractAllText = async () => {
+    if (!pdfDocument) return;
+    setIsExtractingText(true);
+    try {
+      const parts: string[] = [];
+      for (let i = 1; i <= pdfDocument.numPages; i++) {
+        const page = await pdfDocument.getPage(i);
+        const textContent = await page.getTextContent();
+        const text = textContent.items
+          .map((item) => (item as { str?: string }).str || '')
+          .join(' ');
+        parts.push(`[Page ${i}]\n${text}`);
+      }
+      setExtractedTextTitle(t('viewer.extract_dialog.doc_title'));
+      setExtractedText(parts.join('\n\n'));
+      setShowExtractDialog(true);
+    } catch (err) {
+      console.error('Error extracting document text:', err);
+    } finally {
+      setIsExtractingText(false);
+    }
+  };
+
+  const handleCopyExtractedText = async () => {
+    try {
+      if (!extractedText) return;
+      await navigator.clipboard.writeText(extractedText);
+    } catch (err) {
+      console.error('Failed to copy extracted text:', err);
+    }
+  };
+
   const handleBookmarkNavigate = (pageNumber: number) => {
-    goToPage(pageNumber);
-    
-    // For continuous and two-page modes, scroll to the specific page
+    let targetPage = pageNumber;
+    if (pageOrder.length > 0) {
+      const index = pageOrder.indexOf(pageNumber);
+      if (index !== -1) {
+        targetPage = index + 1;
+      }
+    }
+    goToPage(targetPage);
+
     if (viewMode !== 'single') {
-      // Use requestAnimationFrame to ensure DOM is updated
       requestAnimationFrame(() => {
-        const pageElement = pageRefsMap.current.get(pageNumber);
+        const pageElement = pageRefsMap.current.get(targetPage);
         if (pageElement && scrollContainerRef.current) {
-          // Calculate the scroll position with some offset for better visibility
           const containerRect = scrollContainerRef.current.getBoundingClientRect();
           const pageRect = pageElement.getBoundingClientRect();
           const scrollTop = scrollContainerRef.current.scrollTop;
-          const offset = pageRect.top - containerRect.top + scrollTop - 20; // 20px offset from top
-          
-          // Smooth scroll to the page
+          const offset = pageRect.top - containerRect.top + scrollTop - 20;
+
           scrollContainerRef.current.scrollTo({
             top: Math.max(0, offset),
-            behavior: 'smooth'
+            behavior: 'smooth',
           });
         }
       });
     }
   };
 
-  /**
-   * Handle annotation navigation - navigates to the page containing the annotation
-   * and scrolls to it in continuous/two-page modes
-   */
-  const handleAnnotationNavigate = (pageNumber: number, annotationId: string) => {
-    goToPage(pageNumber);
-    
-    // For continuous and two-page modes, scroll to the specific page
+  const handleAnnotationNavigate = (pageNumber: number) => {
+    let targetPage = pageNumber;
+    if (pageOrder.length > 0) {
+      const index = pageOrder.indexOf(pageNumber);
+      if (index !== -1) {
+        targetPage = index + 1;
+      }
+    }
+    goToPage(targetPage);
+
     if (viewMode !== 'single') {
-      // Use requestAnimationFrame to ensure DOM is updated
       requestAnimationFrame(() => {
-        const pageElement = pageRefsMap.current.get(pageNumber);
+        const pageElement = pageRefsMap.current.get(targetPage);
         if (pageElement && scrollContainerRef.current) {
-          // Calculate the scroll position with some offset for better visibility
           const containerRect = scrollContainerRef.current.getBoundingClientRect();
           const pageRect = pageElement.getBoundingClientRect();
           const scrollTop = scrollContainerRef.current.scrollTop;
-          const offset = pageRect.top - containerRect.top + scrollTop - 20; // 20px offset from top
-          
-          // Smooth scroll to the page
+          const offset = pageRect.top - containerRect.top + scrollTop - 20;
+
           scrollContainerRef.current.scrollTo({
             top: Math.max(0, offset),
-            behavior: 'smooth'
+            behavior: 'smooth',
           });
         }
       });
@@ -803,8 +1115,10 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <Spinner className="mx-auto h-12 w-12" />
-          <p className="mt-4 text-lg font-medium">Loading PDF...</p>
+          <div className="absolute inset-0 flex items-center justify-center z-50 bg-background/80 backdrop-blur-sm">
+            <PDFLoadingAnimation type={pdfLoadingAnimation} progress={loadingProgress} />
+          </div>
+          <p className="mt-4 text-lg font-medium">{t('viewer.loading')}</p>
           {loadingProgress > 0 && (
             <p className="mt-2 text-sm text-muted-foreground">{loadingProgress}%</p>
           )}
@@ -817,22 +1131,23 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <p className="text-lg font-medium text-destructive">{error}</p>
+          <p className="text-lg font-medium text-destructive">{error || t('viewer.error')}</p>
           <Button onClick={onClose} className="mt-4">
-            Go Back
+            {t('viewer.go_back')}
           </Button>
         </div>
       </div>
     );
   }
 
+  const getOriginalPageNumber = (visualPageNumber: number) => {
+    return pageOrder.length > 0 ? pageOrder[visualPageNumber - 1] : visualPageNumber;
+  };
+
   return (
     <div
       ref={viewerRef}
-      className={cn(
-        'flex h-screen flex-col bg-background',
-        isDarkMode && 'dark'
-      )}
+      className={cn('flex h-screen flex-col bg-background', isDarkMode && 'dark', themeMode === 'sepia' && 'sepia')}
     >
       {header}
       <PDFToolbar
@@ -841,21 +1156,24 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
         onSearch={handleSearch}
         onClose={onClose}
         onToggleBookmarks={() => setShowBookmarksPanel(!showBookmarksPanel)}
+        onAnnotationTypeSelect={setSelectedAnnotationType}
+        selectedAnnotationType={selectedAnnotationType}
+        onStampSelect={(stamp) => {
+          setPendingStamp(stamp);
+          setSelectedAnnotationType(null);
+        }}
+        onExtractCurrentPageText={() => extractPageText(getOriginalPageNumber(currentPage))}
+        onExtractAllText={extractAllText}
+        onOpenFileFromMenu={onOpenFileFromMenu}
+        onRevealInFileManager={handleRevealInFileManager}
+        showSearch={showSearch}
+        onShowSearchChange={setShowSearch}
+        showSettings={showSettings}
+        onShowSettingsChange={setShowSettings}
       />
-      
-      {/* Annotations Toolbar */}
-      {!isPresentationMode && (
-        <PDFAnnotationsToolbar
-          onAnnotationTypeSelect={setSelectedAnnotationType}
-          selectedType={selectedAnnotationType}
-          onStampSelect={(stamp) => {
-            setPendingStamp(stamp);
-            setSelectedAnnotationType(null);
-          }}
-        />
-      )}
-      
-      {/* Keyboard Shortcuts Dialog */}
+
+      <PDFTTSReader currentPageObj={currentPageObj} />
+
       <KeyboardShortcutsDialog
         open={showKeyboardShortcuts}
         onOpenChange={(open) => {
@@ -865,102 +1183,157 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
         }}
       />
 
-      <div className="flex flex-1 overflow-hidden pb-16 sm:pb-20">
-        {/* Thumbnails Sidebar */}
-        {showThumbnails && (
-          <div
-            className="relative flex flex-col border-r border-border bg-muted/30 overflow-hidden"
-            style={{ width: `${sidebarWidth}px` }}
-          >
-            <ScrollArea className="flex-1 h-full">
-              <div className="space-y-2 p-2">
-                {thumbnailPages.map((page, index) => (
-                  <PDFThumbnail
-                    key={index}
-                    page={page}
-                    pageNumber={index + 1}
-                    isActive={currentPage === index + 1}
-                    onClick={() => setCurrentPage(index + 1)}
-                  />
-                ))}
-              </div>
-            </ScrollArea>
+      <PasswordDialog
+        open={showPasswordDialog}
+        fileName={file.name}
+        onSubmit={handlePasswordSubmit}
+        onCancel={() => {
+          setShowPasswordDialog(false);
+          onClose();
+        }}
+        error={passwordError}
+      />
 
-            {/* Resize Handle */}
-            <div
-              className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors group"
-              onMouseDown={handleResizeStart}
-            >
-              <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary/0 group-hover:bg-primary/50 transition-colors" />
+      <Dialog open={showExtractDialog} onOpenChange={setShowExtractDialog}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{extractedTextTitle || t('viewer.extract_dialog.title')}</DialogTitle>
+            <DialogDescription>
+              {isExtractingText ? t('viewer.extract_dialog.extracting') : t('viewer.extract_dialog.description')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={handleCopyExtractedText} disabled={!extractedText}>
+                {t('viewer.extract_dialog.copy_all')}
+              </Button>
+            </div>
+            <div className="max-h-[60vh] overflow-auto rounded border border-border bg-muted/40 p-3 text-sm whitespace-pre-wrap">
+              {extractedText}
             </div>
           </div>
-        )}
+        </DialogContent>
+      </Dialog>
 
-        {/* Outline Sidebar */}
-        {showOutline && (
-          <div
-            className="relative border-r border-border bg-muted/30 flex flex-col overflow-hidden"
-            style={{ width: `${sidebarWidth}px` }}
-          >
-            <PDFOutline
-              outline={outline}
-              onNavigate={handleBookmarkNavigate}
-              currentPage={currentPage}
-            />
-
-            {/* Resize Handle */}
-            <div
-              className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors group"
-              onMouseDown={handleResizeStart}
+      <div className="flex flex-1 overflow-hidden pb-14 sm:pb-16">
+        <div
+          className={cn(
+            'relative flex flex-col bg-muted/30 overflow-hidden transition-[width,opacity,transform] duration-250 ease-out will-change-transform z-20',
+            showThumbnails
+              ? 'border-r border-border opacity-100 translate-x-0'
+              : 'opacity-0 -translate-x-2 pointer-events-none',
+            // Mobile: Absolute positioning to overlay content
+            'sm:relative absolute h-full shadow-xl sm:shadow-none'
+          )}
+          style={{ width: showThumbnails ? `${sidebarWidth}px` : 0 }}
+        >
+          <ScrollArea className="flex-1 h-full">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
             >
-              <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary/0 group-hover:bg-primary/50 transition-colors" />
-            </div>
-          </div>
-        )}
+              <SortableContext
+                items={pageOrder.length > 0 ? pageOrder : thumbnailPages.map((_, i) => i + 1)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-2 p-2">
+                  {(pageOrder.length > 0 ? pageOrder : thumbnailPages.map((_, i) => i + 1)).map(
+                    (pageNum, i) => {
+                      const page = thumbnailPages[pageNum - 1];
+                      return (
+                        <PDFDraggableThumbnail
+                          key={pageNum}
+                          page={page}
+                          pageNumber={pageNum}
+                          isActive={currentPage === pageNum}
+                          onClick={() => setCurrentPage(i + 1)}
+                          isDragEnabled={true}
+                          onRemove={() => {
+                            if (window.confirm(t('viewer.confirm_delete_page'))) {
+                              removePage(i);
+                            }
+                          }}
+                          onRotate={() => rotatePage(pageNum)}
+                          rotation={(rotation + (pageRotations[pageNum] || 0)) % 360}
+                        />
+                      );
+                    },
+                  )}
+                </div>
+              </SortableContext>
+            </DndContext>
+          </ScrollArea>
 
-        {/* User Bookmarks Panel */}
-        {showBookmarksPanel && (
           <div
-            className="relative border-r border-border bg-muted/30 flex flex-col overflow-hidden"
-            style={{ width: `${sidebarWidth}px` }}
+            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors group"
+            onMouseDown={handleResizeStart}
           >
-            <PDFBookmarks
-              onNavigate={handleBookmarkNavigate}
-              currentPage={currentPage}
-            />
-
-            {/* Resize Handle */}
-            <div
-              className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors group"
-              onMouseDown={handleResizeStart}
-            >
-              <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary/0 group-hover:bg-primary/50 transition-colors" />
-            </div>
+            <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary/0 group-hover:bg-primary/50 transition-colors" />
           </div>
-        )}
+        </div>
 
-        {/* Annotations Panel */}
-        {showAnnotations && (
+        <div
+          className={cn(
+            'relative bg-muted/30 flex flex-col overflow-hidden transition-[width,opacity,transform] duration-250 ease-out will-change-transform z-20',
+            showOutline
+              ? 'border-r border-border opacity-100 translate-x-0'
+              : 'opacity-0 -translate-x-2 pointer-events-none',
+            // Mobile: Absolute positioning to overlay content
+            'sm:relative absolute h-full shadow-xl sm:shadow-none'
+          )}
+          style={{ width: showOutline ? `${sidebarWidth}px` : 0 }}
+        >
+          <PDFOutline outline={outline} onNavigate={handleBookmarkNavigate} currentPage={currentPage} />
+
           <div
-            className="relative border-r border-border bg-muted/30 flex flex-col overflow-hidden"
-            style={{ width: `${sidebarWidth}px` }}
+            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors group"
+            onMouseDown={handleResizeStart}
           >
-            <PDFAnnotationsList
-              onNavigate={handleAnnotationNavigate}
-              currentPage={currentPage}
-            />
-
-            {/* Resize Handle */}
-            <div
-              className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors group"
-              onMouseDown={handleResizeStart}
-            >
-              <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary/0 group-hover:bg-primary/50 transition-colors" />
-            </div>
+            <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary/0 group-hover:bg-primary/50 transition-colors" />
           </div>
-        )}
+        </div>
 
-        {/* Main PDF Viewer */}
+        <div
+          className={cn(
+            'relative border-border bg-muted/30 flex flex-col overflow-hidden transition-[width,opacity,transform] duration-250 ease-out will-change-transform z-20',
+            showBookmarksPanel
+              ? 'border-r opacity-100 translate-x-0'
+              : 'opacity-0 -translate-x-2 pointer-events-none',
+            // Mobile: Absolute positioning to overlay content
+            'sm:relative absolute h-full shadow-xl sm:shadow-none'
+          )}
+          style={{ width: showBookmarksPanel ? `${sidebarWidth}px` : 0 }}
+        >
+          <PDFBookmarks onNavigate={handleBookmarkNavigate} currentPage={currentPage} />
+
+          <div
+            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors group"
+            onMouseDown={handleResizeStart}
+          >
+            <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary/0 group-hover:bg-primary/50 transition-colors" />
+          </div>
+        </div>
+
+        <div
+          className={cn(
+            'relative border-border bg-muted/30 flex flex-col overflow-hidden transition-[width,opacity,transform] duration-250 ease-out will-change-transform',
+            showAnnotations
+              ? 'border-r opacity-100 translate-x-0'
+              : 'opacity-0 -translate-x-2 pointer-events-none',
+          )}
+          style={{ width: showAnnotations ? `${sidebarWidth}px` : 0 }}
+        >
+          <PDFAnnotationsList onNavigate={handleAnnotationNavigate} currentPage={currentPage} />
+
+          <div
+            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors group"
+            onMouseDown={handleResizeStart}
+          >
+            <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary/0 group-hover:bg-primary/50 transition-colors" />
+          </div>
+        </div>
+
         <div
           ref={(el) => {
             if (el) {
@@ -971,10 +1344,9 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
           className="flex-1 overflow-auto bg-muted/50"
           style={{ scrollBehavior: 'smooth' }}
         >
-          {/* Single Page View */}
           {viewMode === 'single' && (
             <div
-              className="flex min-h-full items-center justify-center p-8"
+              className="flex min-h-full items-center justify-center p-8 transition-all duration-300 ease-in-out"
               onClick={(e) => {
                 if (pendingStamp && currentPageObj) {
                   const viewport = currentPageObj.getViewport({ scale: zoom, rotation });
@@ -988,201 +1360,261 @@ export function PDFViewer({ file, onClose, header }: PDFViewerProps) {
                 }
               }}
             >
-              <div className="relative">
-                <PDFPage
-                  page={currentPageObj}
-                  scale={zoom}
-                  rotation={rotation}
+              <div
+                key={currentPage}
+                className={cn(
+                  'relative animate-in fade-in duration-300',
+                  pageDirection === 'forward' && 'slide-in-from-right',
+                  pageDirection === 'backward' && 'slide-in-from-left',
+                )}
+              >
+                <PDFPage 
+                  page={currentPageObj} 
+                  scale={zoom} 
+                  rotation={(rotation + (pageRotations[currentPage] || 0)) % 360} 
                   className="max-w-full"
+                  onRenderSuccess={handleRenderSuccess}
                 />
                 <PDFTextLayer
                   page={currentPageObj}
                   scale={zoom}
-                  rotation={rotation}
+                  rotation={(rotation + (pageRotations[currentPage] || 0)) % 360} 
                   searchQuery={searchQuery}
                   caseSensitive={caseSensitiveSearch}
+                  pageNumber={currentPage}
                 />
                 <PDFAnnotationLayer
                   page={currentPageObj}
                   scale={zoom}
-                  rotation={rotation}
+                  rotation={(rotation + (pageRotations[currentPage] || 0)) % 360} 
                   selectedAnnotationType={selectedAnnotationType === 'drawing' ? null : selectedAnnotationType}
                 />
                 {selectedAnnotationType === 'drawing' && (
                   <PDFDrawingLayer
                     page={currentPageObj}
                     scale={zoom}
-                    rotation={rotation}
+                    rotation={(rotation + (pageRotations[currentPage] || 0)) % 360} 
                     isDrawingMode={true}
                     strokeColor={selectedAnnotationColor}
                     strokeWidth={selectedStrokeWidth}
+                  />
+                )}
+                {isSelectionMode && (
+                  <PDFSelectionLayer
+                    page={currentPageObj}
+                    scale={zoom}
+                    rotation={(rotation + (pageRotations[currentPage] || 0)) % 360} 
+                    pageNumber={currentPage}
                   />
                 )}
               </div>
             </div>
           )}
 
-          {/* Continuous Scroll View */}
           {viewMode === 'continuous' && (
             <div className="flex flex-col items-center gap-4 p-8">
-              {allPages.map((page, index) => (
-                <div
-                  key={index}
-                  ref={(el) => {
-                    if (el) {
-                      pageRefsMap.current.set(index + 1, el);
-                    } else {
-                      pageRefsMap.current.delete(index + 1);
-                    }
-                  }}
-                  data-page={index + 1}
-                  className={cn(
-                    'transition-opacity',
-                    currentPage === index + 1 && 'ring-2 ring-primary rounded'
-                  )}
-                >
-                  <div className="relative">
-                    <PDFPage
-                      page={page}
-                      scale={zoom}
-                      rotation={rotation}
-                      className="shadow-lg"
-                    />
-                    <PDFTextLayer
-                      page={page}
-                      scale={zoom}
-                      rotation={rotation}
-                      searchQuery={searchQuery}
-                      caseSensitive={caseSensitiveSearch}
-                    />
-                    <PDFAnnotationLayer
-                      page={page}
-                      scale={zoom}
-                      rotation={rotation}
-                      selectedAnnotationType={selectedAnnotationType === 'drawing' ? null : selectedAnnotationType}
-                    />
-                    {selectedAnnotationType === 'drawing' && index + 1 === currentPage && (
-                      <PDFDrawingLayer
+              {allPages.map((page, index) => {
+                const pageNumber = index + 1;
+                if (pageNumber < visibleRange.start || pageNumber > visibleRange.end) {
+                  return null;
+                }
+                return (
+                  <div
+                    key={pageNumber}
+                    ref={(el) => {
+                      if (el) {
+                        pageRefsMap.current.set(pageNumber, el);
+                      } else {
+                        pageRefsMap.current.delete(pageNumber);
+                      }
+                    }}
+                    data-page={pageNumber}
+                    className={cn(
+                      'transition-all duration-300 ease-in-out',
+                      currentPage === pageNumber && 'ring-2 ring-primary rounded scale-[1.02]',
+                    )}
+                  >
+                    <div className="relative">
+                      <PDFPage page={page} scale={zoom} rotation={(rotation + (pageRotations[pageNumber] || 0)) % 360} className="shadow-lg" />
+                      <PDFTextLayer
                         page={page}
                         scale={zoom}
-                        rotation={rotation}
-                        isDrawingMode={true}
-                        strokeColor={selectedAnnotationColor}
-                        strokeWidth={selectedStrokeWidth}
+                        rotation={(rotation + (pageRotations[pageNumber] || 0)) % 360}
+                        searchQuery={searchQuery}
+                        caseSensitive={caseSensitiveSearch}
+                        pageNumber={pageNumber}
                       />
-                    )}
+                      <PDFAnnotationLayer
+                        page={page}
+                        scale={zoom}
+                        rotation={(rotation + (pageRotations[pageNumber] || 0)) % 360}
+                        selectedAnnotationType={
+                          selectedAnnotationType === 'drawing' ? null : selectedAnnotationType
+                        }
+                      />
+                      {selectedAnnotationType === 'drawing' && pageNumber === currentPage && (
+                        <PDFDrawingLayer
+                          page={page}
+                          scale={zoom}
+                          rotation={(rotation + (pageRotations[pageNumber] || 0)) % 360}
+                          isDrawingMode={true}
+                          strokeColor={selectedAnnotationColor}
+                          strokeWidth={selectedStrokeWidth}
+                        />
+                      )}
+                      {isSelectionMode && (
+                        <PDFSelectionLayer
+                          page={page}
+                          scale={zoom}
+                          rotation={(rotation + (pageRotations[pageNumber] || 0)) % 360}
+                          pageNumber={pageNumber}
+                        />
+                      )}
+                    </div>
+                    <div className="mt-2 text-center text-sm text-muted-foreground">
+                      {t('viewer.page_n_of_m', { current: pageNumber, total: numPages })}
+                    </div>
                   </div>
-                  <div className="mt-2 text-center text-sm text-muted-foreground">
-                    Page {index + 1} of {numPages}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
-          {/* Two Page View */}
           {viewMode === 'twoPage' && (
             <div className="flex flex-col items-center gap-4 p-8">
-              {Array.from({ length: Math.ceil(numPages / 2) }).map((_, pairIndex) => (
-                <div
-                  key={pairIndex}
-                  className="flex gap-4"
-                >
-                  {/* Left page */}
-                  {allPages[pairIndex * 2] && (
-                    <div
-                      ref={(el) => {
-                        if (el) {
-                          pageRefsMap.current.set(pairIndex * 2 + 1, el);
-                        } else {
-                          pageRefsMap.current.delete(pairIndex * 2 + 1);
-                        }
-                      }}
-                      data-page={pairIndex * 2 + 1}
-                      className={cn(
-                        'transition-opacity',
-                        currentPage === pairIndex * 2 + 1 && 'ring-2 ring-primary rounded'
-                      )}
-                    >
-                      <div className="relative">
-                        <PDFPage
-                          page={allPages[pairIndex * 2]}
-                          scale={zoom}
-                          rotation={rotation}
-                          className="shadow-lg"
-                        />
-                        <PDFTextLayer
-                          page={allPages[pairIndex * 2]}
-                          scale={zoom}
-                          rotation={rotation}
-                          searchQuery={searchQuery}
-                          caseSensitive={caseSensitiveSearch}
-                        />
-                        <PDFAnnotationLayer
-                          page={allPages[pairIndex * 2]}
-                          scale={zoom}
-                          rotation={rotation}
-                          selectedAnnotationType={selectedAnnotationType}
-                        />
+              {Array.from({ length: Math.ceil(numPages / 2) }).map((_, pairIndex) => {
+                const leftPageNumber = pairIndex * 2 + 1;
+                const rightPageNumber = leftPageNumber + 1;
+
+                if (
+                  leftPageNumber < visibleRange.start &&
+                  rightPageNumber < visibleRange.start
+                ) {
+                  return null;
+                }
+                if (leftPageNumber > visibleRange.end && rightPageNumber > visibleRange.end) {
+                  return null;
+                }
+
+                return (
+                  <div
+                    key={pairIndex}
+                    className="flex gap-4 transition-all duration-300 ease-in-out"
+                  >
+                    {allPages[leftPageNumber - 1] && (
+                      <div
+                        ref={(el) => {
+                          if (el) {
+                            pageRefsMap.current.set(leftPageNumber, el);
+                          } else {
+                            pageRefsMap.current.delete(leftPageNumber);
+                          }
+                        }}
+                        data-page={leftPageNumber}
+                        className={cn(
+                          'transition-all duration-300 ease-in-out',
+                          currentPage === leftPageNumber && 'ring-2 ring-primary rounded scale-[1.02]',
+                        )}
+                      >
+                        <div className="relative">
+                          <PDFPage
+                            page={allPages[leftPageNumber - 1]}
+                            scale={zoom}
+                            rotation={(rotation + (pageRotations[getOriginalPageNumber(leftPageNumber)] || 0)) % 360}
+                            className="shadow-lg"
+                          />
+                          <PDFTextLayer
+                            page={allPages[leftPageNumber - 1]}
+                            scale={zoom}
+                            rotation={(rotation + (pageRotations[getOriginalPageNumber(leftPageNumber)] || 0)) % 360}
+                            searchQuery={searchQuery}
+                            caseSensitive={caseSensitiveSearch}
+                            pageNumber={getOriginalPageNumber(leftPageNumber)}
+                          />
+                          <PDFAnnotationLayer
+                            page={allPages[leftPageNumber - 1]}
+                            scale={zoom}
+                            rotation={(rotation + (pageRotations[getOriginalPageNumber(leftPageNumber)] || 0)) % 360}
+                            selectedAnnotationType={selectedAnnotationType}
+                          />
+                          {isSelectionMode && (
+                            <PDFSelectionLayer
+                              page={allPages[leftPageNumber - 1]}
+                              scale={zoom}
+                              rotation={(rotation + (pageRotations[getOriginalPageNumber(leftPageNumber)] || 0)) % 360}
+                              pageNumber={getOriginalPageNumber(leftPageNumber)}
+                            />
+                          )}
+                        </div>
+                        <div className="mt-2 text-center text-sm text-muted-foreground">
+                          {t('viewer.page_n_of_m', { current: leftPageNumber, total: numPages })}
+                        </div>
                       </div>
-                      <div className="mt-2 text-center text-sm text-muted-foreground">
-                        Page {pairIndex * 2 + 1}
+                    )}
+
+                    {allPages[rightPageNumber - 1] && (
+                      <div
+                        ref={(el) => {
+                          if (el) {
+                            pageRefsMap.current.set(rightPageNumber, el);
+                          } else {
+                            pageRefsMap.current.delete(rightPageNumber);
+                          }
+                        }}
+                        data-page={rightPageNumber}
+                        className={cn(
+                          'transition-all duration-300 ease-in-out',
+                          currentPage === rightPageNumber && 'ring-2 ring-primary rounded scale-[1.02]',
+                        )}
+                      >
+                        <div className="relative">
+                          <PDFPage
+                            page={allPages[rightPageNumber - 1]}
+                            scale={zoom}
+                            rotation={(rotation + (pageRotations[getOriginalPageNumber(rightPageNumber)] || 0)) % 360}
+                            className="shadow-lg"
+                          />
+                          <PDFTextLayer
+                            page={allPages[rightPageNumber - 1]}
+                            scale={zoom}
+                            rotation={(rotation + (pageRotations[getOriginalPageNumber(rightPageNumber)] || 0)) % 360}
+                            searchQuery={searchQuery}
+                            caseSensitive={caseSensitiveSearch}
+                            pageNumber={getOriginalPageNumber(rightPageNumber)}
+                          />
+                          <PDFAnnotationLayer
+                            page={allPages[rightPageNumber - 1]}
+                            scale={zoom}
+                            rotation={(rotation + (pageRotations[getOriginalPageNumber(rightPageNumber)] || 0)) % 360}
+                            selectedAnnotationType={selectedAnnotationType}
+                          />
+                          {isSelectionMode && (
+                            <PDFSelectionLayer
+                              page={allPages[rightPageNumber - 1]}
+                              scale={zoom}
+                              rotation={(rotation + (pageRotations[getOriginalPageNumber(rightPageNumber)] || 0)) % 360}
+                              pageNumber={getOriginalPageNumber(rightPageNumber)}
+                            />
+                          )}
+                        </div>
+                        <div className="mt-2 text-center text-sm text-muted-foreground">
+                          {t('viewer.page_n_of_m', { current: rightPageNumber, total: numPages })}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  
-                  {/* Right page */}
-                  {allPages[pairIndex * 2 + 1] && (
-                    <div
-                      ref={(el) => {
-                        if (el) {
-                          pageRefsMap.current.set(pairIndex * 2 + 2, el);
-                        } else {
-                          pageRefsMap.current.delete(pairIndex * 2 + 2);
-                        }
-                      }}
-                      data-page={pairIndex * 2 + 2}
-                      className={cn(
-                        'transition-opacity',
-                        currentPage === pairIndex * 2 + 2 && 'ring-2 ring-primary rounded'
-                      )}
-                    >
-                      <div className="relative">
-                        <PDFPage
-                          page={allPages[pairIndex * 2 + 1]}
-                          scale={zoom}
-                          rotation={rotation}
-                          className="shadow-lg"
-                        />
-                        <PDFTextLayer
-                          page={allPages[pairIndex * 2 + 1]}
-                          scale={zoom}
-                          rotation={rotation}
-                          searchQuery={searchQuery}
-                          caseSensitive={caseSensitiveSearch}
-                        />
-                        <PDFAnnotationLayer
-                          page={allPages[pairIndex * 2 + 1]}
-                          scale={zoom}
-                          rotation={rotation}
-                          selectedAnnotationType={selectedAnnotationType}
-                        />
-                      </div>
-                      <div className="mt-2 text-center text-sm text-muted-foreground">
-                        Page {pairIndex * 2 + 2}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
       </div>
-      
-      {/* Reading Progress Bar - Fixed at bottom */}
+
+      <PDFMobileToolbar
+        onSearch={() => setShowSearch(true)}
+        onOpenSettings={() => setShowSettings(true)}
+      />
       <PDFProgressBar />
     </div>
   );
 }
-

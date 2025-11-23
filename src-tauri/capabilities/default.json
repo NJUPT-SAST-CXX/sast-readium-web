@@ -6,6 +6,30 @@
     "main"
   ],
   "permissions": [
-    "core:default"
+    "core:default",
+    "dialog:default",
+    "fs:default",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        {
+          "path": "$DOCUMENT/*"
+        },
+        {
+          "path": "$DOWNLOAD/*"
+        },
+        {
+          "path": "$DESKTOP/*"
+        },
+        {
+          "path": "$HOME/*"
+        },
+        {
+          "path": "$APPCONFIG/*"
+        }
+      ]
+    },
+    "notification:default",
+    "process:default"
   ]
 }

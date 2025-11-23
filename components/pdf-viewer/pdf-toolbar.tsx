@@ -3,8 +3,6 @@
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   ZoomIn,
   ZoomOut,
   RotateCw,
@@ -29,6 +27,10 @@ import {
   Presentation,
   Keyboard,
   Settings,
+  LayoutGrid,
+  Copy,
+  Volume2,
+  Square,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,9 +49,15 @@ import {
 } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 import { ButtonGroup } from '@/components/ui/button-group';
-import { usePDFStore } from '@/lib/pdf-store';
-import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
+import { usePDFStore, AnnotationStamp } from '@/lib/pdf-store';
+import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PDFSettingsDialog } from './pdf-settings-dialog';
+import { PDFMenuBar } from './pdf-menubar';
+import { PDFAnnotationsToolbar } from './pdf-annotations-toolbar';
+import { PDFGoToPage } from './pdf-go-to-page';
+import { isTauri, openPdfFileViaNativeDialog, openPdfFolderViaNativeDialog } from '@/lib/tauri-bridge';
 
 interface PDFToolbarProps {
   onDownload: () => void;
@@ -57,12 +65,22 @@ interface PDFToolbarProps {
   onSearch: (query: string) => void;
   onClose: () => void;
   onToggleBookmarks?: () => void;
+  onAnnotationTypeSelect?: (type: 'highlight' | 'comment' | 'shape' | 'text' | 'drawing' | null) => void;
+  selectedAnnotationType?: 'highlight' | 'comment' | 'shape' | 'text' | 'drawing' | null;
+  onStampSelect?: (stamp: AnnotationStamp) => void;
+  onExtractCurrentPageText?: () => void;
+  onExtractAllText?: () => void;
+  onOpenFileFromMenu?: (file: File | File[]) => void;
+  onRevealInFileManager?: () => void;
+  showSearch?: boolean;
+  onShowSearchChange?: (show: boolean) => void;
+  showSettings?: boolean;
+  onShowSettingsChange?: (show: boolean) => void;
 }
 
-export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBookmarks }: PDFToolbarProps) {
+export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBookmarks, onAnnotationTypeSelect, selectedAnnotationType, onStampSelect, onExtractCurrentPageText, onExtractAllText, onOpenFileFromMenu, onRevealInFileManager, showSearch, onShowSearchChange, showSettings, onShowSettingsChange }: PDFToolbarProps) {
+  const { t } = useTranslation();
   const {
-    currentPage,
-    numPages,
     zoom,
     isFullscreen,
     showThumbnails,
@@ -75,11 +93,7 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
     viewMode,
     fitMode,
     caseSensitiveSearch,
-    nextPage,
-    previousPage,
-    firstPage,
-    lastPage,
-    goToPage,
+    showMenuBar,
     zoomIn,
     zoomOut,
     setZoom,
@@ -100,31 +114,13 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
     nextSearchResult,
     previousSearchResult,
     toggleCaseSensitiveSearch,
+    toggleMenuBar,
+    isReading,
+    setIsReading,
   } = usePDFStore();
 
-  const [pageInput, setPageInput] = useState(currentPage.toString());
-  const [showSearch, setShowSearch] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
-  const [showSettings, setShowSettings] = useState(false);
-
-  // Sync page input with current page
-  useEffect(() => {
-    setPageInput(currentPage.toString());
-  }, [currentPage]);
-
-  const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPageInput(e.target.value);
-  };
-
-  const handlePageInputSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const page = parseInt(pageInput, 10);
-    if (!isNaN(page)) {
-      goToPage(page);
-    } else {
-      setPageInput(currentPage.toString());
-    }
-  };
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,44 +131,158 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
   // Zoom levels from 50% to 300% as requested
   const zoomLevels = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0];
 
+  const handleMenuOpenFile = () => {
+    if (!onOpenFileFromMenu) return;
+
+    if (isTauri()) {
+      openPdfFileViaNativeDialog()
+        .then((file) => {
+          if (file) {
+            onOpenFileFromMenu(file);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to open PDF via menu native dialog', err);
+        });
+      return;
+    }
+
+    fileInputRef.current?.click();
+  };
+
+  const handleMenuOpenFolder = () => {
+    if (!onOpenFileFromMenu) return;
+
+    if (isTauri()) {
+      openPdfFolderViaNativeDialog()
+        .then((files) => {
+          if (!files || files.length === 0) return;
+          onOpenFileFromMenu(files);
+        })
+        .catch((err) => {
+          console.error('Failed to open folder via menu native dialog', err);
+        });
+    }
+  };
+
   return (
     <TooltipProvider>
-      <>
+      <div className="flex flex-col">
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/pdf"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            const files = e.target.files;
+            if (files && files.length > 0 && onOpenFileFromMenu) {
+              const pdfFiles: File[] = [];
+              for (let i = 0; i < files.length; i++) {
+                if (files[i].type === 'application/pdf') {
+                  pdfFiles.push(files[i]);
+                }
+              }
+              if (pdfFiles.length > 0) {
+                onOpenFileFromMenu(pdfFiles);
+              }
+            }
+            if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
+          }}
+        />
+
+        {/* Menu Bar */}
+        <PDFMenuBar
+          onDownload={onDownload}
+          onPrint={onPrint}
+          onSave={onDownload}
+          onSearch={() => onShowSearchChange?.(true)}
+          onOpenSettings={() => onShowSettingsChange?.(true)}
+          onOpenFile={onOpenFileFromMenu ? handleMenuOpenFile : undefined}
+          onOpenFolder={onOpenFileFromMenu ? handleMenuOpenFolder : undefined}
+          onRevealInFileManager={onRevealInFileManager}
+          onOpenRecentFile={onOpenFileFromMenu}
+        />
+        
+        {/* Main PDF Toolbar */}
         <div className="flex flex-col border-b border-border bg-background">
         {/* Main Toolbar */}
-        <div className="flex items-center justify-between gap-2 px-4 py-2">
+        <div className="flex items-center justify-between gap-2 px-2 sm:px-4 py-2 overflow-x-auto scrollbar-hide">
           {/* Left Section */}
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={onClose}>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0">
               <X className="h-5 w-5" />
             </Button>
-            <Separator orientation="vertical" className="h-6" />
-            <ButtonGroup>
+            <Separator orientation="vertical" className="h-6 hidden sm:block" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleMenuBar}
+                  className={cn("shrink-0 flex", showMenuBar ? 'bg-accent' : '')}
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="text-center">
+                  <div>{t('toolbar.tooltip.toggle_menu')}</div>
+                  <div className="text-xs text-muted-foreground">{t('viewer.menu_toggle_hint')}</div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+            <Separator orientation="vertical" className="h-6 hidden sm:block" />
+            <ButtonGroup className="gap-0.5 sm:gap-1">
+              <div className="hidden sm:block">
+                <PDFGoToPage />
+              </div>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={toggleThumbnails}
-                    className={showThumbnails ? 'bg-accent' : ''}
+                    className={cn("hidden sm:flex", showThumbnails ? 'bg-accent' : '')}
                   >
-                    <Menu className="h-5 w-5" />
+                    <LayoutGrid className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Toggle Thumbnails</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.toggle_thumbnails')}</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
+                    onClick={() => setIsReading(!isReading)}
+                    className={isReading ? 'bg-accent text-accent-foreground animate-pulse' : ''}
+                  >
+                    {isReading ? <Square className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{isReading ? t('toolbar.tooltip.toggle_tts_stop') : t('toolbar.tooltip.toggle_tts_start')}</TooltipContent>
+              </Tooltip>
+            </ButtonGroup>
+
+            <Separator orientation="vertical" className="h-6" />
+
+            <ButtonGroup>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={toggleOutline}
-                    className={showOutline ? 'bg-accent' : ''}
+                    className={cn("hidden md:flex", showOutline ? 'bg-accent' : '')}
                   >
                     <BookOpen className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Toggle Bookmarks</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.toggle_bookmarks')}</TooltipContent>
               </Tooltip>
               {onToggleBookmarks && (
                 <Tooltip>
@@ -181,11 +291,12 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
                       variant="ghost"
                       size="icon"
                       onClick={onToggleBookmarks}
+                      className="hidden md:flex"
                     >
                       <Star className="h-5 w-5" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>My Bookmarks</TooltipContent>
+                  <TooltipContent>{t('toolbar.tooltip.my_bookmarks')}</TooltipContent>
                 </Tooltip>
               )}
               <Tooltip>
@@ -194,100 +305,29 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
                     variant="ghost"
                     size="icon"
                     onClick={toggleAnnotations}
-                    className={showAnnotations ? 'bg-accent' : ''}
+                    className={cn("hidden sm:flex", showAnnotations ? 'bg-accent' : '')}
                   >
                     <MessageSquare className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Toggle Annotations</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.toggle_annotations')}</TooltipContent>
               </Tooltip>
             </ButtonGroup>
           </div>
 
-          {/* Center Section - Navigation */}
-          <div className="flex items-center gap-2">
-            <ButtonGroup>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={firstPage}
-                    disabled={currentPage <= 1}
-                  >
-                    <ChevronsLeft className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>First Page (Home)</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={previousPage}
-                    disabled={currentPage <= 1}
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Previous Page (←)</TooltipContent>
-              </Tooltip>
-
-              <form onSubmit={handlePageInputSubmit} className="flex items-center gap-2">
-                <Input
-                  type="text"
-                  value={pageInput}
-                  onChange={handlePageInputChange}
-                  onBlur={() => setPageInput(currentPage.toString())}
-                  className="w-16 text-center"
-                />
-                <span className="text-sm text-muted-foreground">/ {numPages}</span>
-              </form>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={nextPage}
-                    disabled={currentPage >= numPages}
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Next Page (→)</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={lastPage}
-                    disabled={currentPage >= numPages}
-                  >
-                    <ChevronsRight className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Last Page (End)</TooltipContent>
-              </Tooltip>
-            </ButtonGroup>
-
-            <Separator orientation="vertical" className="h-6" />
-
+          {/* Center Section - Zoom and View Controls */}
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Zoom Controls */}
-            <ButtonGroup>
+            <ButtonGroup className="hidden sm:flex gap-0.5 sm:gap-1">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={zoomOut}>
+                  <Button variant="ghost" size="icon" onClick={zoomOut} className="shrink-0">
                     <ZoomOut className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <div className="text-xs">
-                    <div>Zoom Out</div>
+                    <div>{t('toolbar.tooltip.zoom_out')}</div>
                     <div className="text-muted-foreground">Ctrl/Cmd + -</div>
                   </div>
                 </TooltipContent>
@@ -299,13 +339,13 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
                     value={zoom.toString()}
                     onValueChange={(value) => setZoom(parseFloat(value))}
                   >
-                    <SelectTrigger className="h-9 min-w-[96px]">
+                    <SelectTrigger className="h-9 min-w-[70px] sm:min-w-[96px] px-2">
                       <SelectValue>{Math.round(zoom * 100)}%</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {zoomLevels.map((level) => (
                         <SelectItem key={level} value={level.toString()}>
-                          {Math.round(level * 100)}%
+                          {level === 1.0 ? t('toolbar.tooltip.actual_size') : `${Math.round(level * 100)}%`}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -313,7 +353,7 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
                 </TooltipTrigger>
                 <TooltipContent>
                   <div className="text-xs">
-                    <div>Zoom Level (50% - 300%)</div>
+                    <div>{t('toolbar.tooltip.zoom_level')}</div>
                     <div className="text-muted-foreground">Ctrl/Cmd + Scroll to zoom</div>
                   </div>
                 </TooltipContent>
@@ -321,30 +361,51 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={zoomIn}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setFitMode('custom');
+                      setZoom(1.0);
+                    }}
+                    className="hidden sm:flex"
+                  >
+                    <span className="text-xs font-medium">100%</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="text-xs">
+                    <div>{t('toolbar.tooltip.actual_size')}</div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={zoomIn} className="shrink-0">
                     <ZoomIn className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <div className="text-xs">
-                    <div>Zoom In</div>
+                    <div>{t('toolbar.tooltip.zoom_in')}</div>
                     <div className="text-muted-foreground">Ctrl/Cmd + +</div>
                   </div>
                 </TooltipContent>
               </Tooltip>
             </ButtonGroup>
 
-            <Separator orientation="vertical" className="h-6" />
+            <Separator orientation="vertical" className="h-6 hidden sm:block" />
 
             {/* Rotation Controls */}
-            <ButtonGroup>
+            <ButtonGroup className="hidden md:flex gap-1">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button variant="ghost" size="icon" onClick={rotateCounterClockwise}>
                     <RotateCcw className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Rotate Counter-Clockwise</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.rotate_ccw')}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -353,14 +414,14 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
                     <RotateCw className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Rotate Clockwise</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.rotate_cw')}</TooltipContent>
               </Tooltip>
             </ButtonGroup>
 
-            <Separator orientation="vertical" className="h-6" />
+            <Separator orientation="vertical" className="h-6 hidden md:block" />
 
             {/* View Mode Controls */}
-            <ButtonGroup>
+            <ButtonGroup className="hidden lg:flex gap-1">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -372,7 +433,7 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
                     <FileText className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Single Page</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.single_page')}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -386,7 +447,7 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
                     <Rows3 className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Continuous Scroll</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.continuous')}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -400,14 +461,14 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
                     <Columns2 className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Two Page View</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.two_page')}</TooltipContent>
               </Tooltip>
             </ButtonGroup>
 
-            <Separator orientation="vertical" className="h-6" />
+            <Separator orientation="vertical" className="h-6 hidden lg:block" />
 
             {/* Fit Mode Controls */}
-            <ButtonGroup>
+            <ButtonGroup className="hidden xl:flex gap-1">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -419,7 +480,7 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
                     <Maximize2 className="h-5 w-5 rotate-90" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Fit to Width</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.fit_width')}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -433,62 +494,94 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
                     <Maximize2 className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Fit to Page</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.fit_page')}</TooltipContent>
               </Tooltip>
             </ButtonGroup>
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center gap-2">
-            <ButtonGroup>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <ButtonGroup className="gap-0.5 sm:gap-1">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setShowSearch(!showSearch)}
-                    className={showSearch ? 'bg-accent' : ''}
+                    onClick={() => onShowSearchChange?.(!showSearch)}
+                    className={cn("shrink-0 hidden sm:flex", showSearch ? 'bg-accent' : '')}
                   >
                     <Search className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Search</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.search')}</TooltipContent>
               </Tooltip>
+
+              {onExtractCurrentPageText && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={onExtractCurrentPageText}
+                      className="hidden sm:flex"
+                    >
+                      <FileText className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{t('toolbar.tooltip.extract_page')}</TooltipContent>
+                </Tooltip>
+              )}
+
+              {onExtractAllText && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={onExtractAllText}
+                      className="hidden sm:flex"
+                    >
+                      <Copy className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{t('toolbar.tooltip.extract_all')}</TooltipContent>
+                </Tooltip>
+              )}
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={onPrint}>
+                  <Button variant="ghost" size="icon" onClick={onPrint} className="hidden md:flex">
                     <Printer className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Print</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.print')}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={onDownload}>
+                  <Button variant="ghost" size="icon" onClick={onDownload} className="hidden sm:flex">
                     <Download className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Download</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.download')}</TooltipContent>
               </Tooltip>
             </ButtonGroup>
 
-            <Separator orientation="vertical" className="h-6" />
+            <Separator orientation="vertical" className="h-6 hidden sm:block" />
 
-            <ButtonGroup>
+            <ButtonGroup className="gap-0.5 sm:gap-1">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={togglePresentationMode}
-                    className={isPresentationMode ? 'bg-accent' : ''}
+                    className={cn("hidden lg:flex", isPresentationMode ? 'bg-accent' : '')}
                   >
                     <Presentation className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Presentation Mode</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.presentation')}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -497,21 +590,21 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
                     variant="ghost"
                     size="icon"
                     onClick={toggleKeyboardShortcuts}
-                    className={showKeyboardShortcuts ? 'bg-accent' : ''}
+                    className={cn("hidden xl:flex", showKeyboardShortcuts ? 'bg-accent' : '')}
                   >
                     <Keyboard className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Keyboard Shortcuts (? / H)</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.shortcuts')}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={toggleDarkMode}>
+                  <Button variant="ghost" size="icon" onClick={toggleDarkMode} className="hidden md:flex">
                     {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Toggle Dark Mode</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.dark_mode')}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -519,17 +612,17 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setShowSettings(true)}
+                    onClick={() => onShowSettingsChange?.(true)}
                   >
                     <Settings className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Viewer Settings</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.settings')}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={toggleFullscreen}>
+                  <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="hidden sm:flex">
                     {isFullscreen ? (
                       <Minimize className="h-5 w-5" />
                     ) : (
@@ -537,7 +630,7 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
                     )}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Toggle Fullscreen</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.fullscreen')}</TooltipContent>
               </Tooltip>
             </ButtonGroup>
           </div>
@@ -549,7 +642,7 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
             <form onSubmit={handleSearchSubmit} className="flex flex-1 items-center gap-2">
               <Input
                 type="text"
-                placeholder="Search in document..."
+                placeholder={t('toolbar.search.placeholder')}
                 value={localSearchQuery}
                 onChange={(e) => setLocalSearchQuery(e.target.value)}
                 className="flex-1"
@@ -566,10 +659,10 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
                     <CaseSensitive className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Case Sensitive</TooltipContent>
+                <TooltipContent>{t('toolbar.tooltip.case_sensitive')}</TooltipContent>
               </Tooltip>
               <Button type="submit" size="sm">
-                Search
+                {t('toolbar.tooltip.search')}
               </Button>
             </form>
             {searchResults.length > 0 && (
@@ -595,17 +688,27 @@ export function PDFToolbar({ onDownload, onPrint, onSearch, onClose, onToggleBoo
                 </Button>
               </div>
             )}
-            <Button variant="ghost" size="icon" onClick={() => setShowSearch(false)}>
+            <Button variant="ghost" size="icon" onClick={() => onShowSearchChange?.(false)}>
               <X className="h-4 w-4" />
             </Button>
           </div>
         )}
-      </div>
+        </div>
 
-      {showSettings && (
-        <PDFSettingsDialog open={showSettings} onOpenChange={setShowSettings} />
-      )}
-      </>
+
+        {/* Annotations Toolbar */}
+        {!isPresentationMode && (
+          <PDFAnnotationsToolbar
+            onAnnotationTypeSelect={onAnnotationTypeSelect || (() => {})}
+            selectedType={selectedAnnotationType || null}
+            onStampSelect={onStampSelect || (() => {})}
+          />
+        )}
+
+        {showSettings && (
+          <PDFSettingsDialog open={showSettings} onOpenChange={onShowSettingsChange || (() => {})} />
+        )}
+      </div>
     </TooltipProvider>
   );
 }

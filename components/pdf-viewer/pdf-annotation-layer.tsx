@@ -13,6 +13,7 @@ interface PDFAnnotationLayerProps {
   scale: number;
   rotation: number;
   selectedAnnotationType: 'highlight' | 'comment' | 'shape' | 'text' | 'drawing' | null;
+  onNavigate?: (dest: string | unknown[]) => void;
 }
 
 interface AnnotationInput {
@@ -218,6 +219,7 @@ export function PDFAnnotationLayer({
   scale,
   rotation,
   selectedAnnotationType,
+  onNavigate,
 }: PDFAnnotationLayerProps) {
   const { annotations, addAnnotation, removeAnnotation, updateAnnotation, currentPage } = usePDFStore();
   const layerRef = useRef<HTMLDivElement>(null);
@@ -231,12 +233,48 @@ export function PDFAnnotationLayer({
     x: number;
     y: number;
   } | null>(null);
+  const [nativeAnnotations, setNativeAnnotations] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!page) {
+      setNativeAnnotations([]);
+      return;
+    }
+    
+    let mounted = true;
+    page.getAnnotations().then((annots) => {
+      if (mounted) setNativeAnnotations(annots);
+    }).catch(err => console.error('Error loading annotations:', err));
+
+    return () => { mounted = false; };
+  }, [page]);
 
   // Filter annotations for current page
   const currentPageAnnotations = annotations.filter((a) => a.pageNumber === currentPage);
 
   // Get viewport dimensions
   const viewport = page?.getViewport({ scale, rotation });
+
+  const getNativeAnnotationStyle = (rect: number[]) => {
+    if (!viewport) return {};
+    const [x1, y1, x2, y2] = rect;
+    // viewport.convertToViewportPoint handles the coordinate transform including rotation
+    // Note: PDF coordinates are usually bottom-left origin, but convertToViewportPoint expects PDF coordinates
+    const p1 = viewport.convertToViewportPoint(x1, y1);
+    const p2 = viewport.convertToViewportPoint(x2, y2);
+    
+    const minX = Math.min(p1[0], p2[0]);
+    const minY = Math.min(p1[1], p2[1]);
+    const maxX = Math.max(p1[0], p2[0]);
+    const maxY = Math.max(p1[1], p2[1]);
+    
+    return {
+      left: `${minX}px`,
+      top: `${minY}px`,
+      width: `${maxX - minX}px`,
+      height: `${maxY - minY}px`,
+    };
+  };
 
   // Handle mouse down for starting annotation
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -351,7 +389,7 @@ export function PDFAnnotationLayer({
       ref={layerRef}
       className={cn(
         'absolute inset-0',
-        selectedAnnotationType && 'cursor-crosshair'
+        selectedAnnotationType ? 'cursor-crosshair pointer-events-auto' : 'pointer-events-none'
       )}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -527,6 +565,31 @@ export function PDFAnnotationLayer({
           </div>
         </div>
       )}
+
+      {/* Render native annotations (Links) */}
+      {nativeAnnotations.map((annot, index) => {
+        if (annot.subtype === 'Link' && annot.rect) {
+          const style = getNativeAnnotationStyle(annot.rect);
+          return (
+            <a
+              key={`native-${index}`}
+              href={annot.url || '#'}
+              target={annot.url ? '_blank' : undefined}
+              rel={annot.url ? 'noopener noreferrer' : undefined}
+              className="absolute hover:bg-yellow-500/20 transition-colors cursor-pointer z-10"
+              style={style}
+              onClick={(e) => {
+                if (annot.dest) {
+                  e.preventDefault();
+                  onNavigate?.(annot.dest);
+                }
+              }}
+              title={annot.url || 'Go to destination'}
+            />
+          );
+        }
+        return null;
+      })}
     </div>
   );
 }

@@ -10,12 +10,13 @@ interface PDFThumbnailProps {
   pageNumber: number;
   isActive: boolean;
   onClick: () => void;
+  rotation?: number;
 }
 
-export function PDFThumbnail({ page, pageNumber, isActive, onClick }: PDFThumbnailProps) {
+export function PDFThumbnail({ page, pageNumber, isActive, onClick, rotation = 0 }: PDFThumbnailProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [renderedPageRef, setRenderedPageRef] = useState<PDFPageProxy | null>(null);
-  const isLoaded = page === renderedPageRef;
+  const [renderedState, setRenderedState] = useState<{ page: PDFPageProxy | null; rotation: number }>({ page: null, rotation: 0 });
+  const isLoaded = page === renderedState.page && rotation === renderedState.rotation;
 
   useEffect(() => {
     if (!page || !canvasRef.current) return;
@@ -30,7 +31,7 @@ export function PDFThumbnail({ page, pageNumber, isActive, onClick }: PDFThumbna
 
     // Use lower scale for thumbnails to improve performance
     const thumbnailScale = 0.3;
-    const viewport = page.getViewport({ scale: thumbnailScale });
+    const viewport = page.getViewport({ scale: thumbnailScale, rotation });
 
     // For thumbnails, we can use lower DPI to improve performance
     // Still apply some DPI scaling for clarity on high-DPI displays
@@ -53,14 +54,14 @@ export function PDFThumbnail({ page, pageNumber, isActive, onClick }: PDFThumbna
 
     page.render(renderContext).promise
       .then(() => {
-        setRenderedPageRef(page);
+        setRenderedState({ page, rotation });
       })
       .catch((error: Error) => {
         if (error.name !== 'RenderingCancelledException') {
           console.error('Error rendering thumbnail:', error);
         }
       });
-  }, [page]);
+  }, [page, rotation]);
 
   return (
     <button

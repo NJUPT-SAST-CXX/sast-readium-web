@@ -50,7 +50,7 @@
 
    ```bash
    git clone <your-repo-url>
-   cd react-quick-starter
+   cd sast-readium-web
    ```
 
 2. **安装依赖**
@@ -151,7 +151,7 @@ pnpm dlx shadcn@latest add button card dialog
 ## 项目结构
 
 ```
-react-quick-starter/
+sast-readium-web/
 ├── app/                      # Next.js App Router
 │   ├── layout.tsx           # 根布局，包含字体和元数据
 │   ├── page.tsx             # 主着陆页
@@ -205,7 +205,7 @@ API_SECRET_KEY=your-secret-key
 
 ```json
 {
-  "productName": "react-quick-starter",    // 应用名称
+  "productName": "sast-readium-web",    // 应用名称
   "version": "0.1.0",                      // 应用版本
   "identifier": "com.tauri.dev",          // 唯一应用标识符
   "build": {
@@ -214,7 +214,7 @@ API_SECRET_KEY=your-secret-key
   },
   "app": {
     "windows": [{
-      "title": "react-quick-starter",      // 窗口标题
+      "title": "sast-readium-web",      // 窗口标题
       "width": 800,                        // 默认宽度
       "height": 600,                       // 默认高度
       "resizable": true,                   // 允许调整大小

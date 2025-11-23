@@ -1,0 +1,287 @@
+{
+  "app": {
+    "title": "SAST Readium",
+    "subtitle": "More efficient PDF reading and annotation experience",
+    "tagline": "Focus on efficient PDF reading and annotation"
+  },
+  "welcome": {
+    "start": "Start",
+    "open_pdf": "Open PDF file...",
+    "open_folder": "Open folder with PDFs...",
+    "open_zip": "Open PDF from ZIP...",
+    "parsing_zip": "Parsing ZIP archive...",
+    "continue_reading": "Continue reading: {{fileName}}",
+    "drag_hint": "You can also drag and drop PDF files directly into the window.",
+    "recent": "Recent",
+    "no_recent": "No recently opened documents.",
+    "import_queue": "Import Queue",
+    "clear": "Clear",
+    "no_pending": "No documents pending import.",
+    "help": "Help & Resources",
+    "view_docs": "View Project Documentation (README)",
+    "submit_issue": "Submit Feedback or Issue",
+    "about": "About this project"
+  },
+  "dialog": {
+    "select_pdf": "Select PDF files to import",
+    "scan_desc": "PDF files have been scanned from the selected folder. You can select the documents to import in the file tree below.",
+    "default_import": "If no file is selected, all PDFs detected in the folder will be imported by default.",
+    "simple": "Simple",
+    "detailed": "Detailed",
+    "search_placeholder": "Search filename or path...",
+    "select_all": "Select All",
+    "clear_selection": "Clear Selection",
+    "no_pdf_found": "No PDF files found in this folder.",
+    "root_dir": "(Root)",
+    "cancel": "Cancel",
+    "confirm_import": "Confirm Import",
+    "password": {
+      "title": "Password Protected",
+      "description": "The file \"{{fileName}}\" is encrypted. Please enter the password to open it.",
+      "placeholder": "Enter password",
+      "incorrect": "Incorrect password. Please try again.",
+      "submit": "Open"
+    }
+  },
+  "properties": {
+    "title": "Document Properties",
+    "recent_files": "Recent Files",
+    "filename": "File Name",
+    "filesize": "File Size",
+    "page_count": "Page Count",
+    "page_size": "Page Size",
+    "pdf_version": "PDF Version",
+    "author": "Author",
+    "creator": "Creator",
+    "producer": "Producer",
+    "creation_date": "Creation Date",
+    "mod_date": "Modification Date",
+    "keywords": "Keywords",
+    "subject": "Subject",
+    "unknown": "Unknown",
+    "n_pages": "{{count}} pages",
+    "mm_size": "{{width}} x {{height}} mm",
+    "inch_size": "{{width}} x {{height}} in"
+  },
+  "recent": {
+    "title": "Recent Files",
+    "clear_all": "Clear All",
+    "empty": "No recent files",
+    "open": "Open",
+    "remove": "Remove",
+    "delete": "Delete file from disk",
+    "last_opened": "Last opened: {{date}}"
+  },
+  "footer": {
+    "built_with": "Built with Next.js 16 & React 19",
+    "drag_drop": "Drag & drop PDF files anywhere to open"
+  },
+  "home": {
+    "splash_loading": "Preparing your PDF reading space...",
+    "drag_title": "Drop PDF file here",
+    "drag_subtitle": "Release to open the document",
+    "invalid_pdf": "Please select a valid PDF file",
+    "drop_invalid": "Please drop a valid PDF file"
+  },
+  "menu": {
+    "file": {
+      "label": "File",
+      "open_file": "Open file...",
+      "open_folder": "Open folder...",
+      "new_window": "New Window",
+      "reveal_in_file_manager": "Show in File Manager",
+      "recent_files": "Recent files",
+      "copy_path": "Copy file path",
+      "rename": "Rename file...",
+      "save": "Save",
+      "print": "Print",
+      "download": "Download",
+      "share": "Share"
+    },
+    "edit": {
+      "label": "Edit",
+      "undo": "Undo",
+      "redo": "Redo",
+      "cut": "Cut",
+      "copy": "Copy",
+      "paste": "Paste",
+      "find": "Find"
+    },
+    "view": {
+      "label": "View",
+      "zoom_in": "Zoom In",
+      "zoom_out": "Zoom Out",
+      "rotate_cw": "Rotate Clockwise",
+      "rotate_reset": "Reset Rotation",
+      "single_page": "Single Page",
+      "continuous": "Continuous Scroll",
+      "two_page": "Two Page View",
+      "thumbnails": "Thumbnails",
+      "bookmarks": "Bookmarks",
+      "annotations": "Annotations"
+    },
+    "settings": {
+      "label": "Settings",
+      "preferences": "Preferences"
+    }
+  },
+  "toolbar": {
+    "tooltip": {
+      "toggle_menu": "Toggle Menu Bar",
+      "toggle_thumbnails": "Toggle Thumbnails",
+      "toggle_bookmarks": "Toggle Bookmarks",
+      "toggle_annotations": "Toggle Annotations",
+      "toggle_tts_start": "Start Text-to-Speech",
+      "toggle_tts_stop": "Stop Text-to-Speech",
+      "zoom_in": "Zoom In",
+      "zoom_out": "Zoom Out",
+      "zoom_level": "Zoom Level (50% - 300%)",
+      "actual_size": "Actual Size (100%)",
+      "rotate_ccw": "Rotate Counter-Clockwise",
+      "rotate_cw": "Rotate Clockwise",
+      "single_page": "Single Page",
+      "continuous": "Continuous Scroll",
+      "two_page": "Two Page View",
+      "fit_width": "Fit to Width",
+      "fit_page": "Fit to Page",
+      "search": "Search",
+      "extract_page": "Extract Current Page Text",
+      "extract_all": "Extract All Text",
+      "print": "Print",
+      "download": "Download",
+      "presentation": "Presentation Mode",
+      "shortcuts": "Keyboard Shortcuts (? / H)",
+      "dark_mode": "Toggle Dark Mode",
+      "settings": "Viewer Settings",
+      "fullscreen": "Toggle Fullscreen",
+      "case_sensitive": "Case Sensitive",
+      "my_bookmarks": "My Bookmarks",
+      "go_to_page": "Go to Page"
+    },
+    "search": {
+      "placeholder": "Search in document..."
+    },
+    "go_to": {
+      "label": "Page",
+      "placeholder": "1-{{total}}",
+      "go": "Go"
+    }
+  },
+  "settings": {
+    "title": "Viewer Settings",
+    "description": "Configure how the PDF viewer behaves and looks. These preferences are saved for future sessions.",
+    "section": {
+      "display": "Display & Layout",
+      "interface": "Interface & Navigation",
+      "appearance": "Appearance",
+      "watermark": "Watermark",
+      "system": "System & Updates"
+    },
+    "placeholder": {
+      "watermark_text": "Enter watermark text"
+    },
+    "hint": {
+      "watermark_text": "Text will be repeated across the page"
+    },
+    "option": {
+      "view_mode": "View mode",
+      "fit_mode": "Fit mode",
+      "single_page": "Single page",
+      "continuous": "Continuous",
+      "two_page": "Two page",
+      "fit_width": "Fit width",
+      "fit_page": "Fit page",
+      "custom": "Custom",
+      "current": "Current: {{mode}}",
+      "default_zoom": "Default zoom",
+      "side_panels": "Side panels (Default State)",
+      "show_thumbnails": "Show Thumbnails",
+      "show_outline": "Show Outline",
+      "show_annotations": "Show Annotations",
+      "behavior": "Behavior",
+      "case_sensitive": "Case sensitive search",
+      "bottom_bar": "Bottom navigation bar",
+      "color_theme": "Color Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "sepia": "Sepia",
+      "auto": "Auto",
+      "presentation": "Presentation Mode",
+      "splash_screen": "Show Splash Screen",
+      "loading_animation": "Loading Animation Style",
+      "loading_type": {
+        "spinner": "Spinner",
+        "pulse": "Pulse",
+        "bar": "Bar"
+      },
+      "annotation_defaults": "Annotation Defaults",
+      "highlight_color": "Highlight Color",
+      "stroke_width": "Stroke width",
+      "watermark_text": "Watermark Text",
+      "watermark_style": "Watermark Style",
+      "watermark_color": "Watermark Color",
+      "watermark_opacity": "Opacity",
+      "watermark_size": "Font Size",
+      "check_update": "Check for Updates",
+      "test_notification": "Test Notification",
+      "auto_check_update": "Automatically check for updates"
+    },
+    "message": {
+      "update_available": "New version {{version}} is available!",
+      "no_update": "You are using the latest version.",
+      "check_error": "Failed to check for updates.",
+      "notification_test": "This is a test notification from SAST Readium."
+    },
+    "button": {
+      "reset": "Reset Defaults",
+      "cancel": "Cancel",
+      "save": "Save Changes"
+    }
+  },
+  "shortcuts": {
+    "title": "Keyboard Shortcuts",
+    "description": "Quick reference for all available keyboard shortcuts",
+    "group": {
+      "navigation": "Navigation",
+      "zoom": "Zoom",
+      "view": "View",
+      "annotations": "Annotations",
+      "general": "General"
+    },
+    "action": {
+      "prev_page": "Previous page",
+      "next_page": "Next page",
+      "first_page": "First page",
+      "last_page": "Last page",
+      "zoom_in": "Zoom in",
+      "zoom_out": "Zoom out",
+      "zoom_wheel": "Zoom with mouse wheel",
+      "rotate_cw": "Rotate clockwise",
+      "rotate_ccw": "Rotate counter-clockwise",
+      "toggle_fullscreen": "Toggle fullscreen",
+      "undo": "Undo annotation",
+      "redo": "Redo annotation",
+      "redo_alt": "Redo annotation (alt)",
+      "show_help": "Show keyboard shortcuts",
+      "show_help_alt": "Show keyboard shortcuts (alt)",
+      "close_dialogs": "Close dialogs"
+    }
+  },
+  "viewer": {
+    "loading": "Loading PDF...",
+    "loading_document": "Loading Document...",
+    "loading_pdf": "Loading PDF",
+    "error": "Failed to load PDF. The file may be corrupted or invalid.",
+    "go_back": "Go Back",
+    "page_n_of_m": "Page {{current}} of {{total}}",
+    "extract_dialog": {
+      "title": "Extracted Text",
+      "description": "You can select and copy the extracted text below.",
+      "extracting": "Extracting text, please wait...",
+      "copy_all": "Copy All",
+      "page_title": "Page {{page}} Text",
+      "doc_title": "Document Text"
+    },
+    "menu_toggle_hint": "Toggle menu bar (foldable)"
+  }
+}

@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
+import { useTranslation } from 'react-i18next';
 
 interface ShortcutGroup {
   title: string;
@@ -17,50 +18,6 @@ interface ShortcutGroup {
     description: string;
   }>;
 }
-
-const shortcutGroups: ShortcutGroup[] = [
-  {
-    title: 'Navigation',
-    shortcuts: [
-      { keys: ['←'], description: 'Previous page' },
-      { keys: ['→'], description: 'Next page' },
-      { keys: ['Home'], description: 'First page' },
-      { keys: ['End'], description: 'Last page' },
-    ],
-  },
-  {
-    title: 'Zoom',
-    shortcuts: [
-      { keys: ['Ctrl', '+'], description: 'Zoom in' },
-      { keys: ['Ctrl', '-'], description: 'Zoom out' },
-      { keys: ['Ctrl', 'Scroll'], description: 'Zoom with mouse wheel' },
-    ],
-  },
-  {
-    title: 'View',
-    shortcuts: [
-      { keys: ['R'], description: 'Rotate clockwise' },
-      { keys: ['Shift', 'R'], description: 'Rotate counter-clockwise' },
-      { keys: ['F11'], description: 'Toggle fullscreen' },
-    ],
-  },
-  {
-    title: 'Annotations',
-    shortcuts: [
-      { keys: ['Ctrl', 'Z'], description: 'Undo annotation' },
-      { keys: ['Ctrl', 'Y'], description: 'Redo annotation' },
-      { keys: ['Ctrl', 'Shift', 'Z'], description: 'Redo annotation (alt)' },
-    ],
-  },
-  {
-    title: 'General',
-    shortcuts: [
-      { keys: ['?'], description: 'Show keyboard shortcuts' },
-      { keys: ['H'], description: 'Show keyboard shortcuts (alt)' },
-      { keys: ['Esc'], description: 'Close dialogs' },
-    ],
-  },
-];
 
 interface KeyboardShortcutsDialogProps {
   open?: boolean;
@@ -71,13 +28,59 @@ export function KeyboardShortcutsDialog({
   open,
   onOpenChange,
 }: KeyboardShortcutsDialogProps) {
+  const { t } = useTranslation();
+
+  const shortcutGroups: ShortcutGroup[] = [
+    {
+      title: t('shortcuts.group.navigation'),
+      shortcuts: [
+        { keys: ['←'], description: t('shortcuts.action.prev_page') },
+        { keys: ['→'], description: t('shortcuts.action.next_page') },
+        { keys: ['Home'], description: t('shortcuts.action.first_page') },
+        { keys: ['End'], description: t('shortcuts.action.last_page') },
+      ],
+    },
+    {
+      title: t('shortcuts.group.zoom'),
+      shortcuts: [
+        { keys: ['Ctrl', '+'], description: t('shortcuts.action.zoom_in') },
+        { keys: ['Ctrl', '-'], description: t('shortcuts.action.zoom_out') },
+        { keys: ['Ctrl', 'Scroll'], description: t('shortcuts.action.zoom_wheel') },
+      ],
+    },
+    {
+      title: t('shortcuts.group.view'),
+      shortcuts: [
+        { keys: ['R'], description: t('shortcuts.action.rotate_cw') },
+        { keys: ['Shift', 'R'], description: t('shortcuts.action.rotate_ccw') },
+        { keys: ['F11'], description: t('shortcuts.action.toggle_fullscreen') },
+      ],
+    },
+    {
+      title: t('shortcuts.group.annotations'),
+      shortcuts: [
+        { keys: ['Ctrl', 'Z'], description: t('shortcuts.action.undo') },
+        { keys: ['Ctrl', 'Y'], description: t('shortcuts.action.redo') },
+        { keys: ['Ctrl', 'Shift', 'Z'], description: t('shortcuts.action.redo_alt') },
+      ],
+    },
+    {
+      title: t('shortcuts.group.general'),
+      shortcuts: [
+        { keys: ['?'], description: t('shortcuts.action.show_help') },
+        { keys: ['H'], description: t('shortcuts.action.show_help_alt') },
+        { keys: ['Esc'], description: t('shortcuts.action.close_dialogs') },
+      ],
+    },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Keyboard Shortcuts</DialogTitle>
+          <DialogTitle>{t('shortcuts.title')}</DialogTitle>
           <DialogDescription>
-            Quick reference for all available keyboard shortcuts
+            {t('shortcuts.description')}
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[60vh]">

@@ -1,4 +1,6 @@
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib';
+import { Annotation } from './pdf-store';
 
 const CDN_WORKER_SRC = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.394/build/pdf.worker.min.mjs';
 
@@ -22,12 +24,15 @@ export interface PDFDocumentProxy {
   getOutline: () => Promise<PDFOutlineNode[] | null>;
   getDestination: (dest: string) => Promise<unknown[] | null>;
   getPageIndex: (pageRef: unknown) => Promise<number>;
+  getMetadata: () => Promise<{ info: Record<string, unknown>; metadata: unknown } | null>;
+  destroy: () => Promise<void>;
 }
 
 export interface PDFPageProxy {
   getViewport: (params: { scale: number; rotation?: number }) => PDFPageViewport;
   render: (params: { canvasContext: CanvasRenderingContext2D; viewport: PDFPageViewport }) => PDFRenderTask;
   getTextContent: () => Promise<TextContent>;
+  getAnnotations: () => Promise<any[]>;
 }
 
 export interface PDFPageViewport {
@@ -35,6 +40,9 @@ export interface PDFPageViewport {
   height: number;
   scale: number;
   rotation: number;
+  transform: number[];
+  convertToViewportPoint: (x: number, y: number) => number[];
+  convertToPdfPoint: (x: number, y: number) => number[];
 }
 
 export interface PDFRenderTask {
@@ -53,37 +61,81 @@ export interface TextItem {
   height: number;
 }
 
+const documentCache = new Map<string, Promise<PDFDocumentProxy>>();
+
+const getCacheKey = (file: File) => `${file.name}-${file.lastModified}-${file.size}`;
+
 export async function loadPDFDocument(
   file: File,
-  onProgress?: (progress: { loaded: number; total: number }) => void
+  onProgress?: (progress: { loaded: number; total: number }) => void,
+  password?: string
 ): Promise<PDFDocumentProxy> {
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    const loadingTask = pdfjsLib.getDocument({
-      data: arrayBuffer,
-      verbosity: 0, // Suppress console warnings
-    });
+  const cacheKey = getCacheKey(file) + (password ? `-protected` : '');
 
-    // Report progress if callback provided
+  if (documentCache.has(cacheKey)) {
+    const cachedPromise = documentCache.get(cacheKey)!;
     if (onProgress) {
-      loadingTask.onProgress = onProgress;
+      // Simulate 100% progress for cached files
+      onProgress({ loaded: file.size, total: file.size });
     }
+    return cachedPromise;
+  }
 
-    const pdf = await loadingTask.promise;
-    return pdf as unknown as PDFDocumentProxy;
-  } catch (error: unknown) {
-    const { name, message } = (error as { name?: string; message?: string }) ?? {};
+  const loadPromise = (async () => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const loadingTask = pdfjsLib.getDocument({
+        data: arrayBuffer,
+        password: password,
+        verbosity: 0, // Suppress console warnings
+      });
 
-    // Provide more descriptive error messages
-    if (name === 'InvalidPDFException') {
-      throw new Error('Invalid or corrupted PDF file');
-    } else if (name === 'MissingPDFException') {
-      throw new Error('PDF file not found or empty');
-    } else if (name === 'PasswordException') {
-      throw new Error('Password-protected PDFs are not supported');
+      // Report progress if callback provided
+      if (onProgress) {
+        loadingTask.onProgress = onProgress;
+      }
+
+      const pdf = await loadingTask.promise;
+      return pdf as unknown as PDFDocumentProxy;
+    } catch (error: unknown) {
+      documentCache.delete(cacheKey);
+      const { name, message } = (error as { name?: string; message?: string }) ?? {};
+
+      // Provide more descriptive error messages
+      if (name === 'InvalidPDFException') {
+        throw new Error('Invalid or corrupted PDF file');
+      } else if (name === 'MissingPDFException') {
+        throw new Error('PDF file not found or empty');
+      } else if (name === 'PasswordException') {
+        // Re-throw password exception so the UI can handle it
+        const err = new Error('Password required');
+        err.name = 'PasswordException';
+        throw err;
+      }
+
+      throw new Error(`Failed to load PDF: ${message || 'Unknown error'}`);
     }
+  })();
 
-    throw new Error(`Failed to load PDF: ${message || 'Unknown error'}`);
+  documentCache.set(cacheKey, loadPromise);
+  return loadPromise;
+}
+
+export function unloadPDFDocument(file: File) {
+  const cacheKey = getCacheKey(file);
+  const cachedPromise = documentCache.get(cacheKey);
+  
+  if (cachedPromise) {
+    documentCache.delete(cacheKey);
+    cachedPromise.then((pdf) => {
+      try {
+        pdf.destroy();
+      } catch (err) {
+        console.error('Error destroying PDF document:', err);
+      }
+    }).catch(() => {
+      // Ignore errors from failed loads
+    });
   }
 }
 
@@ -163,5 +215,159 @@ export function printPDF(file: File) {
       URL.revokeObjectURL(url);
     }, 100);
   };
+}
+
+function hexToRgb(hex: string) {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  return rgb(r, g, b);
+}
+
+export async function savePDF(
+  file: File, 
+  annotations: Annotation[],
+  options?: {
+    pageOrder?: number[];
+    pageRotations?: Record<number, number>;
+  }
+) {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdfDoc = await PDFDocument.load(arrayBuffer);
+    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+    // Create a new document for saving to handle reordering cleanly
+    const newPdfDoc = await PDFDocument.create();
+    
+    // Determine page order: use provided order or default 1..N
+    const pageOrder = options?.pageOrder && options.pageOrder.length > 0
+      ? options.pageOrder
+      : Array.from({ length: pdfDoc.getPageCount() }, (_, i) => i + 1);
+
+    // Copy pages in order
+    // pageOrder indices are 1-based, copyPages expects 0-based
+    const copiedPages = await newPdfDoc.copyPages(pdfDoc, pageOrder.map(p => p - 1));
+
+    for (let i = 0; i < copiedPages.length; i++) {
+      const page = copiedPages[i];
+      const originalPageNum = pageOrder[i];
+      
+      // Apply rotation if specified
+      if (options?.pageRotations) {
+        const rotation = options.pageRotations[originalPageNum] || 0;
+        if (rotation !== 0) {
+          const currentRotation = page.getRotation().angle;
+          page.setRotation(degrees((currentRotation + rotation) % 360));
+        }
+      }
+      
+      newPdfDoc.addPage(page);
+    }
+
+    // Get pages from new document to draw annotations on
+    const pages = newPdfDoc.getPages();
+    
+    // Group annotations by page. 
+    // Annotation pageNumber is assumed to be the Visual Page Number (1-based) in the viewer.
+    // Since newPdfDoc is constructed in Visual Order, annotation.pageNumber maps directly to newPdfDoc page index.
+    const annotationsByPage = annotations.reduce((acc, annotation) => {
+      if (!acc[annotation.pageNumber]) {
+        acc[annotation.pageNumber] = [];
+      }
+      acc[annotation.pageNumber].push(annotation);
+      return acc;
+    }, {} as Record<number, Annotation[]>);
+
+    for (const [pageNumber, pageAnnotations] of Object.entries(annotationsByPage)) {
+      const pageIndex = parseInt(pageNumber) - 1;
+      if (pageIndex >= 0 && pageIndex < pages.length) {
+        const page = pages[pageIndex];
+        const { width, height } = page.getSize();
+
+        for (const annotation of pageAnnotations) {
+          const color = hexToRgb(annotation.color);
+          // Normalized coordinates (0-1) -> PDF coordinates
+          const x = annotation.position.x * width;
+          // PDF y is from bottom, UI y is from top
+          const y = height - (annotation.position.y * height);
+
+          if (annotation.type === 'highlight') {
+            const w = (annotation.position.width || 0) * width;
+            const h = (annotation.position.height || 0) * height;
+            
+            page.drawRectangle({
+              x,
+              y: y - h, 
+              width: w,
+              height: h,
+              color,
+              opacity: 0.4,
+            });
+          } else if (annotation.type === 'text' || annotation.type === 'comment') {
+             if (annotation.content) {
+               // Simple text rendering
+               page.drawText(annotation.content, {
+                 x,
+                 y: y - 12, 
+                 size: 12,
+                 font: helveticaFont,
+                 color,
+               });
+             }
+          } else if (annotation.type === 'shape') {
+            const w = (annotation.position.width || 0) * width;
+            const h = (annotation.position.height || 0) * height;
+            
+            page.drawRectangle({
+              x,
+              y: y - h,
+              width: w,
+              height: h,
+              borderColor: color,
+              borderWidth: 2,
+              opacity: 0,
+            });
+          } else if (annotation.type === 'drawing' && annotation.path) {
+             // Draw path
+             // path is array of {x, y} in normalized coords
+             if (annotation.path.length > 1) {
+               const pathPoints = annotation.path.map(p => ({
+                 x: p.x * width,
+                 y: height - (p.y * height)
+               }));
+               
+               for (let i = 0; i < pathPoints.length - 1; i++) {
+                 const p1 = pathPoints[i];
+                 const p2 = pathPoints[i+1];
+                 page.drawLine({
+                   start: p1,
+                   end: p2,
+                   thickness: annotation.strokeWidth || 2,
+                   color,
+                 });
+               }
+             }
+          }
+        }
+      }
+    }
+
+    const pdfBytes = await newPdfDoc.save();
+    const blob = new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file.name.replace('.pdf', '-annotated.pdf');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('Error saving PDF:', err);
+    alert('Failed to save PDF with annotations. Downloading original instead.');
+    downloadPDF(file);
+  }
 }
 

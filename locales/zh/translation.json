@@ -1,0 +1,285 @@
+{
+  "app": {
+    "title": "SAST Readium",
+    "subtitle": "更高效的 PDF 阅读与批注体验",
+    "tagline": "专注高效的 PDF 阅读与批注"
+  },
+  "welcome": {
+    "start": "开始",
+    "open_pdf": "打开 PDF 文件…",
+    "open_folder": "打开包含 PDF 的文件夹…",
+    "open_zip": "从 ZIP 压缩包中打开 PDF…",
+    "parsing_zip": "正在解析 ZIP 压缩包…",
+    "continue_reading": "继续上次阅读：{{fileName}}",
+    "drag_hint": "也可以将 PDF 直接拖拽到窗口中打开。",
+    "recent": "最近",
+    "no_recent": "暂无最近打开的文档。",
+    "import_queue": "导入队列",
+    "clear": "清空",
+    "no_pending": "当前没有待导入的文档。",
+    "help": "帮助与资源",
+    "view_docs": "查看项目文档（README）",
+    "submit_issue": "提交反馈或 Issue",
+    "about": "关于本项目（依赖与项目信息）"
+  },
+  "dialog": {
+    "select_pdf": "选择要导入的 PDF 文件",
+    "scan_desc": "已从所选文件夹中扫描到 PDF 文件，你可以在下方文件树中勾选需要导入的文档。",
+    "default_import": "如果不选择任何文件，将默认导入该文件夹下检测到的全部 PDF。",
+    "simple": "简略",
+    "detailed": "详细",
+    "search_placeholder": "搜索文件名或路径...",
+    "select_all": "全选",
+    "clear_selection": "清空选中",
+    "no_pdf_found": "未在该文件夹中检测到 PDF 文件。",
+    "root_dir": "(根目录)",
+    "cancel": "取消",
+    "confirm_import": "确认导入",
+    "password": {
+      "title": "受密码保护",
+      "description": "文件 \"{{fileName}}\" 已加密。请输入密码以打开。",
+      "placeholder": "输入密码",
+      "incorrect": "密码错误，请重试。",
+      "submit": "打开"
+    }
+  },
+  "properties": {
+    "title": "文档属性",
+    "filename": "文件名",
+    "filesize": "文件大小",
+    "page_count": "页数",
+    "page_size": "页面尺寸",
+    "pdf_version": "PDF 版本",
+    "author": "作者",
+    "creator": "创建工具",
+    "producer": "制作工具",
+    "creation_date": "创建日期",
+    "mod_date": "修改日期",
+    "keywords": "关键词",
+    "subject": "主题",
+    "unknown": "未知",
+    "n_pages": "{{count}} 页",
+    "mm_size": "{{width}} x {{height}} 毫米",
+    "inch_size": "{{width}} x {{height}} 英寸"
+  },
+  "recent": {
+    "title": "最近打开的文件",
+    "clear_all": "清空全部",
+    "empty": "暂无最近打开的文件",
+    "open": "打开",
+    "remove": "移除",
+    "delete": "从磁盘删除文件",
+    "last_opened": "上次打开：{{date}}"
+  },
+  "footer": {
+    "built_with": "Built with Next.js 16 & React 19",
+    "drag_drop": "拖拽 PDF 文件到任意位置以打开"
+  },
+  "home": {
+    "splash_loading": "准备你的 PDF 阅读空间…",
+    "drag_title": "将 PDF 文件拖放到此处",
+    "drag_subtitle": "释放以打开文档",
+    "invalid_pdf": "请选择有效的 PDF 文件",
+    "drop_invalid": "请拖入有效的 PDF 文件"
+  },
+  "menu": {
+    "file": {
+      "label": "文件",
+      "open_file": "打开文件…",
+      "open_folder": "打开文件夹…",
+      "new_window": "新窗口",
+      "save": "保存",
+      "print": "打印",
+      "download": "下载",
+      "share": "分享",
+      "reveal_in_file_manager": "在文件管理器中显示",
+      "copy_path": "复制文件路径",
+      "rename": "重命名文件…",
+      "properties": "文档属性",
+      "recent_files": "最近打开的文件"
+    },
+    "edit": {
+      "label": "编辑",
+      "undo": "撤销",
+      "redo": "重做",
+      "cut": "剪切",
+      "copy": "复制",
+      "paste": "粘贴",
+      "find": "查找"
+    },
+    "view": {
+      "label": "视图",
+      "zoom_in": "放大",
+      "zoom_out": "缩小",
+      "rotate_cw": "顺时针旋转",
+      "rotate_reset": "重置旋转",
+      "single_page": "单页",
+      "continuous": "连续滚动",
+      "two_page": "双页视图",
+      "thumbnails": "缩略图",
+      "bookmarks": "书签",
+      "annotations": "注释"
+    },
+    "settings": {
+      "label": "设置",
+      "preferences": "首选项"
+    }
+  },
+  "toolbar": {
+    "tooltip": {
+      "toggle_menu": "切换菜单栏",
+      "toggle_thumbnails": "切换缩略图",
+      "toggle_bookmarks": "切换书签",
+      "toggle_annotations": "切换注释",
+      "toggle_tts_start": "开始朗读",
+      "toggle_tts_stop": "停止朗读",
+      "zoom_in": "放大",
+      "zoom_out": "缩小",
+      "zoom_level": "缩放级别 (50% - 300%)",
+      "actual_size": "实际大小 (100%)",
+      "rotate_ccw": "逆时针旋转",
+      "rotate_cw": "顺时针旋转",
+      "single_page": "单页",
+      "continuous": "连续滚动",
+      "two_page": "双页视图",
+      "fit_width": "适应宽度",
+      "fit_page": "适应页面",
+      "search": "搜索",
+      "extract_page": "提取当前页文本",
+      "extract_all": "提取全文",
+      "print": "打印",
+      "download": "下载",
+      "presentation": "演示模式",
+      "shortcuts": "快捷键 (? / H)",
+      "dark_mode": "切换暗色模式",
+      "settings": "阅读器设置",
+      "fullscreen": "全屏切换",
+      "case_sensitive": "区分大小写",
+      "my_bookmarks": "我的书签",
+      "go_to_page": "跳转到页码"
+    },
+    "search": {
+      "placeholder": "在文档中搜索..."
+    },
+    "go_to": {
+      "label": "页码",
+      "placeholder": "1-{{total}}",
+      "go": "跳转"
+    }
+  },
+  "settings": {
+    "title": "阅读器设置",
+    "description": "配置 PDF 阅读器的行为和外观。这些偏好设置将被保存。",
+    "section": {
+      "display": "显示与布局",
+      "interface": "界面与导航",
+      "appearance": "外观",
+      "watermark": "水印",
+      "system": "系统与更新"
+    },
+    "placeholder": {
+      "watermark_text": "输入水印文本"
+    },
+    "hint": {
+      "watermark_text": "文本将重复覆盖整个页面"
+    },
+    "option": {
+      "view_mode": "视图模式",
+      "fit_mode": "适应模式",
+      "single_page": "单页",
+      "continuous": "连续",
+      "two_page": "双页",
+      "fit_width": "适应宽度",
+      "fit_page": "适应页面",
+      "custom": "自定义",
+      "current": "当前：{{mode}}",
+      "default_zoom": "默认缩放",
+      "side_panels": "侧边栏（默认状态）",
+      "show_thumbnails": "显示缩略图",
+      "show_outline": "显示目录",
+      "show_annotations": "显示注释",
+      "behavior": "行为",
+      "case_sensitive": "区分大小写搜索",
+      "color_theme": "颜色主题",
+      "light": "浅色",
+      "dark": "深色",
+      "sepia": "护眼",
+      "auto": "自动",
+      "presentation": "演示模式",
+      "splash_screen": "显示开屏动画",
+      "loading_animation": "加载动画样式",
+      "loading_type": {
+        "spinner": "旋转圆圈",
+        "pulse": "脉冲图标",
+        "bar": "进度条"
+      },
+      "annotation_defaults": "标注默认值",
+      "highlight_color": "高亮颜色",
+      "stroke_width": "笔触宽度",
+      "watermark_text": "水印文本",
+      "watermark_color": "水印颜色",
+      "watermark_opacity": "不透明度",
+      "watermark_size": "字体大小",
+      "check_update": "检查更新",
+      "test_notification": "测试通知",
+      "auto_check_update": "自动检查更新"
+    },
+    "message": {
+      "update_available": "发现新版本 {{version}}！",
+      "no_update": "当前已是最新版本。",
+      "check_error": "检查更新失败。",
+      "notification_test": "这是来自 SAST Readium 的测试通知。"
+    },
+    "button": {
+      "reset": "恢复默认",
+      "cancel": "取消",
+      "save": "保存更改"
+    }
+  },
+  "shortcuts": {
+    "title": "键盘快捷键",
+    "description": "所有可用快捷键的快速参考",
+    "group": {
+      "navigation": "导航",
+      "zoom": "缩放",
+      "view": "视图",
+      "annotations": "注释",
+      "general": "通用"
+    },
+    "action": {
+      "prev_page": "上一页",
+      "next_page": "下一页",
+      "first_page": "第一页",
+      "last_page": "最后一页",
+      "zoom_in": "放大",
+      "zoom_out": "缩小",
+      "zoom_wheel": "鼠标滚轮缩放",
+      "rotate_cw": "顺时针旋转",
+      "rotate_ccw": "逆时针旋转",
+      "toggle_fullscreen": "切换全屏",
+      "undo": "撤销注释",
+      "redo": "重做注释",
+      "redo_alt": "重做注释 (Alt)",
+      "show_help": "显示快捷键",
+      "show_help_alt": "显示快捷键 (Alt)",
+      "close_dialogs": "关闭对话框"
+    }
+  },
+  "viewer": {
+    "loading": "正在加载 PDF...",
+    "loading_document": "正在准备文档...",
+    "loading_pdf": "加载 PDF",
+    "error": "加载 PDF 失败。文件可能已损坏或无效。",
+    "go_back": "返回",
+    "page_n_of_m": "第 {{current}} 页，共 {{total}} 页",
+    "extract_dialog": {
+      "title": "提取文本",
+      "description": "您可以选择并复制下方的提取文本。",
+      "extracting": "正在提取文本，请稍候...",
+      "copy_all": "复制全部",
+      "page_title": "第 {{page}} 页文本",
+      "doc_title": "文档文本"
+    },
+    "menu_toggle_hint": "切换菜单栏（支持折叠）"
+  }
+}

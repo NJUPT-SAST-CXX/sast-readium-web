@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "react-quick-starter",
+  "productName": "sast-readium-web",
   "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "com.sast.readium",
   "build": {
     "frontendDist": "../out",
     "devUrl": "http://localhost:3000",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "react-quick-starter",
+        "title": "SAST Readium",
         "width": 800,
         "height": 600,
         "resizable": true,
@@ -26,6 +26,10 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "category": "Utility",
+    "shortDescription": "A modern PDF reader and manager",
+    "longDescription": "SAST Readium is a modern, feature-rich PDF reader and manager built with React, Next.js and Tauri.",
+    "copyright": "Copyright © 2025 SAST",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -36,7 +40,37 @@
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
-      "timestampUrl": ""
+      "timestampUrl": "",
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["English", "SimpChinese"]
+      }
+    },
+    "linux": {
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0",
+          "libappindicator3-1",
+          "librsvg2-2"
+        ]
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.13",
+      "entitlements": null,
+      "exceptionDomain": "",
+      "frameworks": [],
+      "providerShortName": null,
+      "signingIdentity": null
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/NJUPT-SAST-CXX/sast-readium-web/releases/latest/download/latest.json"
+      ],
+      "pubkey": "YOUR_PUBLIC_KEY_HERE"
     }
   }
 }

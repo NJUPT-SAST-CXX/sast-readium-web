@@ -1,11 +1,32 @@
-import { create } from 'zustand';
+import { create, StateCreator } from 'zustand';
 import { persist } from 'zustand/middleware';
+
+export interface PDFMetadata {
+  info?: {
+    Title?: string;
+    Author?: string;
+    Subject?: string;
+    Keywords?: string;
+    Creator?: string;
+    Producer?: string;
+    CreationDate?: string;
+    ModDate?: string;
+    PDFFormatVersion?: string;
+    IsAcroFormPresent?: boolean;
+    IsXFAPresent?: boolean;
+    [key: string]: unknown;
+  };
+  metadata?: unknown;
+  contentLength?: number; // File size
+}
 
 export interface RecentFile {
   name: string;
   url: string;
   lastOpened: number;
   numPages?: number;
+  path?: string | null;
+  readingProgress?: number;
 }
 
 export interface SearchResult {
@@ -56,9 +77,16 @@ interface DocumentStateSnapshot {
   showOutline: boolean;
   showAnnotations: boolean;
   isDarkMode: boolean;
+  themeMode: 'light' | 'dark' | 'sepia' | 'auto';
   isPresentationMode: boolean;
   showKeyboardShortcuts: boolean;
+  showPageNavigationInBottomBar: boolean;
   outline: PDFOutlineNode[];
+  metadata: PDFMetadata | null;
+  // TTS State
+  isReading: boolean;
+  speechRate: number;
+  speechVolume: number;
   searchQuery: string;
   searchResults: SearchResult[];
   currentSearchIndex: number;
@@ -69,6 +97,14 @@ interface DocumentStateSnapshot {
   selectedStrokeWidth: number;
   bookmarks: Bookmark[];
   readingProgress: number;
+  pageOrder: number[];
+  pageRotations: Record<number, number>;
+  pdfUrl: string | null;
+  isSelectionMode: boolean;
+  watermarkText: string;
+  watermarkColor: string;
+  watermarkOpacity: number;
+  watermarkSize: number;
 }
 
 export interface PDFOutlineNode {
@@ -107,10 +143,22 @@ interface PDFState {
   isDarkMode: boolean;
   isPresentationMode: boolean;
   showKeyboardShortcuts: boolean;
+  showPageNavigationInBottomBar: boolean;
 
+  // Theme mode
+  themeMode: 'light' | 'dark' | 'sepia' | 'auto';
+  
   // Outline/Bookmarks
   outline: PDFOutlineNode[];
 
+  // Metadata
+  metadata: PDFMetadata | null;
+
+  // TTS State
+  isReading: boolean;
+  speechRate: number;
+  speechVolume: number;
+  
   // Search state
   searchQuery: string;
   searchResults: SearchResult[];
@@ -136,11 +184,41 @@ interface PDFState {
   activeDocumentId: string | null;
   documents: Record<string, DocumentStateSnapshot>;
 
+  // Menu bar state
+  showMenuBar: boolean;
+  
+  // Selection mode state
+  isSelectionMode: boolean;
+  
+  // Page order for drag-and-drop reordering
+  pageOrder: number[]; // Array of page indices in display order
+  
+  // Per-page rotation (in addition to global rotation)
+  pageRotations: Record<number, number>; // originalPageNumber -> rotation (0, 90, 180, 270)
+
+  // Watermark settings
+  watermarkText: string;
+  watermarkColor: string;
+  watermarkOpacity: number;
+  watermarkSize: number;
+
+  setWatermarkText: (text: string) => void;
+  setWatermarkColor: (color: string) => void;
+  setWatermarkOpacity: (opacity: number) => void;
+  setWatermarkSize: (size: number) => void;
+
+  // App Settings
+  enableSplashScreen: boolean;
+  pdfLoadingAnimation: 'spinner' | 'pulse' | 'bar';
+  autoCheckUpdate: boolean;
+
   // Actions
   setCurrentPDF: (file: File | null) => void;
   setPdfUrl: (url: string | null) => void;
   setNumPages: (numPages: number) => void;
   setCurrentPage: (page: number) => void;
+  removePage: (pageIndex: number) => void; // Removes page at specific visual index
+  rotatePage: (pageNumber: number) => void; // Rotates specific original page number
   nextPage: () => void;
   previousPage: () => void;
   goToPage: (page: number) => void;
@@ -159,9 +237,18 @@ interface PDFState {
   toggleOutline: () => void;
   toggleAnnotations: () => void;
   toggleDarkMode: () => void;
+  setThemeMode: (mode: 'light' | 'dark' | 'sepia' | 'auto') => void;
   togglePresentationMode: () => void;
+  
+  // TTS Actions
+  setIsReading: (isReading: boolean) => void;
+  setSpeechRate: (rate: number) => void;
+  setSpeechVolume: (volume: number) => void;
+
   toggleKeyboardShortcuts: () => void;
+  toggleBottomBarMode: () => void;
   setOutline: (outline: PDFOutlineNode[]) => void;
+  setMetadata: (metadata: PDFMetadata | null) => void;
   setSearchQuery: (query: string) => void;
   setSearchResults: (results: SearchResult[]) => void;
   nextSearchResult: () => void;
@@ -182,11 +269,21 @@ interface PDFState {
   addBookmark: (pageNumber: number, title: string) => void;
   removeBookmark: (id: string) => void;
   addRecentFile: (file: RecentFile) => void;
+  removeRecentFile: (url: string) => void;
   clearRecentFiles: () => void;
+  updateRecentFileByPath: (oldPath: string, updates: { name?: string; path?: string | null }) => void;
+  updateRecentFileByUrl: (url: string, updates: { readingProgress?: number; lastOpened?: number }) => void;
   updateReadingProgress: (progress: number) => void;
   resetPDF: () => void;
   openDocumentSession: (id: string) => void;
   closeDocumentSession: (id: string) => void;
+  toggleMenuBar: () => void;
+  toggleSelectionMode: () => void;
+  reorderPages: (newOrder: number[]) => void;
+  initializePageOrder: (numPages: number) => void;
+  toggleSplashScreen: () => void;
+  setPdfLoadingAnimation: (animation: 'spinner' | 'pulse' | 'bar') => void;
+  toggleAutoCheckUpdate: () => void;
 }
 
 const createSnapshotFromState = (state: PDFState): DocumentStateSnapshot => ({
@@ -201,9 +298,15 @@ const createSnapshotFromState = (state: PDFState): DocumentStateSnapshot => ({
   showOutline: state.showOutline,
   showAnnotations: state.showAnnotations,
   isDarkMode: state.isDarkMode,
+  themeMode: state.themeMode,
   isPresentationMode: state.isPresentationMode,
   showKeyboardShortcuts: state.showKeyboardShortcuts,
+  showPageNavigationInBottomBar: state.showPageNavigationInBottomBar,
   outline: state.outline,
+  metadata: state.metadata,
+  isReading: state.isReading,
+  speechRate: state.speechRate,
+  speechVolume: state.speechVolume,
   searchQuery: state.searchQuery,
   searchResults: state.searchResults,
   currentSearchIndex: state.currentSearchIndex,
@@ -214,6 +317,14 @@ const createSnapshotFromState = (state: PDFState): DocumentStateSnapshot => ({
   selectedStrokeWidth: state.selectedStrokeWidth,
   bookmarks: state.bookmarks,
   readingProgress: state.readingProgress,
+  pageOrder: state.pageOrder,
+  pageRotations: state.pageRotations || {}, // Add this
+  pdfUrl: state.pdfUrl,
+  isSelectionMode: state.isSelectionMode,
+  watermarkText: state.watermarkText,
+  watermarkColor: state.watermarkColor,
+  watermarkOpacity: state.watermarkOpacity,
+  watermarkSize: state.watermarkSize,
 });
 
 export const usePDFStore = create<PDFState>()(
@@ -233,9 +344,18 @@ export const usePDFStore = create<PDFState>()(
       showOutline: false,
       showAnnotations: false,
       isDarkMode: false,
+      themeMode: 'auto',
       isPresentationMode: false,
       showKeyboardShortcuts: false,
+      showPageNavigationInBottomBar: true,
+      
+      // TTS Initial State
+      isReading: false,
+      speechRate: 1.0,
+      speechVolume: 1.0,
+
       outline: [],
+      metadata: null,
       searchQuery: '',
       searchResults: [],
       currentSearchIndex: 0,
@@ -253,24 +373,86 @@ export const usePDFStore = create<PDFState>()(
       readingProgress: 0,
       activeDocumentId: null,
       documents: {},
+      showMenuBar: true,
+      isSelectionMode: false,
+      pageOrder: [],
+      pageRotations: {},
+      enableSplashScreen: true,
+      pdfLoadingAnimation: 'spinner',
+      autoCheckUpdate: false,
+      
+      watermarkText: '',
+      watermarkColor: 'rgba(0, 0, 0, 0.1)',
+      watermarkOpacity: 0.2,
+      watermarkSize: 48,
 
       // Actions
       setCurrentPDF: (file) => set({ currentPDF: file }),
 
+      setWatermarkText: (text: string) => set({ watermarkText: text }),
+      setWatermarkColor: (color: string) => set({ watermarkColor: color }),
+      setWatermarkOpacity: (opacity: number) => set({ watermarkOpacity: opacity }),
+      setWatermarkSize: (size: number) => set({ watermarkSize: size }),
+
       setPdfUrl: (url) => set({ pdfUrl: url }),
+
+      toggleSplashScreen: () => set((state) => ({ enableSplashScreen: !state.enableSplashScreen })),
+
+      toggleAutoCheckUpdate: () => set((state) => ({ autoCheckUpdate: !state.autoCheckUpdate })),
+
+      setPdfLoadingAnimation: (animation: 'spinner' | 'pulse' | 'bar') => set({ pdfLoadingAnimation: animation }),
 
       setNumPages: (numPages) => set({ numPages }),
 
       setCurrentPage: (page) => {
-        const { numPages } = get();
-        if (page >= 1 && page <= numPages) {
+        const { pageOrder, numPages } = get();
+        // If pageOrder is used, we check against pageOrder length, otherwise numPages
+        const max = pageOrder.length > 0 ? pageOrder.length : numPages;
+        if (page >= 1 && page <= max) {
           set({ currentPage: page });
         }
       },
 
+      removePage: (visualIndex) => {
+        set((state) => {
+          const newPageOrder = [...(state.pageOrder.length > 0 ? state.pageOrder : Array.from({ length: state.numPages }, (_, i) => i + 1))];
+          if (visualIndex >= 0 && visualIndex < newPageOrder.length) {
+            newPageOrder.splice(visualIndex, 1);
+            
+            // Adjust current page if needed
+            let newCurrentPage = state.currentPage;
+            if (newCurrentPage > newPageOrder.length) {
+              newCurrentPage = Math.max(1, newPageOrder.length);
+            } else if (state.currentPage > visualIndex + 1) {
+               // If we deleted a page before current page, shift current page back
+               newCurrentPage--;
+            } else if (state.currentPage === visualIndex + 1) {
+               // If we deleted current page, stay at same index (which is now next page) or go to last
+               newCurrentPage = Math.min(state.currentPage, newPageOrder.length);
+            }
+
+            return { pageOrder: newPageOrder, currentPage: newCurrentPage };
+          }
+          return state;
+        });
+      },
+
+      rotatePage: (pageNumber) => {
+        set((state) => {
+          const currentRotation = state.pageRotations[pageNumber] || 0;
+          return {
+            pageRotations: {
+              ...state.pageRotations,
+              [pageNumber]: (currentRotation + 90) % 360,
+            },
+          };
+        });
+      },
+
       nextPage: () => {
-        const { currentPage, numPages } = get();
-        if (currentPage < numPages) {
+        const { currentPage, numPages, pageOrder } = get();
+        const max = pageOrder.length > 0 ? pageOrder.length : numPages;
+        if (currentPage < max) {
           set({ currentPage: currentPage + 1 });
         }
       },
@@ -283,8 +465,9 @@ export const usePDFStore = create<PDFState>()(
       },
 
       goToPage: (page) => {
-        const { numPages } = get();
-        if (page >= 1 && page <= numPages) {
+        const { numPages, pageOrder } = get();
+        const max = pageOrder.length > 0 ? pageOrder.length : numPages;
+        if (page >= 1 && page <= max) {
           set({ currentPage: page });
         }
       },
@@ -294,8 +477,9 @@ export const usePDFStore = create<PDFState>()(
       },
 
       lastPage: () => {
-        const { numPages } = get();
-        set({ currentPage: numPages });
+        const { numPages, pageOrder } = get();
+        const max = pageOrder.length > 0 ? pageOrder.length : numPages;
+        set({ currentPage: max });
       },
 
       setZoom: (zoom) => {
@@ -343,31 +527,76 @@ export const usePDFStore = create<PDFState>()(
 
       toggleAnnotations: () => set((state) => ({ showAnnotations: !state.showAnnotations })),
 
-      toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
+      toggleDarkMode: () => set((state) => {
+        const newIsDarkMode = !state.isDarkMode;
+        return { 
+          isDarkMode: newIsDarkMode,
+          themeMode: newIsDarkMode ? 'dark' : 'light' // Manual toggle sets explicit mode
+        };
+      }),
+
+      setThemeMode: (mode) => set((state) => {
+        let newIsDarkMode = state.isDarkMode;
+        
+        if (mode === 'light' || mode === 'sepia') newIsDarkMode = false;
+        if (mode === 'dark') newIsDarkMode = true;
+        
+        return { themeMode: mode, isDarkMode: newIsDarkMode };
+      }),
+
+      setIsReading: (isReading) => set({ isReading }),
+      setSpeechRate: (rate) => set({ speechRate: rate }),
+      setSpeechVolume: (volume) => set({ speechVolume: volume }),
 
       togglePresentationMode: () => set((state) => ({ isPresentationMode: !state.isPresentationMode })),
 
       toggleKeyboardShortcuts: () => set((state) => ({ showKeyboardShortcuts: !state.showKeyboardShortcuts })),
 
+      toggleBottomBarMode: () => set((state) => ({ showPageNavigationInBottomBar: !state.showPageNavigationInBottomBar })),
+
       setOutline: (outline) => set({ outline }),
+
+      setMetadata: (metadata) => set({ metadata }),
 
       setSearchQuery: (query) => set({ searchQuery: query }),
 
       setSearchResults: (results) => set({ searchResults: results, currentSearchIndex: 0 }),
 
       nextSearchResult: () => {
-        const { currentSearchIndex, searchResults } = get();
+        const { currentSearchIndex, searchResults, pageOrder } = get();
         if (searchResults.length > 0) {
           const newIndex = (currentSearchIndex + 1) % searchResults.length;
-          set({ currentSearchIndex: newIndex, currentPage: searchResults[newIndex].pageNumber });
+          const originalPage = searchResults[newIndex].pageNumber;
+          let visualPage = originalPage;
+          
+          // Map original page to visual page if reordered
+          if (pageOrder.length > 0) {
+            const index = pageOrder.indexOf(originalPage);
+            if (index !== -1) {
+              visualPage = index + 1;
+            }
+          }
+          
+          set({ currentSearchIndex: newIndex, currentPage: visualPage });
         }
       },
 
       previousSearchResult: () => {
-        const { currentSearchIndex, searchResults } = get();
+        const { currentSearchIndex, searchResults, pageOrder } = get();
         if (searchResults.length > 0) {
           const newIndex = (currentSearchIndex - 1 + searchResults.length) % searchResults.length;
-          set({ currentSearchIndex: newIndex, currentPage: searchResults[newIndex].pageNumber });
+          const originalPage = searchResults[newIndex].pageNumber;
+          let visualPage = originalPage;
+          
+          // Map original page to visual page if reordered
+          if (pageOrder.length > 0) {
+            const index = pageOrder.indexOf(originalPage);
+            if (index !== -1) {
+              visualPage = index + 1;
+            }
+          }
+          
+          set({ currentSearchIndex: newIndex, currentPage: visualPage });
         }
       },
 
@@ -563,11 +792,33 @@ export const usePDFStore = create<PDFState>()(
       addRecentFile: (file) => {
         const { recentFiles } = get();
         const filtered = recentFiles.filter((f) => f.url !== file.url);
-        const updated = [file, ...filtered].slice(0, 10); // Keep only 10 most recent
+        const updated = [file, ...filtered].slice(0, 100); // Keep only 10 most recent
         set({ recentFiles: updated });
       },
 
+      removeRecentFile: (url) => {
+        set((state) => ({
+          recentFiles: state.recentFiles.filter((f) => f.url !== url),
+        }));
+      },
+
       clearRecentFiles: () => set({ recentFiles: [] }),
+
+      updateRecentFileByPath: (oldPath, updates) => {
+        set((state) => ({
+          recentFiles: state.recentFiles.map((f) =>
+            f.path === oldPath ? { ...f, ...updates } : f
+          ),
+        }));
+      },
+
+      updateRecentFileByUrl: (url, updates) => {
+        set((state) => ({
+          recentFiles: state.recentFiles.map((f) =>
+            f.url === url ? { ...f, ...updates } : f
+          ),
+        }));
+      },
 
       resetPDF: () => set({
         currentPDF: null,
@@ -583,6 +834,7 @@ export const usePDFStore = create<PDFState>()(
         showOutline: false,
         showAnnotations: false,
         outline: [],
+        metadata: null,
         searchQuery: '',
         searchResults: [],
         currentSearchIndex: 0,
@@ -592,6 +844,10 @@ export const usePDFStore = create<PDFState>()(
         readingProgress: 0,
         activeDocumentId: null,
         documents: {},
+        watermarkText: '',
+        watermarkColor: 'rgba(0, 0, 0, 0.1)',
+        watermarkOpacity: 0.2,
+        watermarkSize: 48,
       }),
 
       openDocumentSession: (id) => {
@@ -620,9 +876,15 @@ export const usePDFStore = create<PDFState>()(
               showOutline: state.showOutline,
               showAnnotations: state.showAnnotations,
               isDarkMode: state.isDarkMode,
+              themeMode: state.themeMode,
               isPresentationMode: state.isPresentationMode,
               showKeyboardShortcuts: state.showKeyboardShortcuts,
+              showPageNavigationInBottomBar: true,
               outline: [],
+              metadata: null,
+              isReading: false,
+              speechRate: 1.0,
+              speechVolume: 1.0,
               searchQuery: '',
               searchResults: [],
               currentSearchIndex: 0,
@@ -637,6 +899,8 @@ export const usePDFStore = create<PDFState>()(
               selectedStrokeWidth: state.selectedStrokeWidth,
               bookmarks: [],
               readingProgress: 0,
+              pageOrder: [],
+              pdfUrl: null,
             };
 
           return {
@@ -656,10 +920,16 @@ export const usePDFStore = create<PDFState>()(
             showThumbnails: snapshot.showThumbnails,
             showOutline: snapshot.showOutline,
             showAnnotations: snapshot.showAnnotations,
+            themeMode: snapshot.themeMode,
             isDarkMode: snapshot.isDarkMode,
             isPresentationMode: snapshot.isPresentationMode,
             showKeyboardShortcuts: snapshot.showKeyboardShortcuts,
+            showPageNavigationInBottomBar: snapshot.showPageNavigationInBottomBar,
             outline: snapshot.outline,
+            metadata: snapshot.metadata,
+            isReading: snapshot.isReading,
+            speechRate: snapshot.speechRate,
+            speechVolume: snapshot.speechVolume,
             searchQuery: snapshot.searchQuery,
             searchResults: snapshot.searchResults,
             currentSearchIndex: snapshot.currentSearchIndex,
@@ -670,6 +940,9 @@ export const usePDFStore = create<PDFState>()(
             selectedStrokeWidth: snapshot.selectedStrokeWidth,
             bookmarks: snapshot.bookmarks,
             readingProgress: snapshot.readingProgress,
+            pageOrder: snapshot.pageOrder,
+            pageRotations: snapshot.pageRotations || {},
+            pdfUrl: snapshot.pdfUrl,
           };
         });
       },
@@ -713,11 +986,17 @@ export const usePDFStore = create<PDFState>()(
             isFullscreen: nextSnapshot.isFullscreen,
             showThumbnails: nextSnapshot.showThumbnails,
             showOutline: nextSnapshot.showOutline,
+            themeMode: nextSnapshot.themeMode,
             showAnnotations: nextSnapshot.showAnnotations,
             isDarkMode: nextSnapshot.isDarkMode,
             isPresentationMode: nextSnapshot.isPresentationMode,
             showKeyboardShortcuts: nextSnapshot.showKeyboardShortcuts,
+            showPageNavigationInBottomBar: nextSnapshot.showPageNavigationInBottomBar,
             outline: nextSnapshot.outline,
+            metadata: nextSnapshot.metadata,
+            isReading: nextSnapshot.isReading,
+            speechRate: nextSnapshot.speechRate,
+            speechVolume: nextSnapshot.speechVolume,
             searchQuery: nextSnapshot.searchQuery,
             searchResults: nextSnapshot.searchResults,
             currentSearchIndex: nextSnapshot.currentSearchIndex,
@@ -728,7 +1007,30 @@ export const usePDFStore = create<PDFState>()(
             selectedStrokeWidth: nextSnapshot.selectedStrokeWidth,
             bookmarks: nextSnapshot.bookmarks,
             readingProgress: nextSnapshot.readingProgress,
+            pageOrder: nextSnapshot.pageOrder,
+            pdfUrl: nextSnapshot.pdfUrl,
+            watermarkText: nextSnapshot.watermarkText,
+            watermarkColor: nextSnapshot.watermarkColor,
+            watermarkOpacity: nextSnapshot.watermarkOpacity,
+            watermarkSize: nextSnapshot.watermarkSize,
           };
+        });
+      },
+
+      toggleMenuBar: () => set((state) => ({ showMenuBar: !state.showMenuBar })),
+
+      toggleSelectionMode: () => set((state) => ({ isSelectionMode: !state.isSelectionMode })),
+
+      reorderPages: (newOrder) => set({ pageOrder: newOrder }),
+
+      initializePageOrder: (numPages) => {
+        set((state) => {
+          // Only initialize if pageOrder is empty or doesn't match the number of pages
+          if (state.pageOrder.length === 0 || state.pageOrder.length !== numPages) {
+            const order = Array.from({ length: numPages }, (_, i) => i + 1);
+            return { pageOrder: order };
+          }
+          return state;
         });
       },
     }),
@@ -737,6 +1039,7 @@ export const usePDFStore = create<PDFState>()(
       partialize: (state) => ({
         recentFiles: state.recentFiles,
         isDarkMode: state.isDarkMode,
+        themeMode: state.themeMode,
         documents: state.documents,
         activeDocumentId: state.activeDocumentId,
         // User preferences
@@ -747,11 +1050,14 @@ export const usePDFStore = create<PDFState>()(
         showOutline: state.showOutline,
         showAnnotations: state.showAnnotations,
         isPresentationMode: state.isPresentationMode,
+        showPageNavigationInBottomBar: state.showPageNavigationInBottomBar,
         caseSensitiveSearch: state.caseSensitiveSearch,
         selectedAnnotationColor: state.selectedAnnotationColor,
         selectedStrokeWidth: state.selectedStrokeWidth,
+        enableSplashScreen: state.enableSplashScreen,
+        pdfLoadingAnimation: state.pdfLoadingAnimation,
+        pageRotations: state.pageRotations,
       }),
     }
-  )
+  ) as StateCreator<PDFState, [], []>
 );
-
