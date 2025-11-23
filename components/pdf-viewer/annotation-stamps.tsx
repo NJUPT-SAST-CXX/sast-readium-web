@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { CheckCircle, XCircle, Lock, FileText, Badge, Eye } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { CheckCircle, XCircle, Lock, FileText, Badge, Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { AnnotationStamp } from '@/lib/pdf-store';
+} from "@/components/ui/tooltip";
+import { AnnotationStamp } from "@/lib/pdf-store";
 
 interface AnnotationStampsProps {
   onStampSelect: (stamp: AnnotationStamp) => void;
@@ -22,44 +22,47 @@ const STAMPS: Array<{
   color: string;
 }> = [
   {
-    type: 'approved',
+    type: "approved",
     icon: <CheckCircle className="h-4 w-4" />,
-    label: 'Approved',
-    color: '#22c55e',
+    label: "Approved",
+    color: "#22c55e",
   },
   {
-    type: 'rejected',
+    type: "rejected",
     icon: <XCircle className="h-4 w-4" />,
-    label: 'Rejected',
-    color: '#ef4444',
+    label: "Rejected",
+    color: "#ef4444",
   },
   {
-    type: 'confidential',
+    type: "confidential",
     icon: <Lock className="h-4 w-4" />,
-    label: 'Confidential',
-    color: '#f59e0b',
+    label: "Confidential",
+    color: "#f59e0b",
   },
   {
-    type: 'draft',
+    type: "draft",
     icon: <FileText className="h-4 w-4" />,
-    label: 'Draft',
-    color: '#6366f1',
+    label: "Draft",
+    color: "#6366f1",
   },
   {
-    type: 'final',
+    type: "final",
     icon: <Badge className="h-4 w-4" />,
-    label: 'Final',
-    color: '#10b981',
+    label: "Final",
+    color: "#10b981",
   },
   {
-    type: 'reviewed',
+    type: "reviewed",
     icon: <Eye className="h-4 w-4" />,
-    label: 'Reviewed',
-    color: '#3b82f6',
+    label: "Reviewed",
+    color: "#3b82f6",
   },
 ];
 
-export function AnnotationStamps({ onStampSelect, className }: AnnotationStampsProps) {
+export function AnnotationStamps({
+  onStampSelect,
+  className,
+}: AnnotationStampsProps) {
   return (
     <TooltipProvider>
       <div className={className}>

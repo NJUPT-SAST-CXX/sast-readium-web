@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
-import { usePDFStore } from '@/lib/pdf-store';
-import { useTTS } from '@/hooks/use-tts';
-import { PDFPageProxy } from '@/lib/pdf-utils';
+import { useEffect, useRef } from "react";
+import { usePDFStore } from "@/lib/pdf-store";
+import { useTTS } from "@/hooks/use-tts";
+import { PDFPageProxy } from "@/lib/pdf-utils";
 
 interface PDFTTSReaderProps {
   currentPageObj: PDFPageProxy | null;
@@ -38,15 +38,15 @@ export function PDFTTSReader({ currentPageObj }: PDFTTSReaderProps) {
       try {
         const textContent = await currentPageObj.getTextContent();
         const text = textContent.items
-          .map((item) => (item as { str?: string }).str || '')
-          .join(' ');
+          .map((item) => (item as { str?: string }).str || "")
+          .join(" ");
 
         if (text.trim().length === 0) {
           // Skip empty pages or just wait a bit then next
           if (currentPage < numPages) {
-             nextPage();
+            nextPage();
           } else {
-             setIsReading(false);
+            setIsReading(false);
           }
           return;
         }
@@ -63,19 +63,29 @@ export function PDFTTSReader({ currentPageObj }: PDFTTSReaderProps) {
           },
           onError: () => {
             setIsReading(false);
-          }
+          },
         });
-        
+
         lastReadPageRef.current = currentPage;
       } catch (err) {
-        console.error('TTS Error extracting text:', err);
+        console.error("TTS Error extracting text:", err);
         setIsReading(false);
       }
     };
 
     readCurrentPage();
-
-  }, [isReading, currentPage, currentPageObj, speak, cancel, nextPage, numPages, setIsReading, speechRate, speechVolume]);
+  }, [
+    isReading,
+    currentPage,
+    currentPageObj,
+    speak,
+    cancel,
+    nextPage,
+    numPages,
+    setIsReading,
+    speechRate,
+    speechVolume,
+  ]);
 
   // Cleanup on unmount
   useEffect(() => {

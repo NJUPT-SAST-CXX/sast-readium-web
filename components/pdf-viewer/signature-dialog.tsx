@@ -1,15 +1,20 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Pen, Image as ImageIcon, Trash2, Plus, Eraser } from 'lucide-react';
-import { usePDFStore } from '@/lib/pdf-store';
-import { cn } from '@/lib/utils';
-import { useTranslation } from 'react-i18next';
+import { useState, useRef, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Pen, Image as ImageIcon, Trash2, Plus, Eraser } from "lucide-react";
+import { usePDFStore } from "@/lib/pdf-store";
+import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface SignatureDialogProps {
   open: boolean;
@@ -17,40 +22,46 @@ interface SignatureDialogProps {
   onSelect: (signature: string) => void;
 }
 
-export function SignatureDialog({ open, onOpenChange, onSelect }: SignatureDialogProps) {
+export function SignatureDialog({
+  open,
+  onOpenChange,
+  onSelect,
+}: SignatureDialogProps) {
   const { t } = useTranslation();
   const { signatures, addSignature, removeSignature } = usePDFStore();
-  const [activeTab, setActiveTab] = useState('draw');
+  const [activeTab, setActiveTab] = useState("draw");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  
+
   // Drawing state
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
 
   // Initialize canvas
   useEffect(() => {
-    if (open && activeTab === 'draw' && canvasRef.current) {
+    if (open && activeTab === "draw" && canvasRef.current) {
       const canvas = canvasRef.current;
       canvas.width = canvas.offsetWidth * 2; // Retina support
       canvas.height = canvas.offsetHeight * 2;
       canvas.style.width = `${canvas.offsetWidth}px`;
       canvas.style.height = `${canvas.offsetHeight}px`;
 
-      const context = canvas.getContext('2d');
+      const context = canvas.getContext("2d");
       if (context) {
         context.scale(2, 2);
-        context.lineCap = 'round';
-        context.strokeStyle = 'black';
+        context.lineCap = "round";
+        context.strokeStyle = "black";
         context.lineWidth = 2;
         contextRef.current = context;
       }
     }
   }, [open, activeTab]);
 
-  const startDrawing = ({ nativeEvent }: React.MouseEvent | React.TouchEvent) => {
+  const startDrawing = ({
+    nativeEvent,
+  }: React.MouseEvent | React.TouchEvent) => {
     if (!contextRef.current) return;
-    
+
     const { offsetX, offsetY } = getCoordinates(nativeEvent);
     contextRef.current.beginPath();
     contextRef.current.moveTo(offsetX, offsetY);
@@ -59,7 +70,7 @@ export function SignatureDialog({ open, onOpenChange, onSelect }: SignatureDialo
 
   const draw = ({ nativeEvent }: React.MouseEvent | React.TouchEvent) => {
     if (!isDrawing || !contextRef.current) return;
-    
+
     const { offsetX, offsetY } = getCoordinates(nativeEvent);
     contextRef.current.lineTo(offsetX, offsetY);
     contextRef.current.stroke();
@@ -73,22 +84,27 @@ export function SignatureDialog({ open, onOpenChange, onSelect }: SignatureDialo
 
   const getCoordinates = (event: MouseEvent | TouchEvent) => {
     if (!canvasRef.current) return { offsetX: 0, offsetY: 0 };
-    
+
     if (event instanceof MouseEvent) {
       return { offsetX: event.offsetX, offsetY: event.offsetY };
     }
-    
+
     const rect = canvasRef.current.getBoundingClientRect();
     const touch = event.touches[0];
     return {
       offsetX: touch.clientX - rect.left,
-      offsetY: touch.clientY - rect.top
+      offsetY: touch.clientY - rect.top,
     };
   };
 
   const clearCanvas = () => {
     if (canvasRef.current && contextRef.current) {
-      contextRef.current.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      contextRef.current.clearRect(
+        0,
+        0,
+        canvasRef.current.width,
+        canvasRef.current.height
+      );
     }
   };
 
@@ -104,12 +120,12 @@ export function SignatureDialog({ open, onOpenChange, onSelect }: SignatureDialo
   };
 
   const saveSignature = () => {
-    let signatureData = '';
-    
-    if (activeTab === 'draw' && canvasRef.current) {
+    let signatureData = "";
+
+    if (activeTab === "draw" && canvasRef.current) {
       // Trim the canvas (optional optimization, skip for now)
-      signatureData = canvasRef.current.toDataURL('image/png');
-    } else if (activeTab === 'image' && uploadedImage) {
+      signatureData = canvasRef.current.toDataURL("image/png");
+    } else if (activeTab === "image" && uploadedImage) {
       signatureData = uploadedImage;
     }
 
@@ -129,7 +145,7 @@ export function SignatureDialog({ open, onOpenChange, onSelect }: SignatureDialo
         <DialogHeader>
           <DialogTitle>Manage Signatures</DialogTitle>
         </DialogHeader>
-        
+
         <div className="grid grid-cols-[200px_1fr] gap-6 h-[400px]">
           {/* Sidebar - Saved Signatures */}
           <div className="border-r pr-4 flex flex-col gap-2 overflow-hidden">
@@ -141,11 +157,19 @@ export function SignatureDialog({ open, onOpenChange, onSelect }: SignatureDialo
                 </div>
               )}
               {signatures.map((sig, index) => (
-                <div key={index} className="group relative border rounded-md p-2 hover:bg-accent cursor-pointer" onClick={() => {
-                  onSelect(sig);
-                  onOpenChange(false);
-                }}>
-                  <img src={sig} alt={`Signature ${index + 1}`} className="w-full h-auto max-h-[60px] object-contain" />
+                <div
+                  key={index}
+                  className="group relative border rounded-md p-2 hover:bg-accent cursor-pointer"
+                  onClick={() => {
+                    onSelect(sig);
+                    onOpenChange(false);
+                  }}
+                >
+                  <img
+                    src={sig}
+                    alt={`Signature ${index + 1}`}
+                    className="w-full h-auto max-h-[60px] object-contain"
+                  />
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -162,7 +186,11 @@ export function SignatureDialog({ open, onOpenChange, onSelect }: SignatureDialo
 
           {/* Main Content - Create New */}
           <div className="flex flex-col overflow-hidden">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="flex-1 flex flex-col"
+            >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="draw">
                   <Pen className="w-4 h-4 mr-2" />
@@ -173,8 +201,11 @@ export function SignatureDialog({ open, onOpenChange, onSelect }: SignatureDialo
                   Image
                 </TabsTrigger>
               </TabsList>
-              
-              <TabsContent value="draw" className="flex-1 flex flex-col gap-4 mt-4">
+
+              <TabsContent
+                value="draw"
+                className="flex-1 flex flex-col gap-4 mt-4"
+              >
                 <div className="flex-1 border rounded-md bg-white relative overflow-hidden touch-none">
                   <canvas
                     ref={canvasRef}
@@ -199,11 +230,18 @@ export function SignatureDialog({ open, onOpenChange, onSelect }: SignatureDialo
                   </Button>
                 </div>
               </TabsContent>
-              
-              <TabsContent value="image" className="flex-1 flex flex-col gap-4 mt-4">
+
+              <TabsContent
+                value="image"
+                className="flex-1 flex flex-col gap-4 mt-4"
+              >
                 <div className="flex-1 border rounded-md bg-muted/20 flex items-center justify-center relative overflow-hidden">
                   {uploadedImage ? (
-                    <img src={uploadedImage} alt="Uploaded" className="max-w-full max-h-full object-contain" />
+                    <img
+                      src={uploadedImage}
+                      alt="Uploaded"
+                      className="max-w-full max-h-full object-contain"
+                    />
                   ) : (
                     <div className="text-center text-muted-foreground">
                       <ImageIcon className="w-12 h-12 mx-auto mb-2 opacity-20" />
@@ -218,10 +256,19 @@ export function SignatureDialog({ open, onOpenChange, onSelect }: SignatureDialo
                   />
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setUploadedImage(null)} disabled={!uploadedImage}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setUploadedImage(null)}
+                    disabled={!uploadedImage}
+                  >
                     Clear
                   </Button>
-                  <Button size="sm" onClick={saveSignature} disabled={!uploadedImage}>
+                  <Button
+                    size="sm"
+                    onClick={saveSignature}
+                    disabled={!uploadedImage}
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     Save Signature
                   </Button>

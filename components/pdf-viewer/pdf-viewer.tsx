@@ -1,27 +1,47 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useRef, useCallback, type ReactNode } from 'react';
-import { usePDFStore } from '@/lib/pdf-store';
-import { loadPDFDocument, searchInPDF, downloadPDF, printPDF, savePDF, PDFDocumentProxy, PDFPageProxy } from '@/lib/pdf-utils';
-import { PDFToolbar } from './pdf-toolbar';
-import { PDFMobileToolbar } from './pdf-mobile-toolbar';
-import { PDFTTSReader } from './pdf-tts-reader';
-import { PDFPage } from './pdf-page';
-import { PasswordDialog } from './password-dialog';
-import { PDFDraggableThumbnail } from './pdf-draggable-thumbnail';
-import { PDFOutline } from './pdf-outline';
-import { PDFBookmarks } from './pdf-bookmarks';
-import { PDFAnnotationsList } from './pdf-annotations-list';
-import { PDFProgressBar } from './pdf-progress-bar';
-import { PDFTextLayer } from './pdf-text-layer';
-import { PDFAnnotationLayer } from './pdf-annotation-layer';
-import { PDFDrawingLayer } from './pdf-drawing-layer';
-import { PDFSelectionLayer } from './pdf-selection-layer';
-import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
-import { useTouchGestures } from '@/hooks/use-touch-gestures';
+import {
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  type ReactNode,
+} from "react";
+import { usePDFStore } from "@/lib/pdf-store";
+import {
+  loadPDFDocument,
+  searchInPDF,
+  downloadPDF,
+  printPDF,
+  savePDF,
+  PDFDocumentProxy,
+  PDFPageProxy,
+} from "@/lib/pdf-utils";
+import { PDFToolbar } from "./pdf-toolbar";
+import { PDFMobileToolbar } from "./pdf-mobile-toolbar";
+import { PDFTTSReader } from "./pdf-tts-reader";
+import { PDFPage } from "./pdf-page";
+import { PasswordDialog } from "./password-dialog";
+import { PDFDraggableThumbnail } from "./pdf-draggable-thumbnail";
+import { PDFOutline } from "./pdf-outline";
+import { PDFBookmarks } from "./pdf-bookmarks";
+import { PDFAnnotationsList } from "./pdf-annotations-list";
+import { PDFProgressBar } from "./pdf-progress-bar";
+import { PDFTextLayer } from "./pdf-text-layer";
+import { PDFAnnotationLayer } from "./pdf-annotation-layer";
+import { PDFDrawingLayer } from "./pdf-drawing-layer";
+import { PDFSelectionLayer } from "./pdf-selection-layer";
+import { KeyboardShortcutsDialog } from "./keyboard-shortcuts-dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import { useTouchGestures } from "@/hooks/use-touch-gestures";
 import {
   DndContext,
   closestCenter,
@@ -30,19 +50,19 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { AnnotationStamp } from '@/lib/pdf-store';
-import { Button } from '@/components/ui/button';
-import { PDFLoadingAnimation } from './loading-animations';
-import { useTranslation } from 'react-i18next';
-import { revealInFileManager } from '@/lib/tauri-bridge';
-import { SignatureDialog } from './signature-dialog';
+} from "@dnd-kit/sortable";
+import { AnnotationStamp } from "@/lib/pdf-store";
+import { Button } from "@/components/ui/button";
+import { PDFLoadingAnimation } from "./loading-animations";
+import { useTranslation } from "react-i18next";
+import { revealInFileManager } from "@/lib/tauri-bridge";
+import { SignatureDialog } from "./signature-dialog";
 
 interface PDFViewerProps {
   file: File;
@@ -52,7 +72,13 @@ interface PDFViewerProps {
   onFileUpdate?: (newFile: File) => void;
 }
 
-export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpdate }: PDFViewerProps) {
+export function PDFViewer({
+  file,
+  onClose,
+  header,
+  onOpenFileFromMenu,
+  onFileUpdate,
+}: PDFViewerProps) {
   const { t } = useTranslation();
   const {
     currentPage,
@@ -100,9 +126,13 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
   } = usePDFStore();
 
   const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null);
-  const [currentPageObj, setCurrentPageObj] = useState<PDFPageProxy | null>(null);
+  const [currentPageObj, setCurrentPageObj] = useState<PDFPageProxy | null>(
+    null
+  );
   const [allPages, setAllPages] = useState<(PDFPageProxy | null)[]>([]);
-  const [thumbnailPages, setThumbnailPages] = useState<(PDFPageProxy | null)[]>([]);
+  const [thumbnailPages, setThumbnailPages] = useState<(PDFPageProxy | null)[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -117,12 +147,14 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
   const lastThrottleTimeRef = useRef<number>(0);
   const shouldScrollToBottomRef = useRef(false);
   const pageRefsMap = useRef<Map<number, HTMLDivElement>>(new Map());
-  const pageDimensionsRef = useRef<Map<number, { width: number; height: number }>>(new Map());
+  const pageDimensionsRef = useRef<
+    Map<number, { width: number; height: number }>
+  >(new Map());
   const recentFileUrlRef = useRef<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
     // Load saved width from localStorage or use default
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('pdf-sidebar-width');
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("pdf-sidebar-width");
       if (saved) return parseInt(saved, 10);
       // Responsive default: smaller on mobile
       return window.innerWidth < 640 ? 200 : 240;
@@ -131,15 +163,21 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
   });
   const [isResizing, setIsResizing] = useState(false);
   const [showBookmarksPanel, setShowBookmarksPanel] = useState(false);
-  const [selectedAnnotationType, setSelectedAnnotationType] = useState<'highlight' | 'comment' | 'shape' | 'text' | 'drawing' | null>(null);
-  const [pendingStamp, setPendingStamp] = useState<AnnotationStamp | null>(null);
+  const [selectedAnnotationType, setSelectedAnnotationType] = useState<
+    "highlight" | "comment" | "shape" | "text" | "drawing" | null
+  >(null);
+  const [pendingStamp, setPendingStamp] = useState<AnnotationStamp | null>(
+    null
+  );
   const [pendingImage, setPendingImage] = useState<string | null>(null);
   const touchContainerRef = useRef<HTMLDivElement>(null);
   const previousPageRef = useRef<number>(currentPage);
-  const [pageDirection, setPageDirection] = useState<'forward' | 'backward' | 'none'>('none');
+  const [pageDirection, setPageDirection] = useState<
+    "forward" | "backward" | "none"
+  >("none");
   const [isExtractingText, setIsExtractingText] = useState(false);
-  const [extractedText, setExtractedText] = useState('');
-  const [extractedTextTitle, setExtractedTextTitle] = useState('');
+  const [extractedText, setExtractedText] = useState("");
+  const [extractedTextTitle, setExtractedTextTitle] = useState("");
   const [showExtractDialog, setShowExtractDialog] = useState(false);
   const [password, setPassword] = useState<string | undefined>(undefined);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -147,10 +185,11 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
   const [showSearch, setShowSearch] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
-  
+
   const handleRenderSuccess = useCallback(() => {
     if (shouldScrollToBottomRef.current && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      scrollContainerRef.current.scrollTop =
+        scrollContainerRef.current.scrollHeight;
       shouldScrollToBottomRef.current = false;
     }
   }, []);
@@ -162,22 +201,23 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-  
+
   // Handle drag end for page reordering
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    
+
     if (over && active.id !== over.id) {
       const oldIndex = pageOrder.indexOf(Number(active.id));
       const newIndex = pageOrder.indexOf(Number(over.id));
-      
+
       const newOrder = arrayMove(pageOrder, oldIndex, newIndex);
       reorderPages(newOrder);
     }
   };
 
   const handleRevealInFileManager = () => {
-    const nativePath = (file as File & { __nativePath?: string | null }).__nativePath ?? null;
+    const nativePath =
+      (file as File & { __nativePath?: string | null }).__nativePath ?? null;
     if (!nativePath) return;
     void revealInFileManager(nativePath);
   };
@@ -196,19 +236,25 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
         setIsLoading(true);
         setError(null);
         setLoadingProgress(0);
-        
-        const pdf = await loadPDFDocument(file, (progress) => {
-          if (mounted) {
-            setLoadingProgress(Math.round((progress.loaded / progress.total) * 100));
-          }
-        }, password);
-        
+
+        const pdf = await loadPDFDocument(
+          file,
+          (progress) => {
+            if (mounted) {
+              setLoadingProgress(
+                Math.round((progress.loaded / progress.total) * 100)
+              );
+            }
+          },
+          password
+        );
+
         if (!mounted) return;
 
         setPdfDocument(pdf);
         setNumPages(pdf.numPages);
         setCurrentPDF(file);
-        
+
         // Load metadata
         try {
           const metadata = await pdf.getMetadata();
@@ -220,22 +266,25 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
             });
           }
         } catch (err) {
-          console.error('Error loading metadata:', err);
+          console.error("Error loading metadata:", err);
         }
-        
+
         // Close password dialog if it was open
         setShowPasswordDialog(false);
         setPasswordError(false);
-        
+
         // Initialize page order for drag-and-drop
         const { initializePageOrder: initOrder } = usePDFStore.getState();
         initOrder(pdf.numPages);
-        
+
         // Add to recent files
         const url = URL.createObjectURL(file);
         recentFileUrlRef.current = url;
-        const relPath = (file as File & { webkitRelativePath?: string }).webkitRelativePath;
-        const nativePath = (file as File & { __nativePath?: string | null }).__nativePath ?? null;
+        const relPath = (file as File & { webkitRelativePath?: string })
+          .webkitRelativePath;
+        const nativePath =
+          (file as File & { __nativePath?: string | null }).__nativePath ??
+          null;
         const displayName = relPath && relPath.length > 0 ? relPath : file.name;
         addRecentFile({
           name: displayName,
@@ -260,62 +309,75 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
               pageNumber?: number;
             };
 
-            const processOutline = async (items: OutlineItem[]): Promise<OutlineItem[]> => {
-              return Promise.all(items.map(async (item) => {
-                const processed: OutlineItem = {
-                  title: item.title,
-                  bold: item.bold,
-                  italic: item.italic,
-                  color: item.color,
-                };
+            const processOutline = async (
+              items: OutlineItem[]
+            ): Promise<OutlineItem[]> => {
+              return Promise.all(
+                items.map(async (item) => {
+                  const processed: OutlineItem = {
+                    title: item.title,
+                    bold: item.bold,
+                    italic: item.italic,
+                    color: item.color,
+                  };
 
-                // Try to get page number from destination
-                if (item.dest) {
-                  try {
-                    const dest = typeof item.dest === 'string'
-                      ? await pdf.getDestination(item.dest)
-                      : item.dest as unknown[];
-                    
-                    if (dest && Array.isArray(dest) && dest[0]) {
-                      const pageRef = dest[0];
-                      const pageIndex = await pdf.getPageIndex(pageRef);
-                      processed.pageNumber = pageIndex + 1;
+                  // Try to get page number from destination
+                  if (item.dest) {
+                    try {
+                      const dest =
+                        typeof item.dest === "string"
+                          ? await pdf.getDestination(item.dest)
+                          : (item.dest as unknown[]);
+
+                      if (dest && Array.isArray(dest) && dest[0]) {
+                        const pageRef = dest[0];
+                        const pageIndex = await pdf.getPageIndex(pageRef);
+                        processed.pageNumber = pageIndex + 1;
+                      }
+                    } catch (err) {
+                      console.error(
+                        "Error getting page number for outline item:",
+                        err
+                      );
                     }
-                  } catch (err) {
-                    console.error('Error getting page number for outline item:', err);
                   }
-                }
 
-                // Process children recursively
-                if (item.items && item.items.length > 0) {
-                  processed.items = await processOutline(item.items);
-                }
+                  // Process children recursively
+                  if (item.items && item.items.length > 0) {
+                    processed.items = await processOutline(item.items);
+                  }
 
-                return processed;
-              }));
+                  return processed;
+                })
+              );
             };
 
-            const processedOutline = await processOutline(pdfOutline as OutlineItem[]);
+            const processedOutline = await processOutline(
+              pdfOutline as OutlineItem[]
+            );
             setOutline(processedOutline);
           } else {
             setOutline([]);
           }
         } catch (err) {
-          console.error('Error loading outline:', err);
+          console.error("Error loading outline:", err);
           setOutline([]);
         }
 
         setIsLoading(false);
       } catch (err) {
-        console.error('Error loading PDF:', err);
+        console.error("Error loading PDF:", err);
         if (mounted) {
           const errorName = (err as { name?: string }).name;
-          if (errorName === 'PasswordException') {
+          if (errorName === "PasswordException") {
             setShowPasswordDialog(true);
             setPasswordError(!!password); // Set error if we already tried a password
             setIsLoading(false);
           } else {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to load PDF. The file may be corrupted or invalid.';
+            const errorMessage =
+              err instanceof Error
+                ? err.message
+                : "Failed to load PDF. The file may be corrupted or invalid.";
             setError(errorMessage);
             setIsLoading(false);
           }
@@ -333,7 +395,15 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
         recentFileUrlRef.current = null;
       }
     };
-  }, [file, setNumPages, addRecentFile, setOutline, setMetadata, password, setCurrentPDF]);
+  }, [
+    file,
+    setNumPages,
+    addRecentFile,
+    setOutline,
+    setMetadata,
+    password,
+    setCurrentPDF,
+  ]);
 
   // Reset password state when file changes
   useEffect(() => {
@@ -350,13 +420,14 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
 
     const loadPage = async () => {
       try {
-        const originalPageNum = pageOrder.length > 0 ? pageOrder[currentPage - 1] : currentPage;
+        const originalPageNum =
+          pageOrder.length > 0 ? pageOrder[currentPage - 1] : currentPage;
         const page = await pdfDocument.getPage(originalPageNum);
         if (mounted) {
           setCurrentPageObj(page);
         }
       } catch (err) {
-        console.error('Error loading page:', err);
+        console.error("Error loading page:", err);
       }
     };
 
@@ -369,14 +440,14 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
 
   // Load visible pages for continuous and two-page views (Lazy Loading)
   useEffect(() => {
-    if (!pdfDocument || viewMode === 'single') {
+    if (!pdfDocument || viewMode === "single") {
       setAllPages([]);
       loadedPagesRef.current.clear();
       return;
     }
 
     // Initialize array if needed
-    setAllPages(prev => {
+    setAllPages((prev) => {
       if (prev.length !== pdfDocument.numPages) {
         return new Array(pdfDocument.numPages).fill(null);
       }
@@ -384,10 +455,11 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
     });
 
     // Determine range to load based on current page and view mode
-    const buffer = viewMode === 'continuous' ? 4 : viewMode === 'twoPage' ? 3 : 0;
+    const buffer =
+      viewMode === "continuous" ? 4 : viewMode === "twoPage" ? 3 : 0;
     const start = Math.max(1, currentPage - buffer);
     const end = Math.min(pdfDocument.numPages, currentPage + buffer);
-    
+
     const pagesToLoad: number[] = [];
     for (let i = start; i <= end; i++) {
       if (!loadedPagesRef.current.has(i)) {
@@ -399,18 +471,24 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
     if (pagesToLoad.length === 0) return;
 
     let mounted = true;
-    
+
     const loadPages = async () => {
       const results = await Promise.all(
         pagesToLoad.map(async (visualPageNum) => {
           try {
-            const originalPageNum = pageOrder.length > 0 ? pageOrder[visualPageNum - 1] : visualPageNum;
+            const originalPageNum =
+              pageOrder.length > 0
+                ? pageOrder[visualPageNum - 1]
+                : visualPageNum;
             const page = await pdfDocument.getPage(originalPageNum);
-            
+
             // Store page dimensions
             const viewport = page.getViewport({ scale: 1 });
-            pageDimensionsRef.current.set(visualPageNum, { width: viewport.width, height: viewport.height });
-            
+            pageDimensionsRef.current.set(visualPageNum, {
+              width: viewport.width,
+              height: viewport.height,
+            });
+
             return { index: visualPageNum - 1, page };
           } catch (err) {
             console.error(`Error loading page ${visualPageNum}:`, err);
@@ -460,10 +538,10 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
     };
 
     updateContainerWidth();
-    window.addEventListener('resize', throttledResize);
+    window.addEventListener("resize", throttledResize);
 
     return () => {
-      window.removeEventListener('resize', throttledResize);
+      window.removeEventListener("resize", throttledResize);
       if (resizeTimeout) {
         clearTimeout(resizeTimeout);
       }
@@ -472,7 +550,7 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
 
   // Apply fit mode zoom with debouncing to prevent performance issues
   useEffect(() => {
-    if (!currentPageObj || !containerWidth || fitMode === 'custom') return;
+    if (!currentPageObj || !containerWidth || fitMode === "custom") return;
 
     // Debounce the zoom calculation to prevent excessive re-renders
     const timeoutId = setTimeout(() => {
@@ -481,10 +559,10 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
       const availableWidth = containerWidth - padding;
       const availableHeight = window.innerHeight - 150; // Account for toolbar
 
-      if (fitMode === 'fitWidth') {
+      if (fitMode === "fitWidth") {
         const newZoom = availableWidth / viewport.width;
         setZoom(newZoom);
-      } else if (fitMode === 'fitPage') {
+      } else if (fitMode === "fitPage") {
         const zoomWidth = availableWidth / viewport.width;
         const zoomHeight = availableHeight / viewport.height;
         const newZoom = Math.min(zoomWidth, zoomHeight);
@@ -508,7 +586,9 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
 
     const loadThumbnailsInChunks = async () => {
       // Initialize with null placeholders
-      const pages: (PDFPageProxy | null)[] = new Array(pdfDocument.numPages).fill(null);
+      const pages: (PDFPageProxy | null)[] = new Array(
+        pdfDocument.numPages
+      ).fill(null);
       setThumbnailPages(pages);
 
       // Load thumbnails in chunks
@@ -520,7 +600,8 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
 
         for (let i = start; i <= end; i++) {
           chunkPromises.push(
-            pdfDocument.getPage(i)
+            pdfDocument
+              .getPage(i)
               .then((page) => ({ index: i - 1, page }))
               .catch((err) => {
                 console.error(`Error loading thumbnail for page ${i}:`, err);
@@ -531,7 +612,7 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
 
         // Load chunk in parallel
         const results = await Promise.all(chunkPromises);
-        
+
         if (!mounted) break;
 
         // Update state with loaded pages
@@ -545,7 +626,9 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
 
         // Small delay to prevent UI freeze
         if (end < pdfDocument.numPages) {
-          await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_CHUNKS));
+          await new Promise((resolve) =>
+            setTimeout(resolve, DELAY_BETWEEN_CHUNKS)
+          );
         }
       }
     };
@@ -561,7 +644,12 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Prevent default for our shortcuts
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Home' || e.key === 'End') {
+      if (
+        e.key === "ArrowLeft" ||
+        e.key === "ArrowRight" ||
+        e.key === "Home" ||
+        e.key === "End"
+      ) {
         e.preventDefault();
       }
 
@@ -582,12 +670,12 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
 
       // Undo/Redo shortcuts
       if (e.ctrlKey || e.metaKey) {
-        if (e.key === 'z' && !e.shiftKey) {
+        if (e.key === "z" && !e.shiftKey) {
           e.preventDefault();
           undoAnnotation();
           return;
         }
-        if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
+        if (e.key === "y" || (e.key === "z" && e.shiftKey)) {
           e.preventDefault();
           redoAnnotation();
           return;
@@ -595,50 +683,50 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
       }
 
       // Help dialog shortcuts
-      if (e.key === '?' || e.key.toLowerCase() === 'h') {
+      if (e.key === "?" || e.key.toLowerCase() === "h") {
         e.preventDefault();
         toggleKeyboardShortcuts();
         return;
       }
 
       switch (e.key) {
-        case 'ArrowLeft':
+        case "ArrowLeft":
           previousPage();
           break;
-        case 'ArrowRight':
+        case "ArrowRight":
           nextPage();
           break;
-        case 'Home':
+        case "Home":
           firstPage();
           break;
-        case 'End':
+        case "End":
           lastPage();
           break;
-        case '+':
-        case '=':
+        case "+":
+        case "=":
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
             zoomIn();
           }
           break;
-        case '-':
+        case "-":
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
             zoomOut();
           }
           break;
-        case 'r':
+        case "r":
           if (e.shiftKey) {
             rotateCounterClockwise();
           } else {
             rotateClockwise();
           }
           break;
-        case 'F11':
+        case "F11":
           e.preventDefault();
           toggleFullscreen();
           break;
-        case 'Escape':
+        case "Escape":
           // Cancel any pending stamp or annotation
           if (pendingStamp) {
             setPendingStamp(null);
@@ -650,8 +738,8 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [pendingStamp, selectedAnnotationType]);
 
   // Handle fullscreen
@@ -699,12 +787,13 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
 
         // Apply the new zoom
         setZoom(newZoom);
-      } 
+      }
       // In single page mode, use wheel for direct page turning
-      else if (viewMode === 'single') {
+      else if (viewMode === "single") {
         const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
         const isAtTop = scrollTop <= 0;
-        const isAtBottom = Math.abs(scrollHeight - clientHeight - scrollTop) < 2;
+        const isAtBottom =
+          Math.abs(scrollHeight - clientHeight - scrollTop) < 2;
         const contentOverflows = scrollHeight > clientHeight;
 
         // If content overflows and we're not at the edges, let native scroll happen
@@ -723,15 +812,15 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
         }
 
         e.preventDefault();
-        
+
         // Accumulate wheel delta to handle trackpad/smooth scrolling
         accumulatedDelta += e.deltaY;
-        
+
         // Clear existing timeout
         if (wheelTimeout) {
           clearTimeout(wheelTimeout);
         }
-        
+
         // Debounce the page change
         wheelTimeout = setTimeout(() => {
           if (isScrollingProgrammatically.current) return;
@@ -743,7 +832,7 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
               nextPage();
               // Reset scroll to top
               if (scrollContainer) scrollContainer.scrollTop = 0;
-              
+
               // Reset flag after delay
               setTimeout(() => {
                 isScrollingProgrammatically.current = false;
@@ -753,7 +842,7 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
               isScrollingProgrammatically.current = true;
               shouldScrollToBottomRef.current = true;
               previousPage();
-              
+
               // Reset flag after delay
               setTimeout(() => {
                 isScrollingProgrammatically.current = false;
@@ -766,10 +855,10 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
     };
 
     // Add event listener with passive: false to allow preventDefault
-    scrollContainer.addEventListener('wheel', handleWheel, { passive: false });
+    scrollContainer.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
-      scrollContainer.removeEventListener('wheel', handleWheel);
+      scrollContainer.removeEventListener("wheel", handleWheel);
       if (wheelTimeout) {
         clearTimeout(wheelTimeout);
       }
@@ -788,11 +877,11 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
       }
 
       // Continuous mode: Update current page based on scroll position
-      if (viewMode === 'continuous' || viewMode === 'twoPage') {
+      if (viewMode === "continuous" || viewMode === "twoPage") {
         const now = Date.now();
         if (now - lastThrottleTimeRef.current >= 100) {
           lastThrottleTimeRef.current = now;
-          
+
           requestAnimationFrame(() => {
             const containerRect = scrollContainer.getBoundingClientRect();
             // Find the page that is most visible in the container
@@ -801,11 +890,17 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
 
             pageRefsMap.current.forEach((element, pageNum) => {
               const rect = element.getBoundingClientRect();
-              
+
               // Calculate intersection height
               const intersectionTop = Math.max(containerRect.top, rect.top);
-              const intersectionBottom = Math.min(containerRect.bottom, rect.bottom);
-              const visibleHeight = Math.max(0, intersectionBottom - intersectionTop);
+              const intersectionBottom = Math.min(
+                containerRect.bottom,
+                rect.bottom
+              );
+              const visibleHeight = Math.max(
+                0,
+                intersectionBottom - intersectionTop
+              );
 
               if (visibleHeight > maxVisibleHeight) {
                 maxVisibleHeight = visibleHeight;
@@ -886,7 +981,8 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
             // Reset scroll to bottom after a short delay
             setTimeout(() => {
               if (scrollContainer) {
-                scrollContainer.scrollTop = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+                scrollContainer.scrollTop =
+                  scrollContainer.scrollHeight - scrollContainer.clientHeight;
                 lastScrollTop.current = scrollContainer.scrollTop;
                 // Keep flag set for a bit longer to ensure all scroll events are ignored
                 setTimeout(() => {
@@ -902,16 +998,24 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
       }, 150); // 150ms debounce delay
     };
 
-    scrollContainer.addEventListener('scroll', handleScroll);
+    scrollContainer.addEventListener("scroll", handleScroll);
 
     return () => {
-      scrollContainer.removeEventListener('scroll', handleScroll);
+      scrollContainer.removeEventListener("scroll", handleScroll);
       // Clean up timeout on unmount
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
     };
-  }, [currentPage, numPages, nextPage, previousPage, viewMode, setCurrentPage, isLoading]);
+  }, [
+    currentPage,
+    numPages,
+    nextPage,
+    previousPage,
+    viewMode,
+    setCurrentPage,
+    isLoading,
+  ]);
 
   // Handle sidebar resize
   const handleResizeStart = (e: React.MouseEvent) => {
@@ -930,26 +1034,26 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
     const handleMouseUp = () => {
       setIsResizing(false);
       // Save to localStorage
-      localStorage.setItem('pdf-sidebar-width', sidebarWidth.toString());
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      localStorage.setItem("pdf-sidebar-width", sidebarWidth.toString());
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
       // Remove user-select disable
-      document.body.style.userSelect = '';
-      document.body.style.cursor = '';
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
     };
 
     // Disable text selection while resizing
-    document.body.style.userSelect = 'none';
-    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "col-resize";
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
   };
 
   // Save sidebar width to localStorage when it changes
   useEffect(() => {
     if (!isResizing) {
-      localStorage.setItem('pdf-sidebar-width', sidebarWidth.toString());
+      localStorage.setItem("pdf-sidebar-width", sidebarWidth.toString());
     }
   }, [sidebarWidth, isResizing]);
 
@@ -962,7 +1066,10 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
       const url = recentFileUrlRef.current;
       if (url) {
         const clamped = Math.min(100, Math.max(0, progress));
-        updateRecentFileByUrl(url, { readingProgress: clamped, lastOpened: Date.now() });
+        updateRecentFileByUrl(url, {
+          readingProgress: clamped,
+          lastOpened: Date.now(),
+        });
       }
     }
   }, [currentPage, numPages, updateReadingProgress, updateRecentFileByUrl]);
@@ -970,23 +1077,23 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
   useEffect(() => {
     const previous = previousPageRef.current;
     if (currentPage > previous) {
-      setPageDirection('forward');
+      setPageDirection("forward");
     } else if (currentPage < previous) {
-      setPageDirection('backward');
+      setPageDirection("backward");
     } else {
-      setPageDirection('none');
+      setPageDirection("none");
     }
     previousPageRef.current = currentPage;
   }, [currentPage]);
 
   useTouchGestures(touchContainerRef, {
     onSwipeLeft: () => {
-      if (viewMode === 'single') {
+      if (viewMode === "single") {
         nextPage();
       }
     },
     onSwipeRight: () => {
-      if (viewMode === 'single') {
+      if (viewMode === "single") {
         previousPage();
       }
     },
@@ -1001,7 +1108,8 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
     if (numPages <= 0) {
       return { start: 1, end: 0 };
     }
-    const buffer = viewMode === 'continuous' ? 4 : viewMode === 'twoPage' ? 3 : 0;
+    const buffer =
+      viewMode === "continuous" ? 4 : viewMode === "twoPage" ? 3 : 0;
     if (!buffer) {
       return { start: 1, end: numPages };
     }
@@ -1035,17 +1143,22 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
 
       setSearchResults(results);
     } catch (err) {
-      if (err instanceof Error && err.message !== 'Search cancelled') {
-        console.error('Error searching PDF:', err);
+      if (err instanceof Error && err.message !== "Search cancelled") {
+        console.error("Error searching PDF:", err);
       }
     }
   };
 
   const handleDownload = () => {
-    if (annotations.length > 0 || pageOrder.length > 0 || Object.keys(pageRotations).length > 0) {
+    if (
+      annotations.length > 0 ||
+      pageOrder.length > 0 ||
+      Object.keys(pageRotations).length > 0
+    ) {
       savePDF(file, annotations, {
         pageOrder: pageOrder.length > 0 ? pageOrder : undefined,
-        pageRotations: Object.keys(pageRotations).length > 0 ? pageRotations : undefined,
+        pageRotations:
+          Object.keys(pageRotations).length > 0 ? pageRotations : undefined,
       });
     } else {
       downloadPDF(file);
@@ -1063,13 +1176,15 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
       const page = await pdfDocument.getPage(pageNumber);
       const textContent = await page.getTextContent();
       const text = textContent.items
-        .map((item) => (item as { str?: string }).str || '')
-        .join(' ');
-      setExtractedTextTitle(t('viewer.extract_dialog.page_title', { page: pageNumber }));
+        .map((item) => (item as { str?: string }).str || "")
+        .join(" ");
+      setExtractedTextTitle(
+        t("viewer.extract_dialog.page_title", { page: pageNumber })
+      );
       setExtractedText(text);
       setShowExtractDialog(true);
     } catch (err) {
-      console.error('Error extracting page text:', err);
+      console.error("Error extracting page text:", err);
     } finally {
       setIsExtractingText(false);
     }
@@ -1084,15 +1199,15 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
         const page = await pdfDocument.getPage(i);
         const textContent = await page.getTextContent();
         const text = textContent.items
-          .map((item) => (item as { str?: string }).str || '')
-          .join(' ');
+          .map((item) => (item as { str?: string }).str || "")
+          .join(" ");
         parts.push(`[Page ${i}]\n${text}`);
       }
-      setExtractedTextTitle(t('viewer.extract_dialog.doc_title'));
-      setExtractedText(parts.join('\n\n'));
+      setExtractedTextTitle(t("viewer.extract_dialog.doc_title"));
+      setExtractedText(parts.join("\n\n"));
       setShowExtractDialog(true);
     } catch (err) {
-      console.error('Error extracting document text:', err);
+      console.error("Error extracting document text:", err);
     } finally {
       setIsExtractingText(false);
     }
@@ -1103,7 +1218,7 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
       if (!extractedText) return;
       await navigator.clipboard.writeText(extractedText);
     } catch (err) {
-      console.error('Failed to copy extracted text:', err);
+      console.error("Failed to copy extracted text:", err);
     }
   };
 
@@ -1117,18 +1232,19 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
     }
     goToPage(targetPage);
 
-    if (viewMode !== 'single') {
+    if (viewMode !== "single") {
       requestAnimationFrame(() => {
         const pageElement = pageRefsMap.current.get(targetPage);
         if (pageElement && scrollContainerRef.current) {
-          const containerRect = scrollContainerRef.current.getBoundingClientRect();
+          const containerRect =
+            scrollContainerRef.current.getBoundingClientRect();
           const pageRect = pageElement.getBoundingClientRect();
           const scrollTop = scrollContainerRef.current.scrollTop;
           const offset = pageRect.top - containerRect.top + scrollTop - 20;
 
           scrollContainerRef.current.scrollTo({
             top: Math.max(0, offset),
-            behavior: 'smooth',
+            behavior: "smooth",
           });
         }
       });
@@ -1145,18 +1261,19 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
     }
     goToPage(targetPage);
 
-    if (viewMode !== 'single') {
+    if (viewMode !== "single") {
       requestAnimationFrame(() => {
         const pageElement = pageRefsMap.current.get(targetPage);
         if (pageElement && scrollContainerRef.current) {
-          const containerRect = scrollContainerRef.current.getBoundingClientRect();
+          const containerRect =
+            scrollContainerRef.current.getBoundingClientRect();
           const pageRect = pageElement.getBoundingClientRect();
           const scrollTop = scrollContainerRef.current.scrollTop;
           const offset = pageRect.top - containerRect.top + scrollTop - 20;
 
           scrollContainerRef.current.scrollTo({
             top: Math.max(0, offset),
-            behavior: 'smooth',
+            behavior: "smooth",
           });
         }
       });
@@ -1168,11 +1285,16 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center">
           <div className="absolute inset-0 flex items-center justify-center z-50 bg-background/80 backdrop-blur-sm">
-            <PDFLoadingAnimation type={pdfLoadingAnimation} progress={loadingProgress} />
+            <PDFLoadingAnimation
+              type={pdfLoadingAnimation}
+              progress={loadingProgress}
+            />
           </div>
-          <p className="mt-4 text-lg font-medium">{t('viewer.loading')}</p>
+          <p className="mt-4 text-lg font-medium">{t("viewer.loading")}</p>
           {loadingProgress > 0 && (
-            <p className="mt-2 text-sm text-muted-foreground">{loadingProgress}%</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {loadingProgress}%
+            </p>
           )}
         </div>
       </div>
@@ -1183,9 +1305,11 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <p className="text-lg font-medium text-destructive">{error || t('viewer.error')}</p>
+          <p className="text-lg font-medium text-destructive">
+            {error || t("viewer.error")}
+          </p>
           <Button onClick={onClose} className="mt-4">
-            {t('viewer.go_back')}
+            {t("viewer.go_back")}
           </Button>
         </div>
       </div>
@@ -1193,13 +1317,19 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
   }
 
   const getOriginalPageNumber = (visualPageNumber: number) => {
-    return pageOrder.length > 0 ? pageOrder[visualPageNumber - 1] : visualPageNumber;
+    return pageOrder.length > 0
+      ? pageOrder[visualPageNumber - 1]
+      : visualPageNumber;
   };
 
   return (
     <div
       ref={viewerRef}
-      className={cn('flex h-screen flex-col bg-background', isDarkMode && 'dark', themeMode === 'sepia' && 'sepia')}
+      className={cn(
+        "flex h-screen flex-col bg-background",
+        isDarkMode && "dark",
+        themeMode === "sepia" && "sepia"
+      )}
     >
       {header}
       <PDFToolbar
@@ -1214,7 +1344,9 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
           setPendingStamp(stamp);
           setSelectedAnnotationType(null);
         }}
-        onExtractCurrentPageText={() => extractPageText(getOriginalPageNumber(currentPage))}
+        onExtractCurrentPageText={() =>
+          extractPageText(getOriginalPageNumber(currentPage))
+        }
         onExtractAllText={extractAllText}
         onOpenFileFromMenu={onOpenFileFromMenu}
         onRevealInFileManager={handleRevealInFileManager}
@@ -1243,7 +1375,7 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
           setPendingImage(signature);
           setShowSignatureDialog(false);
         }}
-        onCancel={() => setShowSignatureDialog(false)}
+        onOpenChange={setShowSignatureDialog}
       />
 
       <PasswordDialog
@@ -1260,15 +1392,24 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
       <Dialog open={showExtractDialog} onOpenChange={setShowExtractDialog}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>{extractedTextTitle || t('viewer.extract_dialog.title')}</DialogTitle>
+            <DialogTitle>
+              {extractedTextTitle || t("viewer.extract_dialog.title")}
+            </DialogTitle>
             <DialogDescription>
-              {isExtractingText ? t('viewer.extract_dialog.extracting') : t('viewer.extract_dialog.description')}
+              {isExtractingText
+                ? t("viewer.extract_dialog.extracting")
+                : t("viewer.extract_dialog.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3">
             <div className="flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={handleCopyExtractedText} disabled={!extractedText}>
-                {t('viewer.extract_dialog.copy_all')}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyExtractedText}
+                disabled={!extractedText}
+              >
+                {t("viewer.extract_dialog.copy_all")}
               </Button>
             </div>
             <div className="max-h-[60vh] overflow-auto rounded border border-border bg-muted/40 p-3 text-sm whitespace-pre-wrap">
@@ -1281,12 +1422,12 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
       <div className="flex flex-1 overflow-hidden pb-14 sm:pb-16">
         <div
           className={cn(
-            'relative flex flex-col bg-muted/30 overflow-hidden transition-[width,opacity,transform] duration-250 ease-out will-change-transform z-20',
+            "relative flex flex-col bg-muted/30 overflow-hidden transition-[width,opacity,transform] duration-250 ease-out will-change-transform z-20",
             showThumbnails
-              ? 'border-r border-border opacity-100 translate-x-0'
-              : 'opacity-0 -translate-x-2 pointer-events-none',
+              ? "border-r border-border opacity-100 translate-x-0"
+              : "opacity-0 -translate-x-2 pointer-events-none",
             // Mobile: Absolute positioning to overlay content
-            'sm:relative absolute h-full shadow-xl sm:shadow-none'
+            "sm:relative absolute h-full shadow-xl sm:shadow-none"
           )}
           style={{ width: showThumbnails ? `${sidebarWidth}px` : 0 }}
         >
@@ -1297,32 +1438,39 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
               onDragEnd={handleDragEnd}
             >
               <SortableContext
-                items={pageOrder.length > 0 ? pageOrder : thumbnailPages.map((_, i) => i + 1)}
+                items={
+                  pageOrder.length > 0
+                    ? pageOrder
+                    : thumbnailPages.map((_, i) => i + 1)
+                }
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-2 p-2">
-                  {(pageOrder.length > 0 ? pageOrder : thumbnailPages.map((_, i) => i + 1)).map(
-                    (pageNum, i) => {
-                      const page = thumbnailPages[pageNum - 1];
-                      return (
-                        <PDFDraggableThumbnail
-                          key={pageNum}
-                          page={page}
-                          pageNumber={pageNum}
-                          isActive={currentPage === pageNum}
-                          onClick={() => setCurrentPage(i + 1)}
-                          isDragEnabled={true}
-                          onRemove={() => {
-                            if (window.confirm(t('viewer.confirm_delete_page'))) {
-                              removePage(i);
-                            }
-                          }}
-                          onRotate={() => rotatePage(pageNum)}
-                          rotation={(rotation + (pageRotations[pageNum] || 0)) % 360}
-                        />
-                      );
-                    },
-                  )}
+                  {(pageOrder.length > 0
+                    ? pageOrder
+                    : thumbnailPages.map((_, i) => i + 1)
+                  ).map((pageNum, i) => {
+                    const page = thumbnailPages[pageNum - 1];
+                    return (
+                      <PDFDraggableThumbnail
+                        key={pageNum}
+                        page={page}
+                        pageNumber={pageNum}
+                        isActive={currentPage === pageNum}
+                        onClick={() => setCurrentPage(i + 1)}
+                        isDragEnabled={true}
+                        onRemove={() => {
+                          if (window.confirm(t("viewer.confirm_delete_page"))) {
+                            removePage(i);
+                          }
+                        }}
+                        onRotate={() => rotatePage(pageNum)}
+                        rotation={
+                          (rotation + (pageRotations[pageNum] || 0)) % 360
+                        }
+                      />
+                    );
+                  })}
                 </div>
               </SortableContext>
             </DndContext>
@@ -1338,16 +1486,20 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
 
         <div
           className={cn(
-            'relative bg-muted/30 flex flex-col overflow-hidden transition-[width,opacity,transform] duration-250 ease-out will-change-transform z-20',
+            "relative bg-muted/30 flex flex-col overflow-hidden transition-[width,opacity,transform] duration-250 ease-out will-change-transform z-20",
             showOutline
-              ? 'border-r border-border opacity-100 translate-x-0'
-              : 'opacity-0 -translate-x-2 pointer-events-none',
+              ? "border-r border-border opacity-100 translate-x-0"
+              : "opacity-0 -translate-x-2 pointer-events-none",
             // Mobile: Absolute positioning to overlay content
-            'sm:relative absolute h-full shadow-xl sm:shadow-none'
+            "sm:relative absolute h-full shadow-xl sm:shadow-none"
           )}
           style={{ width: showOutline ? `${sidebarWidth}px` : 0 }}
         >
-          <PDFOutline outline={outline} onNavigate={handleBookmarkNavigate} currentPage={currentPage} />
+          <PDFOutline
+            outline={outline}
+            onNavigate={handleBookmarkNavigate}
+            currentPage={currentPage}
+          />
 
           <div
             className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors group"
@@ -1359,16 +1511,19 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
 
         <div
           className={cn(
-            'relative border-border bg-muted/30 flex flex-col overflow-hidden transition-[width,opacity,transform] duration-250 ease-out will-change-transform z-20',
+            "relative border-border bg-muted/30 flex flex-col overflow-hidden transition-[width,opacity,transform] duration-250 ease-out will-change-transform z-20",
             showBookmarksPanel
-              ? 'border-r opacity-100 translate-x-0'
-              : 'opacity-0 -translate-x-2 pointer-events-none',
+              ? "border-r opacity-100 translate-x-0"
+              : "opacity-0 -translate-x-2 pointer-events-none",
             // Mobile: Absolute positioning to overlay content
-            'sm:relative absolute h-full shadow-xl sm:shadow-none'
+            "sm:relative absolute h-full shadow-xl sm:shadow-none"
           )}
           style={{ width: showBookmarksPanel ? `${sidebarWidth}px` : 0 }}
         >
-          <PDFBookmarks onNavigate={handleBookmarkNavigate} currentPage={currentPage} />
+          <PDFBookmarks
+            onNavigate={handleBookmarkNavigate}
+            currentPage={currentPage}
+          />
 
           <div
             className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors group"
@@ -1380,14 +1535,17 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
 
         <div
           className={cn(
-            'relative border-border bg-muted/30 flex flex-col overflow-hidden transition-[width,opacity,transform] duration-250 ease-out will-change-transform',
+            "relative border-border bg-muted/30 flex flex-col overflow-hidden transition-[width,opacity,transform] duration-250 ease-out will-change-transform",
             showAnnotations
-              ? 'border-r opacity-100 translate-x-0'
-              : 'opacity-0 -translate-x-2 pointer-events-none',
+              ? "border-r opacity-100 translate-x-0"
+              : "opacity-0 -translate-x-2 pointer-events-none"
           )}
           style={{ width: showAnnotations ? `${sidebarWidth}px` : 0 }}
         >
-          <PDFAnnotationsList onNavigate={handleAnnotationNavigate} currentPage={currentPage} />
+          <PDFAnnotationsList
+            onNavigate={handleAnnotationNavigate}
+            currentPage={currentPage}
+          />
 
           <div
             className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors group"
@@ -1400,21 +1558,30 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
         <div
           ref={(el) => {
             if (el) {
-              (scrollContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
-              (touchContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+              (
+                scrollContainerRef as React.MutableRefObject<HTMLDivElement | null>
+              ).current = el;
+              (
+                touchContainerRef as React.MutableRefObject<HTMLDivElement | null>
+              ).current = el;
             }
           }}
           className="flex-1 overflow-auto bg-muted/50"
-          style={{ scrollBehavior: 'smooth' }}
+          style={{ scrollBehavior: "smooth" }}
         >
-          {viewMode === 'single' && (
+          {viewMode === "single" && (
             <div
               className="flex min-h-full items-center justify-center p-8 transition-all duration-300 ease-in-out"
               onClick={(e) => {
                 if (currentPageObj) {
-                  const viewport = currentPageObj.getViewport({ scale: zoom, rotation });
-                  const rect = (e.currentTarget.querySelector('canvas') as HTMLCanvasElement)?.getBoundingClientRect();
-                  
+                  const viewport = currentPageObj.getViewport({
+                    scale: zoom,
+                    rotation,
+                  });
+                  const rect = (
+                    e.currentTarget.querySelector("canvas") as HTMLCanvasElement
+                  )?.getBoundingClientRect();
+
                   if (rect) {
                     const x = (e.clientX - rect.left) / viewport.width;
                     const y = (e.clientY - rect.top) / viewport.height;
@@ -1428,8 +1595,13 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
                       // Since x,y are normalized (0-1), we need to normalize width/height too
                       const w = 150 / viewport.width;
                       const h = 75 / viewport.height;
-                      
-                      addImageAnnotation(pendingImage, currentPage, { x, y, width: w, height: h });
+
+                      addImageAnnotation(pendingImage, currentPage, {
+                        x,
+                        y,
+                        width: w,
+                        height: h,
+                      });
                       setPendingImage(null);
                     }
                   }
@@ -1439,22 +1611,26 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
               <div
                 key={currentPage}
                 className={cn(
-                  'relative animate-in fade-in duration-300',
-                  pageDirection === 'forward' && 'slide-in-from-right',
-                  pageDirection === 'backward' && 'slide-in-from-left',
+                  "relative animate-in fade-in duration-300",
+                  pageDirection === "forward" && "slide-in-from-right",
+                  pageDirection === "backward" && "slide-in-from-left"
                 )}
               >
-                <PDFPage 
-                  page={currentPageObj} 
-                  scale={zoom} 
-                  rotation={(rotation + (pageRotations[currentPage] || 0)) % 360} 
+                <PDFPage
+                  page={currentPageObj}
+                  scale={zoom}
+                  rotation={
+                    (rotation + (pageRotations[currentPage] || 0)) % 360
+                  }
                   className="max-w-full"
                   onRenderSuccess={handleRenderSuccess}
                 />
                 <PDFTextLayer
                   page={currentPageObj}
                   scale={zoom}
-                  rotation={(rotation + (pageRotations[currentPage] || 0)) % 360} 
+                  rotation={
+                    (rotation + (pageRotations[currentPage] || 0)) % 360
+                  }
                   searchQuery={searchQuery}
                   caseSensitive={caseSensitiveSearch}
                   pageNumber={currentPage}
@@ -1462,14 +1638,22 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
                 <PDFAnnotationLayer
                   page={currentPageObj}
                   scale={zoom}
-                  rotation={(rotation + (pageRotations[currentPage] || 0)) % 360} 
-                  selectedAnnotationType={selectedAnnotationType === 'drawing' ? null : selectedAnnotationType}
+                  rotation={
+                    (rotation + (pageRotations[currentPage] || 0)) % 360
+                  }
+                  selectedAnnotationType={
+                    selectedAnnotationType === "drawing"
+                      ? null
+                      : selectedAnnotationType
+                  }
                 />
-                {selectedAnnotationType === 'drawing' && (
+                {selectedAnnotationType === "drawing" && (
                   <PDFDrawingLayer
                     page={currentPageObj}
                     scale={zoom}
-                    rotation={(rotation + (pageRotations[currentPage] || 0)) % 360} 
+                    rotation={
+                      (rotation + (pageRotations[currentPage] || 0)) % 360
+                    }
                     isDrawingMode={true}
                     strokeColor={selectedAnnotationColor}
                     strokeWidth={selectedStrokeWidth}
@@ -1479,7 +1663,9 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
                   <PDFSelectionLayer
                     page={currentPageObj}
                     scale={zoom}
-                    rotation={(rotation + (pageRotations[currentPage] || 0)) % 360} 
+                    rotation={
+                      (rotation + (pageRotations[currentPage] || 0)) % 360
+                    }
                     pageNumber={currentPage}
                   />
                 )}
@@ -1487,23 +1673,28 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
             </div>
           )}
 
-          {viewMode === 'continuous' && (
+          {viewMode === "continuous" && (
             <div className="flex flex-col items-center gap-4 p-8">
               {Array.from({ length: numPages }).map((_, index) => {
                 const pageNumber = index + 1;
                 const page = allPages[index];
                 const dimensions = pageDimensionsRef.current.get(pageNumber);
-                
+
                 // If page is not loaded and we don't have dimensions, and it's not in visible range, skip it
                 // But if we HAVE dimensions, render a placeholder to maintain scroll height
-                if (!page && !dimensions && (pageNumber < visibleRange.start || pageNumber > visibleRange.end)) {
+                if (
+                  !page &&
+                  !dimensions &&
+                  (pageNumber < visibleRange.start ||
+                    pageNumber > visibleRange.end)
+                ) {
                   return null;
                 }
 
                 // If we have dimensions but page is not loaded, render placeholder
                 // If page is loaded (page variable is truthy), render normally
                 // If page is not loaded but in visible range (loading...), render normally (PDFPage handles null)
-                
+
                 return (
                   <div
                     key={pageNumber}
@@ -1516,23 +1707,30 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
                     }}
                     data-page={pageNumber}
                     className={cn(
-                      'transition-all duration-300 ease-in-out',
-                      currentPage === pageNumber && 'ring-2 ring-primary rounded scale-[1.02]',
+                      "transition-all duration-300 ease-in-out",
+                      currentPage === pageNumber &&
+                        "ring-2 ring-primary rounded scale-[1.02]"
                     )}
                   >
                     <div className="relative">
-                      <PDFPage 
-                        page={page} 
-                        scale={zoom} 
-                        rotation={(rotation + (pageRotations[pageNumber] || 0)) % 360} 
+                      <PDFPage
+                        page={page}
+                        scale={zoom}
+                        rotation={
+                          (rotation + (pageRotations[pageNumber] || 0)) % 360
+                        }
                         className="shadow-lg"
                         width={dimensions ? dimensions.width * zoom : undefined}
-                        height={dimensions ? dimensions.height * zoom : undefined}
+                        height={
+                          dimensions ? dimensions.height * zoom : undefined
+                        }
                       />
                       <PDFTextLayer
                         page={page}
                         scale={zoom}
-                        rotation={(rotation + (pageRotations[pageNumber] || 0)) % 360}
+                        rotation={
+                          (rotation + (pageRotations[pageNumber] || 0)) % 360
+                        }
                         searchQuery={searchQuery}
                         caseSensitive={caseSensitiveSearch}
                         pageNumber={pageNumber}
@@ -1540,32 +1738,45 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
                       <PDFAnnotationLayer
                         page={page}
                         scale={zoom}
-                        rotation={(rotation + (pageRotations[pageNumber] || 0)) % 360}
+                        rotation={
+                          (rotation + (pageRotations[pageNumber] || 0)) % 360
+                        }
                         selectedAnnotationType={
-                          selectedAnnotationType === 'drawing' ? null : selectedAnnotationType
+                          selectedAnnotationType === "drawing"
+                            ? null
+                            : selectedAnnotationType
                         }
                       />
-                      {selectedAnnotationType === 'drawing' && pageNumber === currentPage && (
-                        <PDFDrawingLayer
-                          page={page}
-                          scale={zoom}
-                          rotation={(rotation + (pageRotations[pageNumber] || 0)) % 360}
-                          isDrawingMode={true}
-                          strokeColor={selectedAnnotationColor}
-                          strokeWidth={selectedStrokeWidth}
-                        />
-                      )}
+                      {selectedAnnotationType === "drawing" &&
+                        pageNumber === currentPage && (
+                          <PDFDrawingLayer
+                            page={page}
+                            scale={zoom}
+                            rotation={
+                              (rotation + (pageRotations[pageNumber] || 0)) %
+                              360
+                            }
+                            isDrawingMode={true}
+                            strokeColor={selectedAnnotationColor}
+                            strokeWidth={selectedStrokeWidth}
+                          />
+                        )}
                       {isSelectionMode && (
                         <PDFSelectionLayer
                           page={page}
                           scale={zoom}
-                          rotation={(rotation + (pageRotations[pageNumber] || 0)) % 360}
+                          rotation={
+                            (rotation + (pageRotations[pageNumber] || 0)) % 360
+                          }
                           pageNumber={pageNumber}
                         />
                       )}
                     </div>
                     <div className="mt-2 text-center text-sm text-muted-foreground">
-                      {t('viewer.page_n_of_m', { current: pageNumber, total: numPages })}
+                      {t("viewer.page_n_of_m", {
+                        current: pageNumber,
+                        total: numPages,
+                      })}
                     </div>
                   </div>
                 );
@@ -1573,140 +1784,221 @@ export function PDFViewer({ file, onClose, header, onOpenFileFromMenu, onFileUpd
             </div>
           )}
 
-          {viewMode === 'twoPage' && (
+          {viewMode === "twoPage" && (
             <div className="flex flex-col items-center gap-4 p-8">
-              {Array.from({ length: Math.ceil(numPages / 2) }).map((_, pairIndex) => {
-                const leftPageNumber = pairIndex * 2 + 1;
-                const rightPageNumber = leftPageNumber + 1;
-                
-                const leftPage = allPages[leftPageNumber - 1];
-                const rightPage = allPages[rightPageNumber - 1];
-                
-                const leftDim = pageDimensionsRef.current.get(leftPageNumber);
-                const rightDim = pageDimensionsRef.current.get(rightPageNumber);
+              {Array.from({ length: Math.ceil(numPages / 2) }).map(
+                (_, pairIndex) => {
+                  const leftPageNumber = pairIndex * 2 + 1;
+                  const rightPageNumber = leftPageNumber + 1;
 
-                // Check visibility
-                const isLeftVisible = leftPageNumber >= visibleRange.start && leftPageNumber <= visibleRange.end;
-                const isRightVisible = rightPageNumber >= visibleRange.start && rightPageNumber <= visibleRange.end;
+                  const leftPage = allPages[leftPageNumber - 1];
+                  const rightPage = allPages[rightPageNumber - 1];
 
-                // If neither page is visible AND neither has dimensions, skip
-                if (!isLeftVisible && !isRightVisible && !leftDim && !rightDim) {
-                  return null;
-                }
+                  const leftDim = pageDimensionsRef.current.get(leftPageNumber);
+                  const rightDim =
+                    pageDimensionsRef.current.get(rightPageNumber);
 
-                return (
-                  <div
-                    key={pairIndex}
-                    className="flex gap-4 transition-all duration-300 ease-in-out"
-                  >
-                    {(leftPage || leftDim || isLeftVisible) && (
-                      <div
-                        ref={(el) => {
-                          if (el) {
-                            pageRefsMap.current.set(leftPageNumber, el);
-                          } else {
-                            pageRefsMap.current.delete(leftPageNumber);
-                          }
-                        }}
-                        data-page={leftPageNumber}
-                        className={cn(
-                          'transition-all duration-300 ease-in-out',
-                          currentPage === leftPageNumber && 'ring-2 ring-primary rounded scale-[1.02]',
-                        )}
-                      >
-                        <div className="relative">
-                          <PDFPage
-                            page={leftPage}
-                            scale={zoom}
-                            rotation={(rotation + (pageRotations[getOriginalPageNumber(leftPageNumber)] || 0)) % 360}
-                            className="shadow-lg"
-                            width={leftDim ? leftDim.width * zoom : undefined}
-                            height={leftDim ? leftDim.height * zoom : undefined}
-                          />
-                          <PDFTextLayer
-                            page={leftPage}
-                            scale={zoom}
-                            rotation={(rotation + (pageRotations[getOriginalPageNumber(leftPageNumber)] || 0)) % 360}
-                            searchQuery={searchQuery}
-                            caseSensitive={caseSensitiveSearch}
-                            pageNumber={getOriginalPageNumber(leftPageNumber)}
-                          />
-                          <PDFAnnotationLayer
-                            page={leftPage}
-                            scale={zoom}
-                            rotation={(rotation + (pageRotations[getOriginalPageNumber(leftPageNumber)] || 0)) % 360}
-                            selectedAnnotationType={selectedAnnotationType}
-                          />
-                          {isSelectionMode && (
-                            <PDFSelectionLayer
+                  // Check visibility
+                  const isLeftVisible =
+                    leftPageNumber >= visibleRange.start &&
+                    leftPageNumber <= visibleRange.end;
+                  const isRightVisible =
+                    rightPageNumber >= visibleRange.start &&
+                    rightPageNumber <= visibleRange.end;
+
+                  // If neither page is visible AND neither has dimensions, skip
+                  if (
+                    !isLeftVisible &&
+                    !isRightVisible &&
+                    !leftDim &&
+                    !rightDim
+                  ) {
+                    return null;
+                  }
+
+                  return (
+                    <div
+                      key={pairIndex}
+                      className="flex gap-4 transition-all duration-300 ease-in-out"
+                    >
+                      {(leftPage || leftDim || isLeftVisible) && (
+                        <div
+                          ref={(el) => {
+                            if (el) {
+                              pageRefsMap.current.set(leftPageNumber, el);
+                            } else {
+                              pageRefsMap.current.delete(leftPageNumber);
+                            }
+                          }}
+                          data-page={leftPageNumber}
+                          className={cn(
+                            "transition-all duration-300 ease-in-out",
+                            currentPage === leftPageNumber &&
+                              "ring-2 ring-primary rounded scale-[1.02]"
+                          )}
+                        >
+                          <div className="relative">
+                            <PDFPage
                               page={leftPage}
                               scale={zoom}
-                              rotation={(rotation + (pageRotations[getOriginalPageNumber(leftPageNumber)] || 0)) % 360}
+                              rotation={
+                                (rotation +
+                                  (pageRotations[
+                                    getOriginalPageNumber(leftPageNumber)
+                                  ] || 0)) %
+                                360
+                              }
+                              className="shadow-lg"
+                              width={leftDim ? leftDim.width * zoom : undefined}
+                              height={
+                                leftDim ? leftDim.height * zoom : undefined
+                              }
+                            />
+                            <PDFTextLayer
+                              page={leftPage}
+                              scale={zoom}
+                              rotation={
+                                (rotation +
+                                  (pageRotations[
+                                    getOriginalPageNumber(leftPageNumber)
+                                  ] || 0)) %
+                                360
+                              }
+                              searchQuery={searchQuery}
+                              caseSensitive={caseSensitiveSearch}
                               pageNumber={getOriginalPageNumber(leftPageNumber)}
                             />
-                          )}
-                        </div>
-                        <div className="mt-2 text-center text-sm text-muted-foreground">
-                          {t('viewer.page_n_of_m', { current: leftPageNumber, total: numPages })}
-                        </div>
-                      </div>
-                    )}
-
-                    {(rightPage || rightDim || isRightVisible) && rightPageNumber <= numPages && (
-                      <div
-                        ref={(el) => {
-                          if (el) {
-                            pageRefsMap.current.set(rightPageNumber, el);
-                          } else {
-                            pageRefsMap.current.delete(rightPageNumber);
-                          }
-                        }}
-                        data-page={rightPageNumber}
-                        className={cn(
-                          'transition-all duration-300 ease-in-out',
-                          currentPage === rightPageNumber && 'ring-2 ring-primary rounded scale-[1.02]',
-                        )}
-                      >
-                        <div className="relative">
-                          <PDFPage
-                            page={rightPage}
-                            scale={zoom}
-                            rotation={(rotation + (pageRotations[getOriginalPageNumber(rightPageNumber)] || 0)) % 360}
-                            className="shadow-lg"
-                            width={rightDim ? rightDim.width * zoom : undefined}
-                            height={rightDim ? rightDim.height * zoom : undefined}
-                          />
-                          <PDFTextLayer
-                            page={rightPage}
-                            scale={zoom}
-                            rotation={(rotation + (pageRotations[getOriginalPageNumber(rightPageNumber)] || 0)) % 360}
-                            searchQuery={searchQuery}
-                            caseSensitive={caseSensitiveSearch}
-                            pageNumber={getOriginalPageNumber(rightPageNumber)}
-                          />
-                          <PDFAnnotationLayer
-                            page={rightPage}
-                            scale={zoom}
-                            rotation={(rotation + (pageRotations[getOriginalPageNumber(rightPageNumber)] || 0)) % 360}
-                            selectedAnnotationType={selectedAnnotationType}
-                          />
-                          {isSelectionMode && (
-                            <PDFSelectionLayer
-                              page={rightPage}
+                            <PDFAnnotationLayer
+                              page={leftPage}
                               scale={zoom}
-                              rotation={(rotation + (pageRotations[getOriginalPageNumber(rightPageNumber)] || 0)) % 360}
-                              pageNumber={getOriginalPageNumber(rightPageNumber)}
+                              rotation={
+                                (rotation +
+                                  (pageRotations[
+                                    getOriginalPageNumber(leftPageNumber)
+                                  ] || 0)) %
+                                360
+                              }
+                              selectedAnnotationType={selectedAnnotationType}
                             />
-                          )}
+                            {isSelectionMode && (
+                              <PDFSelectionLayer
+                                page={leftPage}
+                                scale={zoom}
+                                rotation={
+                                  (rotation +
+                                    (pageRotations[
+                                      getOriginalPageNumber(leftPageNumber)
+                                    ] || 0)) %
+                                  360
+                                }
+                                pageNumber={getOriginalPageNumber(
+                                  leftPageNumber
+                                )}
+                              />
+                            )}
+                          </div>
+                          <div className="mt-2 text-center text-sm text-muted-foreground">
+                            {t("viewer.page_n_of_m", {
+                              current: leftPageNumber,
+                              total: numPages,
+                            })}
+                          </div>
                         </div>
-                        <div className="mt-2 text-center text-sm text-muted-foreground">
-                          {t('viewer.page_n_of_m', { current: rightPageNumber, total: numPages })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                      )}
+
+                      {(rightPage || rightDim || isRightVisible) &&
+                        rightPageNumber <= numPages && (
+                          <div
+                            ref={(el) => {
+                              if (el) {
+                                pageRefsMap.current.set(rightPageNumber, el);
+                              } else {
+                                pageRefsMap.current.delete(rightPageNumber);
+                              }
+                            }}
+                            data-page={rightPageNumber}
+                            className={cn(
+                              "transition-all duration-300 ease-in-out",
+                              currentPage === rightPageNumber &&
+                                "ring-2 ring-primary rounded scale-[1.02]"
+                            )}
+                          >
+                            <div className="relative">
+                              <PDFPage
+                                page={rightPage}
+                                scale={zoom}
+                                rotation={
+                                  (rotation +
+                                    (pageRotations[
+                                      getOriginalPageNumber(rightPageNumber)
+                                    ] || 0)) %
+                                  360
+                                }
+                                className="shadow-lg"
+                                width={
+                                  rightDim ? rightDim.width * zoom : undefined
+                                }
+                                height={
+                                  rightDim ? rightDim.height * zoom : undefined
+                                }
+                              />
+                              <PDFTextLayer
+                                page={rightPage}
+                                scale={zoom}
+                                rotation={
+                                  (rotation +
+                                    (pageRotations[
+                                      getOriginalPageNumber(rightPageNumber)
+                                    ] || 0)) %
+                                  360
+                                }
+                                searchQuery={searchQuery}
+                                caseSensitive={caseSensitiveSearch}
+                                pageNumber={getOriginalPageNumber(
+                                  rightPageNumber
+                                )}
+                              />
+                              <PDFAnnotationLayer
+                                page={rightPage}
+                                scale={zoom}
+                                rotation={
+                                  (rotation +
+                                    (pageRotations[
+                                      getOriginalPageNumber(rightPageNumber)
+                                    ] || 0)) %
+                                  360
+                                }
+                                selectedAnnotationType={selectedAnnotationType}
+                              />
+                              {isSelectionMode && (
+                                <PDFSelectionLayer
+                                  page={rightPage}
+                                  scale={zoom}
+                                  rotation={
+                                    (rotation +
+                                      (pageRotations[
+                                        getOriginalPageNumber(rightPageNumber)
+                                      ] || 0)) %
+                                    360
+                                  }
+                                  pageNumber={getOriginalPageNumber(
+                                    rightPageNumber
+                                  )}
+                                />
+                              )}
+                            </div>
+                            <div className="mt-2 text-center text-sm text-muted-foreground">
+                              {t("viewer.page_n_of_m", {
+                                current: rightPageNumber,
+                                total: numPages,
+                              })}
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  );
+                }
+              )}
             </div>
           )}
         </div>

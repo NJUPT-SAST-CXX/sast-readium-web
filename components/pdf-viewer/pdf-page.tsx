@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState, memo, useMemo } from 'react';
-import { PDFPageProxy } from '@/lib/pdf-utils';
-import { usePDFStore } from '@/lib/pdf-store';
-import { PDFWatermark } from './pdf-watermark';
+import { useEffect, useRef, useState, memo, useMemo } from "react";
+import { PDFPageProxy } from "@/lib/pdf-utils";
+import { usePDFStore } from "@/lib/pdf-store";
+import { PDFWatermark } from "./pdf-watermark";
 
 interface PDFPageProps {
   page: PDFPageProxy | null;
@@ -16,14 +16,36 @@ interface PDFPageProps {
   height?: number;
 }
 
-const PDFPageComponent = ({ page, scale, rotation, className = '', onDoubleClick, onRenderSuccess, width, height }: PDFPageProps) => {
+const PDFPageComponent = ({
+  page,
+  scale,
+  rotation,
+  className = "",
+  onDoubleClick,
+  onRenderSuccess,
+  width,
+  height,
+}: PDFPageProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const renderTaskRef = useRef<{ cancel: () => void; promise: Promise<void> } | null>(null);
+  const renderTaskRef = useRef<{
+    cancel: () => void;
+    promise: Promise<void>;
+  } | null>(null);
   const renderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isZooming, setIsZooming] = useState(false);
-  const { setZoom, zoom, watermarkText, watermarkColor, watermarkOpacity, watermarkSize, watermarkGapX, watermarkGapY, watermarkRotation } = usePDFStore();
-  
+  const {
+    setZoom,
+    zoom,
+    watermarkText,
+    watermarkColor,
+    watermarkOpacity,
+    watermarkSize,
+    watermarkGapX,
+    watermarkGapY,
+    watermarkRotation,
+  } = usePDFStore();
+
   const dimensions = useMemo(() => {
     if (!page) return { width: width || 0, height: height || 0 };
     const viewport = page.getViewport({ scale, rotation });
@@ -44,7 +66,7 @@ const PDFPageComponent = ({ page, scale, rotation, className = '', onDoubleClick
     }
 
     const canvas = canvasRef.current;
-    const context = canvas.getContext('2d', {
+    const context = canvas.getContext("2d", {
       // Performance optimization: disable alpha channel if not needed
       alpha: false,
       // Enable hardware acceleration
@@ -90,14 +112,14 @@ const PDFPageComponent = ({ page, scale, rotation, className = '', onDoubleClick
 
       // Enable image smoothing for better quality
       context.imageSmoothingEnabled = true;
-      context.imageSmoothingQuality = 'high';
+      context.imageSmoothingQuality = "high";
 
       // Render the page with optimized settings
       const renderContext = {
         canvasContext: context,
         viewport: viewport,
         // Enable text layer rendering for better quality
-        intent: 'display',
+        intent: "display",
       };
 
       renderTaskRef.current = page.render(renderContext);
@@ -110,8 +132,8 @@ const PDFPageComponent = ({ page, scale, rotation, className = '', onDoubleClick
           }
         })
         .catch((error: Error) => {
-          if (isMounted && error.name !== 'RenderingCancelledException') {
-            console.error('Error rendering page:', error);
+          if (isMounted && error.name !== "RenderingCancelledException") {
+            console.error("Error rendering page:", error);
           }
         });
     }, 50); // 50ms throttle for rendering
@@ -125,7 +147,14 @@ const PDFPageComponent = ({ page, scale, rotation, className = '', onDoubleClick
         clearTimeout(renderTimeoutRef.current);
       }
     };
-  }, [page, scale, rotation, onRenderSuccess, dimensions.width, dimensions.height]);
+  }, [
+    page,
+    scale,
+    rotation,
+    onRenderSuccess,
+    dimensions.width,
+    dimensions.height,
+  ]);
 
   // Handle double-click zoom
   const handleDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -161,7 +190,10 @@ const PDFPageComponent = ({ page, scale, rotation, className = '', onDoubleClick
 
     // Find the scroll container (parent with overflow)
     let scrollContainer = container.parentElement;
-    while (scrollContainer && scrollContainer.scrollHeight === scrollContainer.clientHeight) {
+    while (
+      scrollContainer &&
+      scrollContainer.scrollHeight === scrollContainer.clientHeight
+    ) {
       scrollContainer = scrollContainer.parentElement;
     }
 
@@ -197,21 +229,31 @@ const PDFPageComponent = ({ page, scale, rotation, className = '', onDoubleClick
   return (
     <div
       ref={containerRef}
-      className={`relative ${className} ${isZooming ? 'transition-transform duration-200' : ''}`}
+      className={`relative ${className} ${
+        isZooming ? "transition-transform duration-200" : ""
+      }`}
       onDoubleClick={handleDoubleClick}
-      style={{ cursor: 'default' }}
+      style={{ cursor: "default" }}
     >
       <canvas
         ref={canvasRef}
         className="mx-auto shadow-lg"
         style={{
-          display: 'block',
-          maxWidth: '100%',
-          height: 'auto',
+          display: "block",
+          maxWidth: "100%",
+          height: "auto",
         }}
       />
       {watermarkText && dimensions.width > 0 && (
-        <div className="absolute inset-0 pointer-events-none" style={{ width: dimensions.width, height: dimensions.height, left: '50%', transform: 'translateX(-50%)' }}>
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            width: dimensions.width,
+            height: dimensions.height,
+            left: "50%",
+            transform: "translateX(-50%)",
+          }}
+        >
           <PDFWatermark
             text={watermarkText}
             color={watermarkColor}
@@ -239,4 +281,3 @@ export const PDFPage = memo(PDFPageComponent, (prevProps, nextProps) => {
     prevProps.className === nextProps.className
   );
 });
-

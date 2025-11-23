@@ -1,23 +1,29 @@
-'use client';
+"use client";
 
-import { useRef, useState, useEffect } from 'react';
-import { usePDFStore, Annotation } from '@/lib/pdf-store';
-import { PDFPageProxy, PDFAnnotationData } from '@/lib/pdf-utils';
-import { X, MessageSquare, GripHorizontal } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { useRef, useState, useEffect } from "react";
+import { usePDFStore, Annotation } from "@/lib/pdf-store";
+import { PDFPageProxy, PDFAnnotationData } from "@/lib/pdf-utils";
+import { X, MessageSquare, GripHorizontal } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface PDFAnnotationLayerProps {
   page: PDFPageProxy | null;
   scale: number;
   rotation: number;
-  selectedAnnotationType: 'highlight' | 'comment' | 'shape' | 'text' | 'drawing' | null;
+  selectedAnnotationType:
+    | "highlight"
+    | "comment"
+    | "shape"
+    | "text"
+    | "drawing"
+    | null;
   onNavigate?: (dest: string | unknown[]) => void;
 }
 
 interface AnnotationInput {
-  type: 'comment' | 'text';
+  type: "comment" | "text";
   x: number;
   y: number;
 }
@@ -44,7 +50,7 @@ function DraggableAnnotationPopup({
   const [position, setPosition] = useState(initialPosition);
   const [isDragging, setIsDragging] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(annotation.content || '');
+  const [editValue, setEditValue] = useState(annotation.content || "");
   const dragStartPos = useRef({ x: 0, y: 0 });
   const popupRef = useRef<HTMLDivElement>(null);
 
@@ -75,12 +81,12 @@ function DraggableAnnotationPopup({
     };
 
     // Add event listeners to document for smooth dragging
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isDragging]);
 
@@ -103,7 +109,7 @@ function DraggableAnnotationPopup({
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
-        cursor: isDragging ? 'grabbing' : 'default',
+        cursor: isDragging ? "grabbing" : "default",
       }}
       onClick={(e) => e.stopPropagation()} // Prevent clicks inside popup from propagating
     >
@@ -138,10 +144,10 @@ function DraggableAnnotationPopup({
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === "Enter") {
                     handleSave();
-                  } else if (e.key === 'Escape') {
-                    setEditValue(annotation.content || '');
+                  } else if (e.key === "Escape") {
+                    setEditValue(annotation.content || "");
                     setIsEditing(false);
                   }
                 }}
@@ -178,7 +184,7 @@ function DraggableAnnotationPopup({
                 size="sm"
                 variant="outline"
                 onClick={() => {
-                  setEditValue(annotation.content || '');
+                  setEditValue(annotation.content || "");
                   setIsEditing(false);
                 }}
                 className="flex-1"
@@ -221,36 +227,57 @@ export function PDFAnnotationLayer({
   selectedAnnotationType,
   onNavigate,
 }: PDFAnnotationLayerProps) {
-  const { annotations, addAnnotation, removeAnnotation, updateAnnotation, currentPage } = usePDFStore();
+  const {
+    annotations,
+    addAnnotation,
+    removeAnnotation,
+    updateAnnotation,
+    currentPage,
+  } = usePDFStore();
   const layerRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
-  const [currentRect, setCurrentRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
-  const [annotationInput, setAnnotationInput] = useState<AnnotationInput | null>(null);
-  const [inputValue, setInputValue] = useState('');
+  const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(
+    null
+  );
+  const [currentRect, setCurrentRect] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  const [annotationInput, setAnnotationInput] =
+    useState<AnnotationInput | null>(null);
+  const [inputValue, setInputValue] = useState("");
   const [selectedAnnotation, setSelectedAnnotation] = useState<{
     annotation: Annotation;
     x: number;
     y: number;
   } | null>(null);
-  const [nativeAnnotations, setNativeAnnotations] = useState<PDFAnnotationData[]>([]);
+  const [nativeAnnotations, setNativeAnnotations] = useState<
+    PDFAnnotationData[]
+  >([]);
 
   useEffect(() => {
     if (!page) return;
-    
-    let mounted = true;
-    page.getAnnotations().then((annots) => {
-      if (mounted) setNativeAnnotations(annots);
-    }).catch(err => console.error('Error loading annotations:', err));
 
-    return () => { 
-      mounted = false; 
+    let mounted = true;
+    page
+      .getAnnotations()
+      .then((annots) => {
+        if (mounted) setNativeAnnotations(annots);
+      })
+      .catch((err) => console.error("Error loading annotations:", err));
+
+    return () => {
+      mounted = false;
       setNativeAnnotations([]);
     };
   }, [page]);
 
   // Filter annotations for current page
-  const currentPageAnnotations = annotations.filter((a) => a.pageNumber === currentPage);
+  const currentPageAnnotations = annotations.filter(
+    (a) => a.pageNumber === currentPage
+  );
 
   // Get viewport dimensions
   const viewport = page?.getViewport({ scale, rotation });
@@ -262,12 +289,12 @@ export function PDFAnnotationLayer({
     // Note: PDF coordinates are usually bottom-left origin, but convertToViewportPoint expects PDF coordinates
     const p1 = viewport.convertToViewportPoint(x1, y1);
     const p2 = viewport.convertToViewportPoint(x2, y2);
-    
+
     const minX = Math.min(p1[0], p2[0]);
     const minY = Math.min(p1[1], p2[1]);
     const maxX = Math.max(p1[0], p2[0]);
     const maxY = Math.max(p1[1], p2[1]);
-    
+
     return {
       left: `${minX}px`,
       top: `${minY}px`,
@@ -284,10 +311,13 @@ export function PDFAnnotationLayer({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (selectedAnnotationType === 'comment' || selectedAnnotationType === 'text') {
+    if (
+      selectedAnnotationType === "comment" ||
+      selectedAnnotationType === "text"
+    ) {
       // For comments and text, show input at click position
       setAnnotationInput({ type: selectedAnnotationType, x, y });
-      setInputValue('');
+      setInputValue("");
     } else {
       // For highlight and shape, start drawing
       setIsDrawing(true);
@@ -326,8 +356,9 @@ export function PDFAnnotationLayer({
 
     // Only create annotation if there's meaningful size
     if (currentRect.width > 5 && currentRect.height > 5) {
-      const color = selectedAnnotationType === 'highlight' ? '#ffff00' : '#ff6b6b';
-      
+      const color =
+        selectedAnnotationType === "highlight" ? "#ffff00" : "#ff6b6b";
+
       addAnnotation({
         type: selectedAnnotationType,
         pageNumber: currentPage,
@@ -350,8 +381,8 @@ export function PDFAnnotationLayer({
   const handleInputSubmit = () => {
     if (!annotationInput || !inputValue.trim() || !viewport) return;
 
-    const color = annotationInput.type === 'comment' ? '#4dabf7' : '#333333';
-    
+    const color = annotationInput.type === "comment" ? "#4dabf7" : "#333333";
+
     addAnnotation({
       type: annotationInput.type,
       pageNumber: currentPage,
@@ -364,7 +395,7 @@ export function PDFAnnotationLayer({
     });
 
     setAnnotationInput(null);
-    setInputValue('');
+    setInputValue("");
   };
 
   // Calculate annotation style based on position and viewport
@@ -373,8 +404,12 @@ export function PDFAnnotationLayer({
 
     const x = annotation.position.x * viewport.width;
     const y = annotation.position.y * viewport.height;
-    const width = annotation.position.width ? annotation.position.width * viewport.width : undefined;
-    const height = annotation.position.height ? annotation.position.height * viewport.height : undefined;
+    const width = annotation.position.width
+      ? annotation.position.width * viewport.width
+      : undefined;
+    const height = annotation.position.height
+      ? annotation.position.height * viewport.height
+      : undefined;
 
     return {
       left: `${x}px`,
@@ -388,8 +423,10 @@ export function PDFAnnotationLayer({
     <div
       ref={layerRef}
       className={cn(
-        'absolute inset-0',
-        selectedAnnotationType ? 'cursor-crosshair pointer-events-auto' : 'pointer-events-none'
+        "absolute inset-0",
+        selectedAnnotationType
+          ? "cursor-crosshair pointer-events-auto"
+          : "pointer-events-none"
       )}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -400,8 +437,8 @@ export function PDFAnnotationLayer({
         }
       }}
       style={{
-        width: viewport ? `${viewport.width}px` : '100%',
-        height: viewport ? `${viewport.height}px` : '100%',
+        width: viewport ? `${viewport.width}px` : "100%",
+        height: viewport ? `${viewport.height}px` : "100%",
       }}
     >
       {/* Render existing annotations */}
@@ -409,21 +446,23 @@ export function PDFAnnotationLayer({
         <div
           key={annotation.id}
           className={cn(
-            'absolute group',
-            annotation.type === 'highlight' && 'pointer-events-none',
-            annotation.type === 'shape' && 'border-2',
-            (annotation.type === 'comment' || annotation.type === 'text') && 'flex items-start gap-1'
+            "absolute group",
+            annotation.type === "highlight" && "pointer-events-none",
+            annotation.type === "shape" && "border-2",
+            (annotation.type === "comment" || annotation.type === "text") &&
+              "flex items-start gap-1"
           )}
           style={{
             ...getAnnotationStyle(annotation),
             backgroundColor:
-              annotation.type === 'highlight'
+              annotation.type === "highlight"
                 ? `${annotation.color}80`
-                : annotation.type === 'shape'
-                ? 'transparent'
+                : annotation.type === "shape"
+                ? "transparent"
                 : undefined,
-            borderColor: annotation.type === 'shape' ? annotation.color : undefined,
-            color: annotation.type === 'text' ? annotation.color : undefined,
+            borderColor:
+              annotation.type === "shape" ? annotation.color : undefined,
+            color: annotation.type === "text" ? annotation.color : undefined,
           }}
           onClick={(e) => {
             // Only open popup for annotations with content (comments and text)
@@ -438,10 +477,15 @@ export function PDFAnnotationLayer({
             }
           }}
         >
-          {annotation.type === 'comment' && (
+          {annotation.type === "comment" && (
             <div className="flex items-center gap-1 bg-white rounded px-2 py-1 shadow-md border border-border pointer-events-auto">
-              <MessageSquare className="h-3 w-3 flex-shrink-0" style={{ color: annotation.color }} />
-              <span className="text-xs max-w-[200px] truncate">{annotation.content}</span>
+              <MessageSquare
+                className="h-3 w-3 flex-shrink-0"
+                style={{ color: annotation.color }}
+              />
+              <span className="text-xs max-w-[200px] truncate">
+                {annotation.content}
+              </span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -453,13 +497,15 @@ export function PDFAnnotationLayer({
               </button>
             </div>
           )}
-          {annotation.type === 'text' && (
+          {annotation.type === "text" && (
             <div
               className="bg-white rounded px-2 py-1 shadow-md border border-border pointer-events-auto text-xs"
               style={{ color: annotation.color }}
             >
               <div className="flex items-center gap-1">
-                <span className="max-w-[200px] break-words">{annotation.content}</span>
+                <span className="max-w-[200px] break-words">
+                  {annotation.content}
+                </span>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -472,7 +518,7 @@ export function PDFAnnotationLayer({
               </div>
             </div>
           )}
-          {annotation.type === 'shape' && (
+          {annotation.type === "shape" && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -483,11 +529,11 @@ export function PDFAnnotationLayer({
               <X className="h-3 w-3" />
             </button>
           )}
-          {annotation.type === 'image' && annotation.content && (
+          {annotation.type === "image" && annotation.content && (
             <div className="relative group w-full h-full">
-              <img 
-                src={annotation.content} 
-                alt="Annotation" 
+              <img
+                src={annotation.content}
+                alt="Annotation"
                 className="w-full h-full object-contain select-none pointer-events-none"
                 draggable={false}
               />
@@ -509,9 +555,10 @@ export function PDFAnnotationLayer({
       {isDrawing && currentRect && selectedAnnotationType && (
         <div
           className={cn(
-            'absolute',
-            selectedAnnotationType === 'highlight' && 'bg-yellow-400 opacity-50',
-            selectedAnnotationType === 'shape' && 'border-2 border-red-500'
+            "absolute",
+            selectedAnnotationType === "highlight" &&
+              "bg-yellow-400 opacity-50",
+            selectedAnnotationType === "shape" && "border-2 border-red-500"
           )}
           style={{
             left: `${currentRect.x}px`,
@@ -555,18 +602,22 @@ export function PDFAnnotationLayer({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   handleInputSubmit();
-                } else if (e.key === 'Escape') {
+                } else if (e.key === "Escape") {
                   setAnnotationInput(null);
-                  setInputValue('');
+                  setInputValue("");
                 }
               }}
               className="h-8 text-sm"
               autoFocus
             />
             <div className="flex gap-1">
-              <Button size="sm" onClick={handleInputSubmit} className="h-7 flex-1">
+              <Button
+                size="sm"
+                onClick={handleInputSubmit}
+                className="h-7 flex-1"
+              >
                 Add
               </Button>
               <Button
@@ -574,7 +625,7 @@ export function PDFAnnotationLayer({
                 variant="outline"
                 onClick={() => {
                   setAnnotationInput(null);
-                  setInputValue('');
+                  setInputValue("");
                 }}
                 className="h-7"
               >
@@ -587,14 +638,14 @@ export function PDFAnnotationLayer({
 
       {/* Render native annotations (Links) */}
       {nativeAnnotations.map((annot, index) => {
-        if (annot.subtype === 'Link' && annot.rect) {
+        if (annot.subtype === "Link" && annot.rect) {
           const style = getNativeAnnotationStyle(annot.rect);
           return (
             <a
               key={`native-${index}`}
-              href={annot.url || '#'}
-              target={annot.url ? '_blank' : undefined}
-              rel={annot.url ? 'noopener noreferrer' : undefined}
+              href={annot.url || "#"}
+              target={annot.url ? "_blank" : undefined}
+              rel={annot.url ? "noopener noreferrer" : undefined}
               className="absolute hover:bg-yellow-500/20 transition-colors cursor-pointer z-10"
               style={style}
               onClick={(e) => {
@@ -603,7 +654,7 @@ export function PDFAnnotationLayer({
                   onNavigate?.(annot.dest);
                 }
               }}
-              title={annot.url || 'Go to destination'}
+              title={annot.url || "Go to destination"}
             />
           );
         }

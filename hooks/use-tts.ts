@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from "react";
 
 export interface TTSOptions {
   rate?: number;
@@ -20,10 +20,10 @@ export function useTTS() {
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
       // Small timeout to ensure we are not blocking main thread and let React handle render cycle
       setTimeout(() => setIsSupported(true), 0);
-      
+
       const loadVoices = () => {
         const availableVoices = window.speechSynthesis.getVoices();
         setVoices(availableVoices);
@@ -36,51 +36,54 @@ export function useTTS() {
     }
   }, []);
 
-  const speak = useCallback((text: string, options: TTSOptions = {}) => {
-    if (!isSupported) return;
+  const speak = useCallback(
+    (text: string, options: TTSOptions = {}) => {
+      if (!isSupported) return;
 
-    // Cancel any current speaking
-    window.speechSynthesis.cancel();
+      // Cancel any current speaking
+      window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    if (options.rate) utterance.rate = options.rate;
-    if (options.pitch) utterance.pitch = options.pitch;
-    if (options.volume) utterance.volume = options.volume;
-    if (options.voice) utterance.voice = options.voice;
+      const utterance = new SpeechSynthesisUtterance(text);
 
-    utterance.onstart = () => {
-      setIsSpeaking(true);
-      setIsPaused(false);
-      options.onStart?.();
-    };
+      if (options.rate) utterance.rate = options.rate;
+      if (options.pitch) utterance.pitch = options.pitch;
+      if (options.volume) utterance.volume = options.volume;
+      if (options.voice) utterance.voice = options.voice;
 
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      setIsPaused(false);
-      options.onEnd?.();
-    };
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+        setIsPaused(false);
+        options.onStart?.();
+      };
 
-    utterance.onerror = (e) => {
-      console.error('TTS Error:', e);
-      setIsSpeaking(false);
-      setIsPaused(false);
-      options.onError?.(e);
-    };
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        setIsPaused(false);
+        options.onEnd?.();
+      };
 
-    utterance.onpause = () => {
-      setIsPaused(true);
-      options.onPause?.();
-    };
+      utterance.onerror = (e) => {
+        console.error("TTS Error:", e);
+        setIsSpeaking(false);
+        setIsPaused(false);
+        options.onError?.(e);
+      };
 
-    utterance.onresume = () => {
-      setIsPaused(false);
-      options.onResume?.();
-    };
+      utterance.onpause = () => {
+        setIsPaused(true);
+        options.onPause?.();
+      };
 
-    utteranceRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
-  }, [isSupported]);
+      utterance.onresume = () => {
+        setIsPaused(false);
+        options.onResume?.();
+      };
+
+      utteranceRef.current = utterance;
+      window.speechSynthesis.speak(utterance);
+    },
+    [isSupported]
+  );
 
   const pause = useCallback(() => {
     if (!isSupported) return;

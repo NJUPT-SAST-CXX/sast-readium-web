@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
-import { PDFPageProxy } from '@/lib/pdf-utils';
-import { cn } from '@/lib/utils';
-import { Spinner } from '@/components/ui/spinner';
+import { useEffect, useRef, useState } from "react";
+import { PDFPageProxy } from "@/lib/pdf-utils";
+import { cn } from "@/lib/utils";
+import { Spinner } from "@/components/ui/spinner";
 
 interface PDFThumbnailProps {
   page: PDFPageProxy | null;
@@ -13,16 +13,26 @@ interface PDFThumbnailProps {
   rotation?: number;
 }
 
-export function PDFThumbnail({ page, pageNumber, isActive, onClick, rotation = 0 }: PDFThumbnailProps) {
+export function PDFThumbnail({
+  page,
+  pageNumber,
+  isActive,
+  onClick,
+  rotation = 0,
+}: PDFThumbnailProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [renderedState, setRenderedState] = useState<{ page: PDFPageProxy | null; rotation: number }>({ page: null, rotation: 0 });
-  const isLoaded = page === renderedState.page && rotation === renderedState.rotation;
+  const [renderedState, setRenderedState] = useState<{
+    page: PDFPageProxy | null;
+    rotation: number;
+  }>({ page: null, rotation: 0 });
+  const isLoaded =
+    page === renderedState.page && rotation === renderedState.rotation;
 
   useEffect(() => {
     if (!page || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
-    const context = canvas.getContext('2d', {
+    const context = canvas.getContext("2d", {
       // Performance optimization for thumbnails
       alpha: false,
       willReadFrequently: false,
@@ -49,16 +59,17 @@ export function PDFThumbnail({ page, pageNumber, isActive, onClick, rotation = 0
     const renderContext = {
       canvasContext: context,
       viewport: viewport,
-      intent: 'display',
+      intent: "display",
     };
 
-    page.render(renderContext).promise
-      .then(() => {
+    page
+      .render(renderContext)
+      .promise.then(() => {
         setRenderedState({ page, rotation });
       })
       .catch((error: Error) => {
-        if (error.name !== 'RenderingCancelledException') {
-          console.error('Error rendering thumbnail:', error);
+        if (error.name !== "RenderingCancelledException") {
+          console.error("Error rendering thumbnail:", error);
         }
       });
   }, [page, rotation]);
@@ -67,28 +78,24 @@ export function PDFThumbnail({ page, pageNumber, isActive, onClick, rotation = 0
     <button
       onClick={onClick}
       className={cn(
-        'group relative flex flex-col items-center gap-2 rounded-lg border-2 p-2 transition-all hover:bg-accent',
+        "group relative flex flex-col items-center gap-2 rounded-lg border-2 p-2 transition-all hover:bg-accent",
         isActive
-          ? 'border-primary bg-accent'
-          : 'border-transparent hover:border-border'
+          ? "border-primary bg-accent"
+          : "border-transparent hover:border-border"
       )}
     >
       <div className="relative overflow-hidden rounded bg-white">
         {!page || !isLoaded ? (
           <div className="flex h-32 w-24 items-center justify-center bg-muted">
-            {page && !isLoaded && (
-              <Spinner className="h-4 w-4" />
-            )}
-            {!page && (
-              <div className="text-xs text-muted-foreground">...</div>
-            )}
+            {page && !isLoaded && <Spinner className="h-4 w-4" />}
+            {!page && <div className="text-xs text-muted-foreground">...</div>}
           </div>
         ) : null}
         <canvas
           ref={canvasRef}
           className={cn(
-            'transition-opacity',
-            isLoaded ? 'opacity-100' : 'opacity-0'
+            "transition-opacity",
+            isLoaded ? "opacity-100" : "opacity-0"
           )}
         />
       </div>
@@ -98,4 +105,3 @@ export function PDFThumbnail({ page, pageNumber, isActive, onClick, rotation = 0
     </button>
   );
 }
-

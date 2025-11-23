@@ -1,7 +1,7 @@
-import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
-import resourcesToBackend from 'i18next-resources-to-backend';
+import i18n from "i18next";
+import { initReactI18next } from "react-i18next";
+import LanguageDetector from "i18next-browser-languagedetector";
+import resourcesToBackend from "i18next-resources-to-backend";
 
 i18n
   .use(LanguageDetector)
@@ -9,26 +9,26 @@ i18n
   .use(
     resourcesToBackend((language: string, namespace: string) => {
       let lang = language;
-      if (language.startsWith('zh')) {
-        lang = 'zh';
-      } else if (language.startsWith('en')) {
-        lang = 'en';
+      if (language.startsWith("zh")) {
+        lang = "zh";
+      } else if (language.startsWith("en")) {
+        lang = "en";
       }
       return import(`@/locales/${lang}/${namespace}.json`);
     })
   )
   .init({
-    supportedLngs: ['en', 'zh'],
-    fallbackLng: 'zh',
-    debug: process.env.NODE_ENV === 'development',
+    supportedLngs: ["en", "zh"],
+    fallbackLng: "zh",
+    debug: process.env.NODE_ENV === "development",
     interpolation: {
       escapeValue: false, // React already escapes values
     },
-    ns: ['translation'],
-    defaultNS: 'translation',
+    ns: ["translation"],
+    defaultNS: "translation",
     detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
+      order: ["localStorage", "navigator"],
+      caches: ["localStorage"],
     },
   });
 

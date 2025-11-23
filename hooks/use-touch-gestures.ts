@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
 interface TouchGesturesOptions {
   onPinchZoom?: (scale: number) => void;
@@ -13,7 +13,11 @@ export function useTouchGestures(
   elementRef: React.RefObject<HTMLElement | null>,
   options: TouchGesturesOptions
 ) {
-  const touchStartRef = useRef<{ x: number; y: number; distance: number } | null>(null);
+  const touchStartRef = useRef<{
+    x: number;
+    y: number;
+    distance: number;
+  } | null>(null);
   const initialPinchDistance = useRef<number>(0);
 
   useEffect(() => {
@@ -49,7 +53,7 @@ export function useTouchGestures(
         e.preventDefault();
         const currentDistance = getTouchDistance(e.touches);
         const scale = currentDistance / initialPinchDistance.current;
-        
+
         if (options.onPinchZoom) {
           options.onPinchZoom(scale);
         }
@@ -62,7 +66,7 @@ export function useTouchGestures(
         const touchEnd = e.changedTouches[0];
         const deltaX = touchEnd.clientX - touchStartRef.current.x;
         const deltaY = touchEnd.clientY - touchStartRef.current.y;
-        
+
         const absX = Math.abs(deltaX);
         const absY = Math.abs(deltaY);
 
@@ -91,14 +95,14 @@ export function useTouchGestures(
       }
     };
 
-    element.addEventListener('touchstart', handleTouchStart);
-    element.addEventListener('touchmove', handleTouchMove, { passive: false });
-    element.addEventListener('touchend', handleTouchEnd);
+    element.addEventListener("touchstart", handleTouchStart);
+    element.addEventListener("touchmove", handleTouchMove, { passive: false });
+    element.addEventListener("touchend", handleTouchEnd);
 
     return () => {
-      element.removeEventListener('touchstart', handleTouchStart);
-      element.removeEventListener('touchmove', handleTouchMove);
-      element.removeEventListener('touchend', handleTouchEnd);
+      element.removeEventListener("touchstart", handleTouchStart);
+      element.removeEventListener("touchmove", handleTouchMove);
+      element.removeEventListener("touchend", handleTouchEnd);
     };
   }, [elementRef, options]);
 }

@@ -13,7 +13,7 @@ export function SplashScreen() {
   useEffect(() => {
     // Only run on client side
     const hasShown = sessionStorage.getItem("hasShownSplashScreen");
-    
+
     if (enableSplashScreen && !hasShown) {
       const mountTimer = setTimeout(() => {
         setShouldRender(true);
@@ -23,11 +23,11 @@ export function SplashScreen() {
       const showTimer = setTimeout(() => {
         setIsVisible(true);
       }, 10);
-      
+
       const hideTimer = setTimeout(() => {
         setIsVisible(false);
         sessionStorage.setItem("hasShownSplashScreen", "true");
-        
+
         // Remove from DOM after fade out
         setTimeout(() => setShouldRender(false), 1000);
       }, 2500);
@@ -43,7 +43,7 @@ export function SplashScreen() {
   if (!shouldRender) return null;
 
   return (
-    <div 
+    <div
       className={cn(
         "fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background transition-opacity duration-1000 ease-in-out",
         isVisible ? "opacity-100" : "opacity-0 pointer-events-none",
@@ -52,12 +52,24 @@ export function SplashScreen() {
     >
       <style jsx>{`
         @keyframes float {
-          0%, 100% { transform: translateY(0px) scale(1); }
-          50% { transform: translateY(-15px) scale(1.02); }
+          0%,
+          100% {
+            transform: translateY(0px) scale(1);
+          }
+          50% {
+            transform: translateY(-15px) scale(1.02);
+          }
         }
         @keyframes glow {
-          0%, 100% { opacity: 0.3; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(1.2); }
+          0%,
+          100% {
+            opacity: 0.3;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.6;
+            transform: scale(1.2);
+          }
         }
         .animate-float-slow {
           animation: float 6s ease-in-out infinite;
@@ -71,20 +83,20 @@ export function SplashScreen() {
         <div className="relative mb-10 group">
           {/* Glow effect */}
           <div className="absolute inset-0 bg-primary/40 blur-[80px] rounded-full animate-glow-slow" />
-          
+
           {/* Icon */}
           <div className="relative z-10 animate-float-slow">
-            <Image 
-              src="/app-icon.png" 
-              alt="Readium Logo" 
-              width={160} 
-              height={160} 
-              className="h-40 w-40 object-contain drop-shadow-2xl" 
+            <Image
+              src="/app-icon.png"
+              alt="Readium Logo"
+              width={160}
+              height={160}
+              className="h-40 w-40 object-contain drop-shadow-2xl"
               priority
             />
           </div>
         </div>
-        
+
         <div className="space-y-4 text-center relative z-10">
           <h1 className="text-6xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70 select-none">
             Readium

@@ -1,18 +1,32 @@
-'use client';
+"use client";
 
-import { usePDFStore, type RecentFile } from '@/lib/pdf-store';
-import { useTranslation } from 'react-i18next';
+import { usePDFStore, type RecentFile } from "@/lib/pdf-store";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clock, FileText, Trash2, ExternalLink, FolderOpen, Clipboard, Edit3 } from 'lucide-react';
-import { isTauri, readPdfFileAtPath, revealInFileManager, renameFile, deleteFile } from '@/lib/tauri-bridge';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Clock,
+  FileText,
+  Trash2,
+  ExternalLink,
+  FolderOpen,
+  Clipboard,
+  Edit3,
+} from "lucide-react";
+import {
+  isTauri,
+  readPdfFileAtPath,
+  revealInFileManager,
+  renameFile,
+  deleteFile,
+} from "@/lib/tauri-bridge";
 
 interface PDFRecentFilesDialogProps {
   open: boolean;
@@ -20,9 +34,19 @@ interface PDFRecentFilesDialogProps {
   onOpenRecentFile?: (file: File) => void;
 }
 
-export function PDFRecentFilesDialog({ open, onOpenChange, onOpenRecentFile }: PDFRecentFilesDialogProps) {
+export function PDFRecentFilesDialog({
+  open,
+  onOpenChange,
+  onOpenRecentFile,
+}: PDFRecentFilesDialogProps) {
   const { t, i18n } = useTranslation();
-  const { recentFiles, removeRecentFile, clearRecentFiles, setCurrentPDF, updateRecentFileByPath } = usePDFStore();
+  const {
+    recentFiles,
+    removeRecentFile,
+    clearRecentFiles,
+    setCurrentPDF,
+    updateRecentFileByPath,
+  } = usePDFStore();
   const isDesktop = isTauri();
 
   const handleOpenFile = async (entry: RecentFile) => {
@@ -34,7 +58,9 @@ export function PDFRecentFilesDialog({ open, onOpenChange, onOpenRecentFile }: P
       } else {
         const response = await fetch(entry.url);
         const blob = await response.blob();
-        file = new File([blob], entry.name || 'document.pdf', { type: 'application/pdf' });
+        file = new File([blob], entry.name || "document.pdf", {
+          type: "application/pdf",
+        });
       }
 
       if (!file) return;
@@ -47,7 +73,7 @@ export function PDFRecentFilesDialog({ open, onOpenChange, onOpenRecentFile }: P
 
       onOpenChange(false);
     } catch (error) {
-      console.error('Failed to open recent file:', error);
+      console.error("Failed to open recent file:", error);
     }
   };
 
@@ -56,15 +82,15 @@ export function PDFRecentFilesDialog({ open, onOpenChange, onOpenRecentFile }: P
     try {
       await navigator.clipboard.writeText(entry.path);
     } catch (error) {
-      console.error('Failed to copy file path:', error);
+      console.error("Failed to copy file path:", error);
     }
   };
 
   const handleRename = async (entry: RecentFile) => {
     if (!isDesktop || !entry.path) return;
 
-    const currentName = entry.name || 'document.pdf';
-    const input = window.prompt(t('menu.file.rename'), currentName);
+    const currentName = entry.name || "document.pdf";
+    const input = window.prompt(t("menu.file.rename"), currentName);
     if (!input) return;
 
     const trimmed = input.trim();
@@ -74,8 +100,11 @@ export function PDFRecentFilesDialog({ open, onOpenChange, onOpenRecentFile }: P
     if (!ok) return;
 
     const oldPath = entry.path;
-    const lastSlash = Math.max(oldPath.lastIndexOf('/'), oldPath.lastIndexOf('\\'));
-    const dir = lastSlash >= 0 ? oldPath.slice(0, lastSlash + 1) : '';
+    const lastSlash = Math.max(
+      oldPath.lastIndexOf("/"),
+      oldPath.lastIndexOf("\\")
+    );
+    const dir = lastSlash >= 0 ? oldPath.slice(0, lastSlash + 1) : "";
     const newFullPath = `${dir}${trimmed}`;
 
     updateRecentFileByPath(oldPath, { name: trimmed, path: newFullPath });
@@ -84,7 +113,7 @@ export function PDFRecentFilesDialog({ open, onOpenChange, onOpenRecentFile }: P
   const handleDeleteFile = async (entry: RecentFile) => {
     if (!isDesktop || !entry.path) return;
 
-    const confirmed = window.confirm(t('recent.delete'));
+    const confirmed = window.confirm(t("recent.delete"));
     if (!confirmed) return;
 
     const ok = await deleteFile(entry.path);
@@ -95,11 +124,11 @@ export function PDFRecentFilesDialog({ open, onOpenChange, onOpenRecentFile }: P
 
   const formatLastOpened = (timestamp: number) => {
     return new Date(timestamp).toLocaleString(i18n.language, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric'
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
     });
   };
 
@@ -109,12 +138,10 @@ export function PDFRecentFilesDialog({ open, onOpenChange, onOpenRecentFile }: P
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            {t('recent.title')}
+            {t("recent.title")}
           </DialogTitle>
           <DialogDescription>
-            {recentFiles.length > 0 
-              ? t('recent.title') 
-              : t('recent.empty')}
+            {recentFiles.length > 0 ? t("recent.title") : t("recent.empty")}
           </DialogDescription>
         </DialogHeader>
 
@@ -122,7 +149,7 @@ export function PDFRecentFilesDialog({ open, onOpenChange, onOpenRecentFile }: P
           {recentFiles.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full py-12 text-muted-foreground">
               <Clock className="h-12 w-12 mb-4 opacity-20" />
-              <p>{t('recent.empty')}</p>
+              <p>{t("recent.empty")}</p>
             </div>
           ) : (
             <div className="space-y-2 p-1">
@@ -140,9 +167,9 @@ export function PDFRecentFilesDialog({ open, onOpenChange, onOpenRecentFile }: P
                         {file.name}
                       </span>
                       <span className="text-xs text-muted-foreground truncate">
-                        {typeof file.readingProgress === 'number'
+                        {typeof file.readingProgress === "number"
                           ? `${Math.round(file.readingProgress)}% · `
-                          : ''}
+                          : ""}
                         {formatLastOpened(file.lastOpened)}
                       </span>
                     </div>
@@ -153,7 +180,7 @@ export function PDFRecentFilesDialog({ open, onOpenChange, onOpenRecentFile }: P
                       size="icon"
                       className="h-8 w-8"
                       onClick={() => handleOpenFile(file)}
-                      title={t('recent.open')}
+                      title={t("recent.open")}
                     >
                       <ExternalLink className="h-4 w-4" />
                     </Button>
@@ -164,7 +191,7 @@ export function PDFRecentFilesDialog({ open, onOpenChange, onOpenRecentFile }: P
                           size="icon"
                           className="h-8 w-8"
                           onClick={() => handleCopyPath(file)}
-                          title={t('menu.file.copy_path')}
+                          title={t("menu.file.copy_path")}
                         >
                           <Clipboard className="h-4 w-4" />
                         </Button>
@@ -173,7 +200,7 @@ export function PDFRecentFilesDialog({ open, onOpenChange, onOpenRecentFile }: P
                           size="icon"
                           className="h-8 w-8 text-destructive hover:text-destructive"
                           onClick={() => handleDeleteFile(file)}
-                          title={t('recent.delete')}
+                          title={t("recent.delete")}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -182,7 +209,7 @@ export function PDFRecentFilesDialog({ open, onOpenChange, onOpenRecentFile }: P
                           size="icon"
                           className="h-8 w-8"
                           onClick={() => handleRename(file)}
-                          title={t('menu.file.rename')}
+                          title={t("menu.file.rename")}
                         >
                           <Edit3 className="h-4 w-4" />
                         </Button>
@@ -190,8 +217,10 @@ export function PDFRecentFilesDialog({ open, onOpenChange, onOpenRecentFile }: P
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={() => void revealInFileManager(file.path as string)}
-                          title={t('menu.file.reveal_in_file_manager')}
+                          onClick={() =>
+                            void revealInFileManager(file.path as string)
+                          }
+                          title={t("menu.file.reveal_in_file_manager")}
                         >
                           <FolderOpen className="h-4 w-4" />
                         </Button>
@@ -202,7 +231,7 @@ export function PDFRecentFilesDialog({ open, onOpenChange, onOpenRecentFile }: P
                       size="icon"
                       className="h-8 w-8 text-destructive hover:text-destructive"
                       onClick={() => removeRecentFile(file.url)}
-                      title={t('recent.remove')}
+                      title={t("recent.remove")}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -222,7 +251,7 @@ export function PDFRecentFilesDialog({ open, onOpenChange, onOpenRecentFile }: P
               className="gap-2"
             >
               <Trash2 className="h-4 w-4" />
-              {t('recent.clear_all')}
+              {t("recent.clear_all")}
             </Button>
           </div>
         )}

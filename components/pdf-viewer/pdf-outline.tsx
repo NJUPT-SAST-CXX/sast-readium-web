@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState, useMemo } from 'react';
-import { ChevronRight, ChevronDown, BookOpen, Search, X } from 'lucide-react';
-import { PDFOutlineNode } from '@/lib/pdf-store';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
+import { useState, useMemo } from "react";
+import { ChevronRight, ChevronDown, BookOpen, Search, X } from "lucide-react";
+import { PDFOutlineNode } from "@/lib/pdf-store";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 interface PDFOutlineProps {
   outline: PDFOutlineNode[];
@@ -20,7 +20,12 @@ interface OutlineItemProps {
   currentPage: number;
 }
 
-function OutlineItem({ item, level, onNavigate, currentPage }: OutlineItemProps) {
+function OutlineItem({
+  item,
+  level,
+  onNavigate,
+  currentPage,
+}: OutlineItemProps) {
   const [isExpanded, setIsExpanded] = useState(level === 0);
   const hasChildren = item.items && item.items.length > 0;
 
@@ -38,14 +43,14 @@ function OutlineItem({ item, level, onNavigate, currentPage }: OutlineItemProps)
       <button
         onClick={handleClick}
         className={cn(
-          'flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-accent transition-colors',
-          item.pageNumber === currentPage && 'bg-accent/50',
-          item.bold && 'font-semibold',
-          item.italic && 'italic'
+          "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-accent transition-colors",
+          item.pageNumber === currentPage && "bg-accent/50",
+          item.bold && "font-semibold",
+          item.italic && "italic"
         )}
         style={{
           paddingLeft: `${level * 16 + 8}px`,
-          color: item.color ? `rgb(${item.color.join(',')})` : undefined,
+          color: item.color ? `rgb(${item.color.join(",")})` : undefined,
         }}
       >
         {hasChildren && (
@@ -85,7 +90,10 @@ function OutlineItem({ item, level, onNavigate, currentPage }: OutlineItemProps)
 }
 
 // Helper function to filter outline nodes based on search query
-function filterOutlineNodes(nodes: PDFOutlineNode[], query: string): PDFOutlineNode[] {
+function filterOutlineNodes(
+  nodes: PDFOutlineNode[],
+  query: string
+): PDFOutlineNode[] {
   if (!query.trim()) return nodes;
 
   const lowerQuery = query.toLowerCase();
@@ -94,10 +102,12 @@ function filterOutlineNodes(nodes: PDFOutlineNode[], query: string): PDFOutlineN
   for (const node of nodes) {
     // Check if current node matches
     const matchesTitle = node.title.toLowerCase().includes(lowerQuery);
-    
+
     // Recursively filter children
-    const filteredChildren = node.items ? filterOutlineNodes(node.items, query) : [];
-    
+    const filteredChildren = node.items
+      ? filterOutlineNodes(node.items, query)
+      : [];
+
     // Include node if it matches or has matching children
     if (matchesTitle || filteredChildren.length > 0) {
       filtered.push({
@@ -110,8 +120,12 @@ function filterOutlineNodes(nodes: PDFOutlineNode[], query: string): PDFOutlineN
   return filtered;
 }
 
-export function PDFOutline({ outline, onNavigate, currentPage }: PDFOutlineProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+export function PDFOutline({
+  outline,
+  onNavigate,
+  currentPage,
+}: PDFOutlineProps) {
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Filter outline based on search query
   const filteredOutline = useMemo(() => {
@@ -142,7 +156,7 @@ export function PDFOutline({ outline, onNavigate, currentPage }: PDFOutlineProps
           />
           {searchQuery && (
             <button
-              onClick={() => setSearchQuery('')}
+              onClick={() => setSearchQuery("")}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Clear search"
             >
@@ -178,4 +192,3 @@ export function PDFOutline({ outline, onNavigate, currentPage }: PDFOutlineProps
     </div>
   );
 }
-

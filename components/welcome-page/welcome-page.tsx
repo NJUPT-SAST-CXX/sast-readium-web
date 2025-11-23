@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { processArchive } from '@/lib/archive-utils';
-import Image from 'next/image';
-import Link from 'next/link';
+import { processArchive } from "@/lib/archive-utils";
+import Image from "next/image";
+import Link from "next/link";
 import {
   Clock,
   FileArchive,
@@ -10,18 +10,30 @@ import {
   FolderOpen,
   Sparkles,
   Upload,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { usePDFStore, type RecentFile } from '@/lib/pdf-store';
-import { isTauri, openPdfFileViaNativeDialog, openPdfFolderViaNativeDialog, readPdfFileAtPath } from '@/lib/tauri-bridge';
-import { getSystemInfo } from '@/lib/tauri-bridge';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { LanguageSwitcher } from '@/components/language-switcher';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { usePDFStore, type RecentFile } from "@/lib/pdf-store";
+import {
+  isTauri,
+  openPdfFileViaNativeDialog,
+  openPdfFolderViaNativeDialog,
+  readPdfFileAtPath,
+} from "@/lib/tauri-bridge";
+import { getSystemInfo } from "@/lib/tauri-bridge";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 interface WelcomePageProps {
   onFileSelect: (file: File | File[]) => void;
@@ -42,7 +54,11 @@ interface FileTreeNode {
   isDirectory: boolean;
 }
 
-function collectFileStats(node: FileTreeNode): { totalFiles: number; totalSize: number; filePaths: string[] } {
+function collectFileStats(node: FileTreeNode): {
+  totalFiles: number;
+  totalSize: number;
+  filePaths: string[];
+} {
   let totalFiles = 0;
   let totalSize = 0;
   const filePaths: string[] = [];
@@ -75,10 +91,15 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
   const [folderFiles, setFolderFiles] = useState<File[]>([]);
   const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());
-  const [folderDetailMode, setFolderDetailMode] = useState<'simple' | 'detailed'>('simple');
-  const [folderSearch, setFolderSearch] = useState('');
+  const [folderDetailMode, setFolderDetailMode] = useState<
+    "simple" | "detailed"
+  >("simple");
+  const [folderSearch, setFolderSearch] = useState("");
   const { recentFiles } = usePDFStore();
-  const [systemInfo, setSystemInfo] = useState<{ os: string; arch: string } | null>(null);
+  const [systemInfo, setSystemInfo] = useState<{
+    os: string;
+    arch: string;
+  } | null>(null);
 
   const formatFileSize = useCallback((size: number) => {
     if (size >= 1024 * 1024) {
@@ -91,27 +112,32 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
   }, []);
 
   const dedupeKey = (file: PendingFile) =>
-    `${file.origin}-${file.relativePath ?? file.file.name}-${file.file.lastModified}`;
+    `${file.origin}-${file.relativePath ?? file.file.name}-${
+      file.file.lastModified
+    }`;
 
   const handleFilesSelected = useCallback(
     (files: File[], origin: string) => {
       if (!files.length) return;
       const pdfFiles = files.filter(
-        (file) => file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'),
+        (file) =>
+          file.type === "application/pdf" ||
+          file.name.toLowerCase().endsWith(".pdf")
       );
 
       if (pdfFiles.length === 0) {
-        alert(t('dialog.no_pdf_found'));
+        alert(t("dialog.no_pdf_found"));
         return;
       }
 
       const entries: PendingFile[] = pdfFiles.map((file) => ({
         id:
-          (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)) +
-          file.lastModified.toString(),
+          (globalThis.crypto?.randomUUID?.() ??
+            Math.random().toString(36).slice(2)) + file.lastModified.toString(),
         file,
         origin,
-        relativePath: (file as File & { webkitRelativePath?: string }).webkitRelativePath,
+        relativePath: (file as File & { webkitRelativePath?: string })
+          .webkitRelativePath,
       }));
 
       setPendingFiles((prev) => {
@@ -127,37 +153,54 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
 
       onFileSelect(pdfFiles[0]);
     },
-    [onFileSelect, t],
+    [onFileSelect, t]
   );
 
   const folderFileTree = useMemo(() => {
     const root: FileTreeNode = {
-      name: '',
-      path: '',
+      name: "",
+      path: "",
       children: [],
       isDirectory: true,
     };
 
-    const ensureChild = (parent: FileTreeNode, name: string, path: string, isDirectory: boolean) => {
+    const ensureChild = (
+      parent: FileTreeNode,
+      name: string,
+      path: string,
+      isDirectory: boolean
+    ) => {
       if (!parent.children) parent.children = [];
-      let child = parent.children.find((c) => c.name === name && c.isDirectory === isDirectory);
+      let child = parent.children.find(
+        (c) => c.name === name && c.isDirectory === isDirectory
+      );
       if (!child) {
-        child = { name, path, children: isDirectory ? [] : undefined, isDirectory };
+        child = {
+          name,
+          path,
+          children: isDirectory ? [] : undefined,
+          isDirectory,
+        };
         parent.children.push(child);
       }
       return child;
     };
 
     for (const file of folderFiles) {
-      const rel = (file as File & { webkitRelativePath?: string }).webkitRelativePath ?? file.name;
-      const parts = rel.split('/').filter(Boolean);
+      const rel =
+        (file as File & { webkitRelativePath?: string }).webkitRelativePath ??
+        file.name;
+      const parts = rel.split("/").filter(Boolean);
       let current = root;
       for (let i = 0; i < parts.length; i++) {
         const segment = parts[i];
         const isLast = i === parts.length - 1;
-        const currentPath = parts.slice(0, i + 1).join('/');
+        const currentPath = parts.slice(0, i + 1).join("/");
         if (isLast) {
-          if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+          if (
+            file.type === "application/pdf" ||
+            file.name.toLowerCase().endsWith(".pdf")
+          ) {
             if (!current.children) current.children = [];
             current.children.push({
               name: segment,
@@ -194,7 +237,8 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
 
     const filterNode = (node: FileTreeNode): FileTreeNode | null => {
       const selfMatch =
-        node.name.toLowerCase().includes(query) || node.path.toLowerCase().includes(query);
+        node.name.toLowerCase().includes(query) ||
+        node.path.toLowerCase().includes(query);
 
       if (!node.children || node.children.length === 0) {
         if (!node.isDirectory && selfMatch) return node;
@@ -258,35 +302,43 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
     setSelectedPaths(new Set());
   }, []);
 
-  const formatLastModified = useCallback((timestamp?: number) => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    return date.toLocaleString(i18n.language, {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  }, [i18n.language]);
+  const formatLastModified = useCallback(
+    (timestamp?: number) => {
+      if (!timestamp) return "";
+      const date = new Date(timestamp);
+      return date.toLocaleString(i18n.language, {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    },
+    [i18n.language]
+  );
 
   const handleConfirmFolderImport = useCallback(() => {
     const pdfs: File[] = [];
     for (const file of folderFiles) {
-      const rel = (file as File & { webkitRelativePath?: string }).webkitRelativePath ?? file.name;
-      const path = rel.split('/').filter(Boolean).join('/');
+      const rel =
+        (file as File & { webkitRelativePath?: string }).webkitRelativePath ??
+        file.name;
+      const path = rel.split("/").filter(Boolean).join("/");
       if (selectedPaths.size === 0 || selectedPaths.has(path)) {
-        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+        if (
+          file.type === "application/pdf" ||
+          file.name.toLowerCase().endsWith(".pdf")
+        ) {
           pdfs.push(file);
         }
       }
     }
 
-    handleFilesSelected(pdfs, '文件夹导入');
+    handleFilesSelected(pdfs, "文件夹导入");
     setFolderDialogOpen(false);
     setFolderFiles([]);
     setSelectedPaths(new Set());
-    setFolderSearch('');
+    setFolderSearch("");
   }, [folderFiles, handleFilesSelected, selectedPaths]);
 
   useEffect(() => {
@@ -305,9 +357,9 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
-    handleFilesSelected(files, '单文件/多文件选择');
+    handleFilesSelected(files, "单文件/多文件选择");
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -319,11 +371,13 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
     setFolderFiles(files);
     setFolderDialogOpen(true);
     if (folderInputRef.current) {
-      folderInputRef.current.value = '';
+      folderInputRef.current.value = "";
     }
   };
 
-  const handleArchiveInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleArchiveInputChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const archive = e.target.files?.[0];
     if (!archive) return;
 
@@ -332,12 +386,12 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
       const files = await processArchive(archive);
       handleFilesSelected(files, `${archive.name} 压缩包`);
     } catch (error) {
-      console.error('Failed to extract archive', error);
-      alert('解析压缩包失败，请确认文件是否有效');
+      console.error("Failed to extract archive", error);
+      alert("解析压缩包失败，请确认文件是否有效");
     } finally {
       setIsExtractingArchive(false);
       if (archiveInputRef.current) {
-        archiveInputRef.current.value = '';
+        archiveInputRef.current.value = "";
       }
     }
   };
@@ -351,7 +405,7 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
           }
         })
         .catch((error) => {
-          console.error('Failed to open PDF via native dialog', error);
+          console.error("Failed to open PDF via native dialog", error);
         });
     } else {
       fileInputRef.current?.click();
@@ -364,14 +418,14 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
         .then((files) => {
           if (!files) return;
           if (files.length === 0) {
-            alert(t('dialog.no_pdf_found'));
+            alert(t("dialog.no_pdf_found"));
             return;
           }
           setFolderFiles(files);
           setFolderDialogOpen(true);
         })
         .catch((error) => {
-          console.error('Failed to open folder via native dialog', error);
+          console.error("Failed to open folder via native dialog", error);
         });
     } else {
       folderInputRef.current?.click();
@@ -385,8 +439,8 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
   useEffect(() => {
     const folderInput = folderInputRef.current;
     if (!folderInput) return;
-    folderInput.setAttribute('webkitdirectory', '');
-    folderInput.setAttribute('directory', '');
+    folderInput.setAttribute("webkitdirectory", "");
+    folderInput.setAttribute("directory", "");
   }, []);
 
   const handleRecentFileClick = (entry: RecentFile) => {
@@ -396,17 +450,21 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
           if (!file) return;
           onFileSelect(file);
         })
-        .catch((err) => console.error('Error loading recent native file:', err));
+        .catch((err) =>
+          console.error("Error loading recent native file:", err)
+        );
       return;
     }
 
     fetch(entry.url)
       .then((res) => res.blob())
       .then((blob) => {
-        const file = new File([blob], entry.name || 'document.pdf', { type: 'application/pdf' });
+        const file = new File([blob], entry.name || "document.pdf", {
+          type: "application/pdf",
+        });
         onFileSelect(file);
       })
-      .catch((err) => console.error('Error loading recent file:', err));
+      .catch((err) => console.error("Error loading recent file:", err));
   };
 
   const handleRemovePending = (id: string) => {
@@ -453,13 +511,15 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
               />
             </div>
             <div>
-              <h1 className="text-2xl font-semibold">{t('app.title')}</h1>
-              <p className="text-sm text-muted-foreground">{t('app.subtitle')}</p>
+              <h1 className="text-2xl font-semibold">{t("app.title")}</h1>
+              <p className="text-sm text-muted-foreground">
+                {t("app.subtitle")}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <span className="hidden text-xs text-muted-foreground sm:inline-flex">
-              {t('app.tagline')}
+              {t("app.tagline")}
             </span>
             <LanguageSwitcher />
           </div>
@@ -473,12 +533,16 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
             <section>
               <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                 <Sparkles className="h-4 w-4" />
-                {t('welcome.start')}
+                {t("welcome.start")}
               </h2>
               <div className="space-y-1">
-                <Button size="sm" className="w-full justify-start gap-2" onClick={handleOpenClick}>
+                <Button
+                  size="sm"
+                  className="w-full justify-start gap-2"
+                  onClick={handleOpenClick}
+                >
                   <FileText className="h-4 w-4" />
-                  <span>{t('welcome.open_pdf')}</span>
+                  <span>{t("welcome.open_pdf")}</span>
                 </Button>
                 <Button
                   size="sm"
@@ -487,7 +551,7 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
                   onClick={handleFolderClick}
                 >
                   <FolderOpen className="h-4 w-4" />
-                  <span>{t('welcome.open_folder')}</span>
+                  <span>{t("welcome.open_folder")}</span>
                 </Button>
                 <Button
                   size="sm"
@@ -497,7 +561,11 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
                   disabled={isExtractingArchive}
                 >
                   <FileArchive className="h-4 w-4" />
-                  <span>{isExtractingArchive ? t('welcome.parsing_zip') : t('welcome.open_zip')}</span>
+                  <span>
+                    {isExtractingArchive
+                      ? t("welcome.parsing_zip")
+                      : t("welcome.open_zip")}
+                  </span>
                 </Button>
                 {recentFiles.length > 0 && (
                   <Button
@@ -507,18 +575,24 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
                     onClick={() => handleRecentFileClick(recentFiles[0])}
                   >
                     <Clock className="h-4 w-4" />
-                    <span>{t('welcome.continue_reading', { fileName: recentFiles[0].name })}</span>
+                    <span>
+                      {t("welcome.continue_reading", {
+                        fileName: recentFiles[0].name,
+                      })}
+                    </span>
                   </Button>
                 )}
               </div>
-              <p className="mt-4 text-xs text-muted-foreground">{t('welcome.drag_hint')}</p>
+              <p className="mt-4 text-xs text-muted-foreground">
+                {t("welcome.drag_hint")}
+              </p>
             </section>
 
             <section className="space-y-6">
               <div>
                 <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                   <Clock className="h-4 w-4" />
-                  {t('welcome.recent')}
+                  {t("welcome.recent")}
                 </h2>
                 {recentFiles.length > 0 ? (
                   <div className="space-y-1">
@@ -530,16 +604,18 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
                       >
                         <span className="truncate">{file.name}</span>
                         <span className="ml-3 shrink-0 text-xs text-muted-foreground">
-                          {typeof file.readingProgress === 'number'
+                          {typeof file.readingProgress === "number"
                             ? `${Math.round(file.readingProgress)}%`
-                            : ''}
-                          {file.numPages ? ` · ${file.numPages} p` : ''}
+                            : ""}
+                          {file.numPages ? ` · ${file.numPages} p` : ""}
                         </span>
                       </button>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-muted-foreground">{t('welcome.no_recent')}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("welcome.no_recent")}
+                  </p>
                 )}
               </div>
 
@@ -547,11 +623,15 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                     <Upload className="h-4 w-4" />
-                    {t('welcome.import_queue')}
+                    {t("welcome.import_queue")}
                   </h2>
                   {pendingFiles.length > 0 && (
-                    <Button variant="ghost" size="sm" onClick={() => setPendingFiles([])}>
-                      {t('welcome.clear')}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPendingFiles([])}
+                    >
+                      {t("welcome.clear")}
                     </Button>
                   )}
                 </div>
@@ -565,7 +645,7 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
                         <div className="min-w-0">
                           <p className="truncate">{pending.file.name}</p>
                           <p className="text-[11px] text-muted-foreground">
-                            {pending.relativePath ?? '—'} · {pending.origin}
+                            {pending.relativePath ?? "—"} · {pending.origin}
                           </p>
                         </div>
                         <div className="ml-3 flex shrink-0 items-center gap-2">
@@ -593,14 +673,16 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-muted-foreground">{t('welcome.no_pending')}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("welcome.no_pending")}
+                  </p>
                 )}
               </div>
 
               <div>
                 <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                   <Sparkles className="h-4 w-4" />
-                  {t('welcome.help')}
+                  {t("welcome.help")}
                 </h2>
                 <ul className="space-y-1 text-xs text-muted-foreground">
                   <li>
@@ -610,7 +692,7 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
                       rel="noreferrer noopener"
                       className="hover:text-foreground hover:underline"
                     >
-                      {t('welcome.view_docs')}
+                      {t("welcome.view_docs")}
                     </a>
                   </li>
                   <li>
@@ -620,12 +702,15 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
                       rel="noreferrer noopener"
                       className="hover:text-foreground hover:underline"
                     >
-                      {t('welcome.submit_issue')}
+                      {t("welcome.submit_issue")}
                     </a>
                   </li>
                   <li>
-                    <Link href="/about" className="hover:text-foreground hover:underline">
-                      {t('welcome.about')}
+                    <Link
+                      href="/about"
+                      className="hover:text-foreground hover:underline"
+                    >
+                      {t("welcome.about")}
                     </Link>
                   </li>
                 </ul>
@@ -638,8 +723,8 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
       {/* Footer */}
       <footer className="border-t border-border px-6 py-4">
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <p>{t('footer.built_with')}</p>
-          <p>{t('footer.drag_drop')}</p>
+          <p>{t("footer.built_with")}</p>
+          <p>{t("footer.drag_drop")}</p>
           {systemInfo && (
             <p className="hidden md:inline-flex text-xs">
               {systemInfo.os} · {systemInfo.arch}
@@ -650,37 +735,35 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
       <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
         <DialogContent className="max-h-[80vh] max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{t('dialog.select_pdf')}</DialogTitle>
-            <DialogDescription>
-              {t('dialog.scan_desc')}
-            </DialogDescription>
+            <DialogTitle>{t("dialog.select_pdf")}</DialogTitle>
+            <DialogDescription>{t("dialog.scan_desc")}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1 text-xs text-muted-foreground">
               <div className="flex items-center justify-between gap-2">
-                <span>{t('dialog.default_import')}</span>
+                <span>{t("dialog.default_import")}</span>
                 <div className="inline-flex items-center gap-px rounded-md border bg-background px-1 py-0.5">
                   <button
                     type="button"
-                    onClick={() => setFolderDetailMode('simple')}
+                    onClick={() => setFolderDetailMode("simple")}
                     className={`rounded-sm px-2 py-0.5 text-[11px] transition-colors ${
-                      folderDetailMode === 'simple'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-muted/60'
+                      folderDetailMode === "simple"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-muted/60"
                     }`}
                   >
-                    {t('dialog.simple')}
+                    {t("dialog.simple")}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setFolderDetailMode('detailed')}
+                    onClick={() => setFolderDetailMode("detailed")}
                     className={`rounded-sm px-2 py-0.5 text-[11px] transition-colors ${
-                      folderDetailMode === 'detailed'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-muted/60'
+                      folderDetailMode === "detailed"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-muted/60"
                     }`}
                   >
-                    {t('dialog.detailed')}
+                    {t("dialog.detailed")}
                   </button>
                 </div>
               </div>
@@ -688,7 +771,7 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
                 <Input
                   value={folderSearch}
                   onChange={(e) => setFolderSearch(e.target.value)}
-                  placeholder={t('dialog.search_placeholder')}
+                  placeholder={t("dialog.search_placeholder")}
                   className="h-8 text-xs"
                 />
                 <Button
@@ -698,7 +781,7 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
                   onClick={handleSelectAllInFolderTree}
                   className="shrink-0"
                 >
-                  {t('dialog.select_all')}
+                  {t("dialog.select_all")}
                 </Button>
                 <Button
                   type="button"
@@ -707,14 +790,16 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
                   onClick={handleClearSelection}
                   className="shrink-0"
                 >
-                  {t('dialog.clear_selection')}
+                  {t("dialog.clear_selection")}
                 </Button>
               </div>
             </div>
             <ScrollArea className="h-72 rounded-md border bg-muted/30 p-2">
               <div className="space-y-1 text-sm">
                 {filteredFolderFileTree.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">{t('dialog.no_pdf_found')}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("dialog.no_pdf_found")}
+                  </p>
                 ) : (
                   filteredFolderFileTree.map((node) => (
                     <FolderTreeNode
@@ -740,17 +825,17 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
                 setFolderDialogOpen(false);
                 setFolderFiles([]);
                 setSelectedPaths(new Set());
-                setFolderSearch('');
+                setFolderSearch("");
               }}
             >
-              {t('dialog.cancel')}
+              {t("dialog.cancel")}
             </Button>
             <Button
               type="button"
               onClick={handleConfirmFolderImport}
               disabled={folderFileTree.length === 0}
             >
-              {t('dialog.confirm_import')}
+              {t("dialog.confirm_import")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -764,18 +849,26 @@ interface FolderTreeNodeProps {
   level: number;
   selectedPaths: Set<string>;
   onToggle: (node: FileTreeNode) => void;
-  detailMode: 'simple' | 'detailed';
+  detailMode: "simple" | "detailed";
   formatFileSize: (size: number) => string;
   formatLastModified: (timestamp?: number) => string;
 }
 
-function FolderTreeNode({ node, level, selectedPaths, onToggle, detailMode, formatFileSize, formatLastModified }: FolderTreeNodeProps) {
+function FolderTreeNode({
+  node,
+  level,
+  selectedPaths,
+  onToggle,
+  detailMode,
+  formatFileSize,
+  formatLastModified,
+}: FolderTreeNodeProps) {
   const { t } = useTranslation();
   const hasChildren = !!node.children && node.children.length > 0;
   const isSelected = !node.isDirectory && selectedPaths.has(node.path);
   const paddingLeft = 8 + level * 16;
 
-  let directoryChecked: boolean | 'indeterminate' = false;
+  let directoryChecked: boolean | "indeterminate" = false;
   let directoryTotalFiles = 0;
   let directoryTotalSize = 0;
 
@@ -784,13 +877,15 @@ function FolderTreeNode({ node, level, selectedPaths, onToggle, detailMode, form
     directoryTotalFiles = stats.totalFiles;
     directoryTotalSize = stats.totalSize;
     if (stats.filePaths.length > 0) {
-      const selectedCount = stats.filePaths.filter((p) => selectedPaths.has(p)).length;
+      const selectedCount = stats.filePaths.filter((p) =>
+        selectedPaths.has(p)
+      ).length;
       if (selectedCount === 0) {
         directoryChecked = false;
       } else if (selectedCount === stats.filePaths.length) {
         directoryChecked = true;
       } else {
-        directoryChecked = 'indeterminate';
+        directoryChecked = "indeterminate";
       }
     }
   }
@@ -808,25 +903,29 @@ function FolderTreeNode({ node, level, selectedPaths, onToggle, detailMode, form
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1">
-            {node.isDirectory && <span className="text-xs text-muted-foreground">📁</span>}
+            {node.isDirectory && (
+              <span className="text-xs text-muted-foreground">📁</span>
+            )}
             <span className="truncate text-xs sm:text-sm">
-              {node.name || t('dialog.root_dir')}
+              {node.name || t("dialog.root_dir")}
             </span>
           </div>
-          {detailMode === 'detailed' && !node.isDirectory && (
+          {detailMode === "detailed" && !node.isDirectory && (
             <div className="mt-0.5 text-[11px] text-muted-foreground truncate">
               {node.path}
-              {node.file ? ` · ${formatFileSize(node.file.size)}` : ''}
+              {node.file ? ` · ${formatFileSize(node.file.size)}` : ""}
               {node.file && node.file.lastModified
                 ? ` · ${formatLastModified(node.file.lastModified)}`
-                : ''}
+                : ""}
             </div>
           )}
-          {detailMode === 'detailed' && node.isDirectory && directoryTotalFiles > 0 && (
-            <div className="mt-0.5 text-[11px] text-muted-foreground truncate">
-              {directoryTotalFiles} PDF · {formatFileSize(directoryTotalSize)}
-            </div>
-          )}
+          {detailMode === "detailed" &&
+            node.isDirectory &&
+            directoryTotalFiles > 0 && (
+              <div className="mt-0.5 text-[11px] text-muted-foreground truncate">
+                {directoryTotalFiles} PDF · {formatFileSize(directoryTotalSize)}
+              </div>
+            )}
         </div>
       </div>
       {hasChildren && (

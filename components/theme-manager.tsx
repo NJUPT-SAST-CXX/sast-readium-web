@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { usePDFStore } from '@/lib/pdf-store';
-import { isTauri, loadDesktopPreferences } from '@/lib/tauri-bridge';
+import { useEffect } from "react";
+import { usePDFStore } from "@/lib/pdf-store";
+import { isTauri, loadDesktopPreferences } from "@/lib/tauri-bridge";
 
 export function ThemeManager() {
   const { themeMode, isDarkMode } = usePDFStore();
@@ -18,18 +18,19 @@ export function ThemeManager() {
         if (!prefs || cancelled) return;
 
         usePDFStore.setState((state) => {
-          const next: Partial<ReturnType<typeof usePDFStore.getState>> & Record<string, unknown> = {};
+          const next: Partial<ReturnType<typeof usePDFStore.getState>> &
+            Record<string, unknown> = {};
 
           if (prefs.themeMode && state.themeMode !== prefs.themeMode) {
             next.themeMode = prefs.themeMode;
-            if (prefs.themeMode === 'light') {
+            if (prefs.themeMode === "light") {
               next.isDarkMode = false;
-            } else if (prefs.themeMode === 'dark') {
+            } else if (prefs.themeMode === "dark") {
               next.isDarkMode = true;
             }
           }
 
-          if (typeof prefs.enableSplashScreen === 'boolean') {
+          if (typeof prefs.enableSplashScreen === "boolean") {
             next.enableSplashScreen = prefs.enableSplashScreen;
           }
 
@@ -44,7 +45,10 @@ export function ThemeManager() {
           return { ...state, ...next };
         });
       } catch (error) {
-        console.error('Failed to load desktop preferences in ThemeManager', error);
+        console.error(
+          "Failed to load desktop preferences in ThemeManager",
+          error
+        );
       }
     })();
 
@@ -54,32 +58,32 @@ export function ThemeManager() {
   }, []);
 
   useEffect(() => {
-    if (themeMode === 'auto') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      
+    if (themeMode === "auto") {
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
       const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
         // Only update if the calculated mode differs from current isDarkMode
         // We need to be careful not to loop if toggleDarkMode triggers a state change that we don't want?
         // Actually, toggleDarkMode toggles it. We want to SET it.
         // But pdf-store doesn't have a setDarkMode(bool), only toggle.
         // We should probably check the store's current isDarkMode vs the desired one.
-        
+
         const systemIsDark = e.matches;
-        
+
         // We need to access the FRESH isDarkMode from store, but here we might have a stale one in closure if we don't include it in dependency.
         // However, putting isDarkMode in dependency might cause loops.
         // Better to rely on the store state directly or add a setDarkMode action.
         // But looking at the store: toggleDarkMode sets themeMode to manual.
         // We should update the store to have a setDarkModeInternal that doesn't change themeMode?
         // Or just use the toggle if needed.
-        
+
         usePDFStore.setState((state) => {
-            if (state.themeMode === 'auto') {
-                if (state.isDarkMode !== systemIsDark) {
-                    return { isDarkMode: systemIsDark };
-                }
+          if (state.themeMode === "auto") {
+            if (state.isDarkMode !== systemIsDark) {
+              return { isDarkMode: systemIsDark };
             }
-            return {};
+          }
+          return {};
         });
       };
 
@@ -87,9 +91,9 @@ export function ThemeManager() {
       handleChange(mediaQuery);
 
       // Listen for changes
-      mediaQuery.addEventListener('change', handleChange);
+      mediaQuery.addEventListener("change", handleChange);
 
-      return () => mediaQuery.removeEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
     }
   }, [themeMode]); // Re-run if themeMode changes to/from auto
 
@@ -98,9 +102,9 @@ export function ThemeManager() {
   useEffect(() => {
     const root = window.document.documentElement;
     if (isDarkMode) {
-      root.classList.add('dark');
+      root.classList.add("dark");
     } else {
-      root.classList.remove('dark');
+      root.classList.remove("dark");
     }
   }, [isDarkMode]);
 

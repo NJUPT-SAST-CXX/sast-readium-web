@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Trash2, RotateCw } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { PDFThumbnail } from './pdf-thumbnail';
-import { PDFPageProxy } from '@/lib/pdf-utils';
-import { Button } from '@/components/ui/button';
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical, Trash2, RotateCw } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { PDFThumbnail } from "./pdf-thumbnail";
+import { PDFPageProxy } from "@/lib/pdf-utils";
+import { Button } from "@/components/ui/button";
 
 interface PDFDraggableThumbnailProps {
   page: PDFPageProxy | null;
@@ -52,9 +52,9 @@ export function PDFDraggableThumbnail({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'relative group',
-        isDragging && 'z-50 opacity-50',
-        isOver && 'opacity-75'
+        "relative group",
+        isDragging && "z-50 opacity-50",
+        isOver && "opacity-75"
       )}
     >
       {/* Drag Handle */}
@@ -63,8 +63,8 @@ export function PDFDraggableThumbnail({
           {...attributes}
           {...listeners}
           className={cn(
-            'absolute -left-1 top-1/2 z-10 flex h-8 w-6 -translate-y-1/2 cursor-grab items-center justify-center rounded-l-md bg-primary/10 opacity-0 transition-all hover:bg-primary/20 group-hover:opacity-100 active:cursor-grabbing',
-            isDragging && 'cursor-grabbing opacity-100'
+            "absolute -left-1 top-1/2 z-10 flex h-8 w-6 -translate-y-1/2 cursor-grab items-center justify-center rounded-l-md bg-primary/10 opacity-0 transition-all hover:bg-primary/20 group-hover:opacity-100 active:cursor-grabbing",
+            isDragging && "cursor-grabbing opacity-100"
           )}
         >
           <GripVertical className="h-4 w-4 text-primary" />
@@ -107,7 +107,7 @@ export function PDFDraggableThumbnail({
       )}
 
       {/* Thumbnail Content */}
-      <div className={cn('w-full', isDragEnabled && 'pr-2')}>
+      <div className={cn("w-full", isDragEnabled && "pr-2")}>
         <PDFThumbnail
           page={page}
           pageNumber={pageNumber}

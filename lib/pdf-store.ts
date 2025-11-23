@@ -1,5 +1,5 @@
-import { create, StateCreator } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create, StateCreator } from "zustand";
+import { persist } from "zustand/middleware";
 
 export interface PDFMetadata {
   info?: {
@@ -36,7 +36,7 @@ export interface SearchResult {
 
 export interface Annotation {
   id: string;
-  type: 'highlight' | 'comment' | 'shape' | 'text' | 'drawing' | 'image';
+  type: "highlight" | "comment" | "shape" | "text" | "drawing" | "image";
   pageNumber: number;
   content?: string;
   color: string;
@@ -77,7 +77,7 @@ interface DocumentStateSnapshot {
   showOutline: boolean;
   showAnnotations: boolean;
   isDarkMode: boolean;
-  themeMode: 'light' | 'dark' | 'sepia' | 'auto';
+  themeMode: "light" | "dark" | "sepia" | "auto";
   isPresentationMode: boolean;
   showKeyboardShortcuts: boolean;
   showPageNavigationInBottomBar: boolean;
@@ -121,9 +121,15 @@ export interface PDFOutlineNode {
   pageNumber?: number;
 }
 
-export type ViewMode = 'single' | 'continuous' | 'twoPage';
-export type FitMode = 'custom' | 'fitWidth' | 'fitPage';
-export type AnnotationStamp = 'approved' | 'rejected' | 'confidential' | 'draft' | 'final' | 'reviewed';
+export type ViewMode = "single" | "continuous" | "twoPage";
+export type FitMode = "custom" | "fitWidth" | "fitPage";
+export type AnnotationStamp =
+  | "approved"
+  | "rejected"
+  | "confidential"
+  | "draft"
+  | "final"
+  | "reviewed";
 
 interface PDFState {
   // Current PDF state
@@ -149,8 +155,8 @@ interface PDFState {
   showPageNavigationInBottomBar: boolean;
 
   // Theme mode
-  themeMode: 'light' | 'dark' | 'sepia' | 'auto';
-  
+  themeMode: "light" | "dark" | "sepia" | "auto";
+
   // Outline/Bookmarks
   outline: PDFOutlineNode[];
 
@@ -161,7 +167,7 @@ interface PDFState {
   isReading: boolean;
   speechRate: number;
   speechVolume: number;
-  
+
   // Search state
   searchQuery: string;
   searchResults: SearchResult[];
@@ -173,16 +179,16 @@ interface PDFState {
   annotationHistory: AnnotationHistory;
   selectedAnnotationColor: string;
   selectedStrokeWidth: number;
-  
+
   // Bookmarks
   bookmarks: Bookmark[];
 
   // Recent files
   recentFiles: RecentFile[];
-  
+
   // Signatures
   signatures: string[];
-  
+
   // Reading progress
   readingProgress: number; // 0-100 percentage
 
@@ -192,13 +198,13 @@ interface PDFState {
 
   // Menu bar state
   showMenuBar: boolean;
-  
+
   // Selection mode state
   isSelectionMode: boolean;
-  
+
   // Page order for drag-and-drop reordering
   pageOrder: number[]; // Array of page indices in display order
-  
+
   // Per-page rotation (in addition to global rotation)
   pageRotations: Record<number, number>; // originalPageNumber -> rotation (0, 90, 180, 270)
 
@@ -221,7 +227,7 @@ interface PDFState {
 
   // App Settings
   enableSplashScreen: boolean;
-  pdfLoadingAnimation: 'spinner' | 'pulse' | 'bar';
+  pdfLoadingAnimation: "spinner" | "pulse" | "bar";
   autoCheckUpdate: boolean;
 
   // Actions
@@ -249,9 +255,9 @@ interface PDFState {
   toggleOutline: () => void;
   toggleAnnotations: () => void;
   toggleDarkMode: () => void;
-  setThemeMode: (mode: 'light' | 'dark' | 'sepia' | 'auto') => void;
+  setThemeMode: (mode: "light" | "dark" | "sepia" | "auto") => void;
   togglePresentationMode: () => void;
-  
+
   // TTS Actions
   setIsReading: (isReading: boolean) => void;
   setSpeechRate: (rate: number) => void;
@@ -266,7 +272,7 @@ interface PDFState {
   nextSearchResult: () => void;
   previousSearchResult: () => void;
   toggleCaseSensitiveSearch: () => void;
-  addAnnotation: (annotation: Omit<Annotation, 'id' | 'timestamp'>) => void;
+  addAnnotation: (annotation: Omit<Annotation, "id" | "timestamp">) => void;
   removeAnnotation: (id: string) => void;
   updateAnnotation: (id: string, updates: Partial<Annotation>) => void;
   undoAnnotation: () => void;
@@ -275,8 +281,16 @@ interface PDFState {
   canRedo: () => boolean;
   setSelectedAnnotationColor: (color: string) => void;
   setSelectedStrokeWidth: (width: number) => void;
-  addStampAnnotation: (stamp: AnnotationStamp, pageNumber: number, position: { x: number; y: number }) => void;
-  addImageAnnotation: (imageUrl: string, pageNumber: number, position: { x: number; y: number; width: number; height: number }) => void;
+  addStampAnnotation: (
+    stamp: AnnotationStamp,
+    pageNumber: number,
+    position: { x: number; y: number }
+  ) => void;
+  addImageAnnotation: (
+    imageUrl: string,
+    pageNumber: number,
+    position: { x: number; y: number; width: number; height: number }
+  ) => void;
   addSignature: (signature: string) => void;
   removeSignature: (index: number) => void;
   exportAnnotations: () => string;
@@ -286,8 +300,14 @@ interface PDFState {
   addRecentFile: (file: RecentFile) => void;
   removeRecentFile: (url: string) => void;
   clearRecentFiles: () => void;
-  updateRecentFileByPath: (oldPath: string, updates: { name?: string; path?: string | null }) => void;
-  updateRecentFileByUrl: (url: string, updates: { readingProgress?: number; lastOpened?: number }) => void;
+  updateRecentFileByPath: (
+    oldPath: string,
+    updates: { name?: string; path?: string | null }
+  ) => void;
+  updateRecentFileByUrl: (
+    url: string,
+    updates: { readingProgress?: number; lastOpened?: number }
+  ) => void;
   updateReadingProgress: (progress: number) => void;
   resetPDF: () => void;
   openDocumentSession: (id: string) => void;
@@ -297,7 +317,7 @@ interface PDFState {
   reorderPages: (newOrder: number[]) => void;
   initializePageOrder: (numPages: number) => void;
   toggleSplashScreen: () => void;
-  setPdfLoadingAnimation: (animation: 'spinner' | 'pulse' | 'bar') => void;
+  setPdfLoadingAnimation: (animation: "spinner" | "pulse" | "bar") => void;
   toggleAutoCheckUpdate: () => void;
 }
 
@@ -355,18 +375,18 @@ export const usePDFStore = create<PDFState>()(
       currentPage: 1,
       zoom: 1.0,
       rotation: 0,
-      viewMode: 'single' as ViewMode,
-      fitMode: 'custom' as FitMode,
+      viewMode: "single" as ViewMode,
+      fitMode: "custom" as FitMode,
       isFullscreen: false,
       showThumbnails: false,
       showOutline: false,
       showAnnotations: false,
       isDarkMode: false,
-      themeMode: 'auto',
+      themeMode: "auto",
       isPresentationMode: false,
       showKeyboardShortcuts: false,
       showPageNavigationInBottomBar: true,
-      
+
       // TTS Initial State
       isReading: false,
       speechRate: 1.0,
@@ -374,7 +394,7 @@ export const usePDFStore = create<PDFState>()(
 
       outline: [],
       metadata: null,
-      searchQuery: '',
+      searchQuery: "",
       searchResults: [],
       currentSearchIndex: 0,
       caseSensitiveSearch: false,
@@ -384,7 +404,7 @@ export const usePDFStore = create<PDFState>()(
         present: [],
         future: [],
       },
-      selectedAnnotationColor: '#ffff00',
+      selectedAnnotationColor: "#ffff00",
       selectedStrokeWidth: 2,
       bookmarks: [],
       signatures: [],
@@ -397,11 +417,11 @@ export const usePDFStore = create<PDFState>()(
       pageOrder: [],
       pageRotations: {},
       enableSplashScreen: true,
-      pdfLoadingAnimation: 'spinner',
+      pdfLoadingAnimation: "spinner",
       autoCheckUpdate: false,
-      
-      watermarkText: '',
-      watermarkColor: 'rgba(0, 0, 0, 0.1)',
+
+      watermarkText: "",
+      watermarkColor: "rgba(0, 0, 0, 0.1)",
       watermarkOpacity: 0.2,
       watermarkSize: 48,
       watermarkGapX: 1.5,
@@ -413,19 +433,24 @@ export const usePDFStore = create<PDFState>()(
 
       setWatermarkText: (text: string) => set({ watermarkText: text }),
       setWatermarkColor: (color: string) => set({ watermarkColor: color }),
-      setWatermarkOpacity: (opacity: number) => set({ watermarkOpacity: opacity }),
+      setWatermarkOpacity: (opacity: number) =>
+        set({ watermarkOpacity: opacity }),
       setWatermarkSize: (size: number) => set({ watermarkSize: size }),
       setWatermarkGapX: (gap: number) => set({ watermarkGapX: gap }),
       setWatermarkGapY: (gap: number) => set({ watermarkGapY: gap }),
-      setWatermarkRotation: (rotation: number) => set({ watermarkRotation: rotation }),
+      setWatermarkRotation: (rotation: number) =>
+        set({ watermarkRotation: rotation }),
 
       setPdfUrl: (url) => set({ pdfUrl: url }),
 
-      toggleSplashScreen: () => set((state) => ({ enableSplashScreen: !state.enableSplashScreen })),
+      toggleSplashScreen: () =>
+        set((state) => ({ enableSplashScreen: !state.enableSplashScreen })),
 
-      toggleAutoCheckUpdate: () => set((state) => ({ autoCheckUpdate: !state.autoCheckUpdate })),
+      toggleAutoCheckUpdate: () =>
+        set((state) => ({ autoCheckUpdate: !state.autoCheckUpdate })),
 
-      setPdfLoadingAnimation: (animation: 'spinner' | 'pulse' | 'bar') => set({ pdfLoadingAnimation: animation }),
+      setPdfLoadingAnimation: (animation: "spinner" | "pulse" | "bar") =>
+        set({ pdfLoadingAnimation: animation }),
 
       setNumPages: (numPages) => set({ numPages }),
 
@@ -440,20 +465,24 @@ export const usePDFStore = create<PDFState>()(
 
       removePage: (visualIndex) => {
         set((state) => {
-          const newPageOrder = [...(state.pageOrder.length > 0 ? state.pageOrder : Array.from({ length: state.numPages }, (_, i) => i + 1))];
+          const newPageOrder = [
+            ...(state.pageOrder.length > 0
+              ? state.pageOrder
+              : Array.from({ length: state.numPages }, (_, i) => i + 1)),
+          ];
           if (visualIndex >= 0 && visualIndex < newPageOrder.length) {
             newPageOrder.splice(visualIndex, 1);
-            
+
             // Adjust current page if needed
             let newCurrentPage = state.currentPage;
             if (newCurrentPage > newPageOrder.length) {
               newCurrentPage = Math.max(1, newPageOrder.length);
             } else if (state.currentPage > visualIndex + 1) {
-               // If we deleted a page before current page, shift current page back
-               newCurrentPage--;
+              // If we deleted a page before current page, shift current page back
+              newCurrentPage--;
             } else if (state.currentPage === visualIndex + 1) {
-               // If we deleted current page, stay at same index (which is now next page) or go to last
-               newCurrentPage = Math.min(state.currentPage, newPageOrder.length);
+              // If we deleted current page, stay at same index (which is now next page) or go to last
+              newCurrentPage = Math.min(state.currentPage, newPageOrder.length);
             }
 
             return { pageOrder: newPageOrder, currentPage: newCurrentPage };
@@ -510,7 +539,7 @@ export const usePDFStore = create<PDFState>()(
       setZoom: (zoom) => {
         // Zoom limits: 50% to 300%
         if (zoom >= 0.5 && zoom <= 3.0) {
-          set({ zoom, fitMode: 'custom' });
+          set({ zoom, fitMode: "custom" });
         }
       },
 
@@ -518,14 +547,14 @@ export const usePDFStore = create<PDFState>()(
         const { zoom } = get();
         // Increment by 0.25 (25%) with max of 300%
         const newZoom = Math.min(zoom + 0.25, 3.0);
-        set({ zoom: newZoom, fitMode: 'custom' });
+        set({ zoom: newZoom, fitMode: "custom" });
       },
 
       zoomOut: () => {
         const { zoom } = get();
         // Decrement by 0.25 (25%) with min of 50%
         const newZoom = Math.max(zoom - 0.25, 0.5);
-        set({ zoom: newZoom, fitMode: 'custom' });
+        set({ zoom: newZoom, fitMode: "custom" });
       },
 
       setViewMode: (mode) => set({ viewMode: mode }),
@@ -544,40 +573,53 @@ export const usePDFStore = create<PDFState>()(
         set({ rotation: (rotation - 90 + 360) % 360 });
       },
 
-      toggleFullscreen: () => set((state) => ({ isFullscreen: !state.isFullscreen })),
+      toggleFullscreen: () =>
+        set((state) => ({ isFullscreen: !state.isFullscreen })),
 
-      toggleThumbnails: () => set((state) => ({ showThumbnails: !state.showThumbnails })),
+      toggleThumbnails: () =>
+        set((state) => ({ showThumbnails: !state.showThumbnails })),
 
-      toggleOutline: () => set((state) => ({ showOutline: !state.showOutline })),
+      toggleOutline: () =>
+        set((state) => ({ showOutline: !state.showOutline })),
 
-      toggleAnnotations: () => set((state) => ({ showAnnotations: !state.showAnnotations })),
+      toggleAnnotations: () =>
+        set((state) => ({ showAnnotations: !state.showAnnotations })),
 
-      toggleDarkMode: () => set((state) => {
-        const newIsDarkMode = !state.isDarkMode;
-        return { 
-          isDarkMode: newIsDarkMode,
-          themeMode: newIsDarkMode ? 'dark' : 'light' // Manual toggle sets explicit mode
-        };
-      }),
+      toggleDarkMode: () =>
+        set((state) => {
+          const newIsDarkMode = !state.isDarkMode;
+          return {
+            isDarkMode: newIsDarkMode,
+            themeMode: newIsDarkMode ? "dark" : "light", // Manual toggle sets explicit mode
+          };
+        }),
 
-      setThemeMode: (mode) => set((state) => {
-        let newIsDarkMode = state.isDarkMode;
-        
-        if (mode === 'light' || mode === 'sepia') newIsDarkMode = false;
-        if (mode === 'dark') newIsDarkMode = true;
-        
-        return { themeMode: mode, isDarkMode: newIsDarkMode };
-      }),
+      setThemeMode: (mode) =>
+        set((state) => {
+          let newIsDarkMode = state.isDarkMode;
+
+          if (mode === "light" || mode === "sepia") newIsDarkMode = false;
+          if (mode === "dark") newIsDarkMode = true;
+
+          return { themeMode: mode, isDarkMode: newIsDarkMode };
+        }),
 
       setIsReading: (isReading) => set({ isReading }),
       setSpeechRate: (rate) => set({ speechRate: rate }),
       setSpeechVolume: (volume) => set({ speechVolume: volume }),
 
-      togglePresentationMode: () => set((state) => ({ isPresentationMode: !state.isPresentationMode })),
+      togglePresentationMode: () =>
+        set((state) => ({ isPresentationMode: !state.isPresentationMode })),
 
-      toggleKeyboardShortcuts: () => set((state) => ({ showKeyboardShortcuts: !state.showKeyboardShortcuts })),
+      toggleKeyboardShortcuts: () =>
+        set((state) => ({
+          showKeyboardShortcuts: !state.showKeyboardShortcuts,
+        })),
 
-      toggleBottomBarMode: () => set((state) => ({ showPageNavigationInBottomBar: !state.showPageNavigationInBottomBar })),
+      toggleBottomBarMode: () =>
+        set((state) => ({
+          showPageNavigationInBottomBar: !state.showPageNavigationInBottomBar,
+        })),
 
       setOutline: (outline) => set({ outline }),
 
@@ -585,7 +627,8 @@ export const usePDFStore = create<PDFState>()(
 
       setSearchQuery: (query) => set({ searchQuery: query }),
 
-      setSearchResults: (results) => set({ searchResults: results, currentSearchIndex: 0 }),
+      setSearchResults: (results) =>
+        set({ searchResults: results, currentSearchIndex: 0 }),
 
       nextSearchResult: () => {
         const { currentSearchIndex, searchResults, pageOrder } = get();
@@ -593,7 +636,7 @@ export const usePDFStore = create<PDFState>()(
           const newIndex = (currentSearchIndex + 1) % searchResults.length;
           const originalPage = searchResults[newIndex].pageNumber;
           let visualPage = originalPage;
-          
+
           // Map original page to visual page if reordered
           if (pageOrder.length > 0) {
             const index = pageOrder.indexOf(originalPage);
@@ -601,7 +644,7 @@ export const usePDFStore = create<PDFState>()(
               visualPage = index + 1;
             }
           }
-          
+
           set({ currentSearchIndex: newIndex, currentPage: visualPage });
         }
       },
@@ -609,10 +652,12 @@ export const usePDFStore = create<PDFState>()(
       previousSearchResult: () => {
         const { currentSearchIndex, searchResults, pageOrder } = get();
         if (searchResults.length > 0) {
-          const newIndex = (currentSearchIndex - 1 + searchResults.length) % searchResults.length;
+          const newIndex =
+            (currentSearchIndex - 1 + searchResults.length) %
+            searchResults.length;
           const originalPage = searchResults[newIndex].pageNumber;
           let visualPage = originalPage;
-          
+
           // Map original page to visual page if reordered
           if (pageOrder.length > 0) {
             const index = pageOrder.indexOf(originalPage);
@@ -620,12 +665,13 @@ export const usePDFStore = create<PDFState>()(
               visualPage = index + 1;
             }
           }
-          
+
           set({ currentSearchIndex: newIndex, currentPage: visualPage });
         }
       },
 
-      toggleCaseSensitiveSearch: () => set((state) => ({ caseSensitiveSearch: !state.caseSensitiveSearch })),
+      toggleCaseSensitiveSearch: () =>
+        set((state) => ({ caseSensitiveSearch: !state.caseSensitiveSearch })),
 
       addAnnotation: (annotation) => {
         const newAnnotation: Annotation = {
@@ -636,7 +682,10 @@ export const usePDFStore = create<PDFState>()(
         set((state) => ({
           annotations: [...state.annotations, newAnnotation],
           annotationHistory: {
-            past: [...state.annotationHistory.past, state.annotationHistory.present],
+            past: [
+              ...state.annotationHistory.past,
+              state.annotationHistory.present,
+            ],
             present: [...state.annotations, newAnnotation],
             future: [], // Clear redo stack
           },
@@ -649,7 +698,10 @@ export const usePDFStore = create<PDFState>()(
           return {
             annotations: newAnnotations,
             annotationHistory: {
-              past: [...state.annotationHistory.past, state.annotationHistory.present],
+              past: [
+                ...state.annotationHistory.past,
+                state.annotationHistory.present,
+              ],
               present: newAnnotations,
               future: [], // Clear redo stack
             },
@@ -665,7 +717,10 @@ export const usePDFStore = create<PDFState>()(
           return {
             annotations: newAnnotations,
             annotationHistory: {
-              past: [...state.annotationHistory.past, state.annotationHistory.present],
+              past: [
+                ...state.annotationHistory.past,
+                state.annotationHistory.present,
+              ],
               present: newAnnotations,
               future: [], // Clear redo stack
             },
@@ -677,7 +732,10 @@ export const usePDFStore = create<PDFState>()(
         set((state) => {
           if (state.annotationHistory.past.length === 0) return state;
 
-          const previous = state.annotationHistory.past[state.annotationHistory.past.length - 1];
+          const previous =
+            state.annotationHistory.past[
+              state.annotationHistory.past.length - 1
+            ];
           const newPast = state.annotationHistory.past.slice(0, -1);
 
           return {
@@ -685,7 +743,10 @@ export const usePDFStore = create<PDFState>()(
             annotationHistory: {
               past: newPast,
               present: previous,
-              future: [state.annotationHistory.present, ...state.annotationHistory.future],
+              future: [
+                state.annotationHistory.present,
+                ...state.annotationHistory.future,
+              ],
             },
           };
         });
@@ -701,7 +762,10 @@ export const usePDFStore = create<PDFState>()(
           return {
             annotations: next,
             annotationHistory: {
-              past: [...state.annotationHistory.past, state.annotationHistory.present],
+              past: [
+                ...state.annotationHistory.past,
+                state.annotationHistory.present,
+              ],
               present: next,
               future: newFuture,
             },
@@ -719,32 +783,33 @@ export const usePDFStore = create<PDFState>()(
         return state.annotationHistory.future.length > 0;
       },
 
-      setSelectedAnnotationColor: (color) => set({ selectedAnnotationColor: color }),
+      setSelectedAnnotationColor: (color) =>
+        set({ selectedAnnotationColor: color }),
 
       setSelectedStrokeWidth: (width) => set({ selectedStrokeWidth: width }),
 
       addStampAnnotation: (stamp, pageNumber, position) => {
         const stampTexts: Record<AnnotationStamp, string> = {
-          approved: '✓ APPROVED',
-          rejected: '✗ REJECTED',
-          confidential: '🔒 CONFIDENTIAL',
-          draft: '📝 DRAFT',
-          final: '✓ FINAL',
-          reviewed: '👁 REVIEWED',
+          approved: "✓ APPROVED",
+          rejected: "✗ REJECTED",
+          confidential: "🔒 CONFIDENTIAL",
+          draft: "📝 DRAFT",
+          final: "✓ FINAL",
+          reviewed: "👁 REVIEWED",
         };
 
         const stampColors: Record<AnnotationStamp, string> = {
-          approved: '#22c55e',
-          rejected: '#ef4444',
-          confidential: '#f59e0b',
-          draft: '#6366f1',
-          final: '#10b981',
-          reviewed: '#3b82f6',
+          approved: "#22c55e",
+          rejected: "#ef4444",
+          confidential: "#f59e0b",
+          draft: "#6366f1",
+          final: "#10b981",
+          reviewed: "#3b82f6",
         };
 
         const newAnnotation: Annotation = {
           id: `stamp-${Date.now()}-${Math.random()}`,
-          type: 'text',
+          type: "text",
           pageNumber,
           content: stampTexts[stamp],
           color: stampColors[stamp],
@@ -755,20 +820,27 @@ export const usePDFStore = create<PDFState>()(
         set((state) => ({
           annotations: [...state.annotations, newAnnotation],
           annotationHistory: {
-            past: [...state.annotationHistory.past, state.annotationHistory.present],
+            past: [
+              ...state.annotationHistory.past,
+              state.annotationHistory.present,
+            ],
             present: [...state.annotations, newAnnotation],
             future: [],
           },
         }));
       },
 
-      addImageAnnotation: (imageUrl: string, pageNumber: number, position: { x: number; y: number; width: number; height: number }) => {
+      addImageAnnotation: (
+        imageUrl: string,
+        pageNumber: number,
+        position: { x: number; y: number; width: number; height: number }
+      ) => {
         const newAnnotation: Annotation = {
           id: `image-${Date.now()}-${Math.random()}`,
-          type: 'image',
+          type: "image",
           pageNumber,
           content: imageUrl,
-          color: '#000000', // Not used for images but required by type
+          color: "#000000", // Not used for images but required by type
           position,
           timestamp: Date.now(),
         };
@@ -776,18 +848,23 @@ export const usePDFStore = create<PDFState>()(
         set((state) => ({
           annotations: [...state.annotations, newAnnotation],
           annotationHistory: {
-            past: [...state.annotationHistory.past, state.annotationHistory.present],
+            past: [
+              ...state.annotationHistory.past,
+              state.annotationHistory.present,
+            ],
             present: [...state.annotations, newAnnotation],
             future: [],
           },
         }));
       },
 
-      addSignature: (signature: string) => set((state) => ({ signatures: [...state.signatures, signature] })),
+      addSignature: (signature: string) =>
+        set((state) => ({ signatures: [...state.signatures, signature] })),
 
-      removeSignature: (index: number) => set((state) => ({
-        signatures: state.signatures.filter((_, i) => i !== index),
-      })),
+      removeSignature: (index: number) =>
+        set((state) => ({
+          signatures: state.signatures.filter((_, i) => i !== index),
+        })),
 
       exportAnnotations: () => {
         const state = get();
@@ -795,7 +872,7 @@ export const usePDFStore = create<PDFState>()(
           annotations: state.annotations,
           bookmarks: state.bookmarks,
           exportDate: new Date().toISOString(),
-          version: '1.0',
+          version: "1.0",
         };
         return JSON.stringify(exportData, null, 2);
       },
@@ -810,14 +887,17 @@ export const usePDFStore = create<PDFState>()(
                 ? [...state.bookmarks, ...importData.bookmarks]
                 : state.bookmarks,
               annotationHistory: {
-                past: [...state.annotationHistory.past, state.annotationHistory.present],
+                past: [
+                  ...state.annotationHistory.past,
+                  state.annotationHistory.present,
+                ],
                 present: [...state.annotations, ...importData.annotations],
                 future: [],
               },
             }));
           }
         } catch (error) {
-          console.error('Failed to import annotations:', error);
+          console.error("Failed to import annotations:", error);
         }
       },
 
@@ -872,38 +952,39 @@ export const usePDFStore = create<PDFState>()(
         }));
       },
 
-      resetPDF: () => set({
-        currentPDF: null,
-        pdfUrl: null,
-        numPages: 0,
-        currentPage: 1,
-        zoom: 1.0,
-        rotation: 0,
-        viewMode: 'single',
-        fitMode: 'custom',
-        isFullscreen: false,
-        showThumbnails: false,
-        showOutline: false,
-        showAnnotations: false,
-        outline: [],
-        metadata: null,
-        searchQuery: '',
-        searchResults: [],
-        currentSearchIndex: 0,
-        caseSensitiveSearch: false,
-        annotations: [],
-        bookmarks: [],
-        readingProgress: 0,
-        activeDocumentId: null,
-        documents: {},
-        watermarkText: '',
-        watermarkColor: 'rgba(0, 0, 0, 0.1)',
-        watermarkOpacity: 0.2,
-        watermarkSize: 48,
-        watermarkGapX: 1.5,
-        watermarkGapY: 4,
-        watermarkRotation: -45,
-      }),
+      resetPDF: () =>
+        set({
+          currentPDF: null,
+          pdfUrl: null,
+          numPages: 0,
+          currentPage: 1,
+          zoom: 1.0,
+          rotation: 0,
+          viewMode: "single",
+          fitMode: "custom",
+          isFullscreen: false,
+          showThumbnails: false,
+          showOutline: false,
+          showAnnotations: false,
+          outline: [],
+          metadata: null,
+          searchQuery: "",
+          searchResults: [],
+          currentSearchIndex: 0,
+          caseSensitiveSearch: false,
+          annotations: [],
+          bookmarks: [],
+          readingProgress: 0,
+          activeDocumentId: null,
+          documents: {},
+          watermarkText: "",
+          watermarkColor: "rgba(0, 0, 0, 0.1)",
+          watermarkOpacity: 0.2,
+          watermarkSize: 48,
+          watermarkGapX: 1.5,
+          watermarkGapY: 4,
+          watermarkRotation: -45,
+        }),
 
       openDocumentSession: (id) => {
         set((state) => {
@@ -918,45 +999,44 @@ export const usePDFStore = create<PDFState>()(
 
           const existing = documents[id];
 
-          const snapshot: DocumentStateSnapshot =
-            existing || {
-              numPages: 0,
-              currentPage: 1,
-              zoom: 1.0,
-              rotation: 0,
-              viewMode: state.viewMode,
-              fitMode: state.fitMode,
-              isFullscreen: false,
-              showThumbnails: state.showThumbnails,
-              showOutline: state.showOutline,
-              showAnnotations: state.showAnnotations,
-              isDarkMode: state.isDarkMode,
-              themeMode: state.themeMode,
-              isPresentationMode: state.isPresentationMode,
-              showKeyboardShortcuts: state.showKeyboardShortcuts,
-              showPageNavigationInBottomBar: true,
-              outline: [],
-              metadata: null,
-              isReading: false,
-              speechRate: 1.0,
-              speechVolume: 1.0,
-              searchQuery: '',
-              searchResults: [],
-              currentSearchIndex: 0,
-              caseSensitiveSearch: state.caseSensitiveSearch,
-              annotations: [],
-              annotationHistory: {
-                past: [],
-                present: [],
-                future: [],
-              },
-              selectedAnnotationColor: state.selectedAnnotationColor,
-              selectedStrokeWidth: state.selectedStrokeWidth,
-              bookmarks: [],
-              readingProgress: 0,
-              pageOrder: [],
-              pdfUrl: null,
-            };
+          const snapshot: DocumentStateSnapshot = existing || {
+            numPages: 0,
+            currentPage: 1,
+            zoom: 1.0,
+            rotation: 0,
+            viewMode: state.viewMode,
+            fitMode: state.fitMode,
+            isFullscreen: false,
+            showThumbnails: state.showThumbnails,
+            showOutline: state.showOutline,
+            showAnnotations: state.showAnnotations,
+            isDarkMode: state.isDarkMode,
+            themeMode: state.themeMode,
+            isPresentationMode: state.isPresentationMode,
+            showKeyboardShortcuts: state.showKeyboardShortcuts,
+            showPageNavigationInBottomBar: true,
+            outline: [],
+            metadata: null,
+            isReading: false,
+            speechRate: 1.0,
+            speechVolume: 1.0,
+            searchQuery: "",
+            searchResults: [],
+            currentSearchIndex: 0,
+            caseSensitiveSearch: state.caseSensitiveSearch,
+            annotations: [],
+            annotationHistory: {
+              past: [],
+              present: [],
+              future: [],
+            },
+            selectedAnnotationColor: state.selectedAnnotationColor,
+            selectedStrokeWidth: state.selectedStrokeWidth,
+            bookmarks: [],
+            readingProgress: 0,
+            pageOrder: [],
+            pdfUrl: null,
+          };
 
           return {
             ...state,
@@ -979,7 +1059,8 @@ export const usePDFStore = create<PDFState>()(
             isDarkMode: snapshot.isDarkMode,
             isPresentationMode: snapshot.isPresentationMode,
             showKeyboardShortcuts: snapshot.showKeyboardShortcuts,
-            showPageNavigationInBottomBar: snapshot.showPageNavigationInBottomBar,
+            showPageNavigationInBottomBar:
+              snapshot.showPageNavigationInBottomBar,
             outline: snapshot.outline,
             metadata: snapshot.metadata,
             isReading: snapshot.isReading,
@@ -1046,7 +1127,8 @@ export const usePDFStore = create<PDFState>()(
             isDarkMode: nextSnapshot.isDarkMode,
             isPresentationMode: nextSnapshot.isPresentationMode,
             showKeyboardShortcuts: nextSnapshot.showKeyboardShortcuts,
-            showPageNavigationInBottomBar: nextSnapshot.showPageNavigationInBottomBar,
+            showPageNavigationInBottomBar:
+              nextSnapshot.showPageNavigationInBottomBar,
             outline: nextSnapshot.outline,
             metadata: nextSnapshot.metadata,
             isReading: nextSnapshot.isReading,
@@ -1072,16 +1154,21 @@ export const usePDFStore = create<PDFState>()(
         });
       },
 
-      toggleMenuBar: () => set((state) => ({ showMenuBar: !state.showMenuBar })),
+      toggleMenuBar: () =>
+        set((state) => ({ showMenuBar: !state.showMenuBar })),
 
-      toggleSelectionMode: () => set((state) => ({ isSelectionMode: !state.isSelectionMode })),
+      toggleSelectionMode: () =>
+        set((state) => ({ isSelectionMode: !state.isSelectionMode })),
 
       reorderPages: (newOrder) => set({ pageOrder: newOrder }),
 
       initializePageOrder: (numPages) => {
         set((state) => {
           // Only initialize if pageOrder is empty or doesn't match the number of pages
-          if (state.pageOrder.length === 0 || state.pageOrder.length !== numPages) {
+          if (
+            state.pageOrder.length === 0 ||
+            state.pageOrder.length !== numPages
+          ) {
             const order = Array.from({ length: numPages }, (_, i) => i + 1);
             return { pageOrder: order };
           }
@@ -1090,7 +1177,7 @@ export const usePDFStore = create<PDFState>()(
       },
     }),
     {
-      name: 'pdf-reader-storage',
+      name: "pdf-reader-storage",
       partialize: (state) => ({
         recentFiles: state.recentFiles,
         isDarkMode: state.isDarkMode,

@@ -7,7 +7,8 @@ const isTauriRuntime =
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).__TAURI_INTERNALS__ !== undefined;
 
-let cachedInvoke: (<T>(cmd: string, args?: InvokeArgs) => Promise<T>) | null = null;
+let cachedInvoke: (<T>(cmd: string, args?: InvokeArgs) => Promise<T>) | null =
+  null;
 
 async function getInvoke() {
   if (!isTauriRuntime) return null;
@@ -18,7 +19,10 @@ async function getInvoke() {
   return cachedInvoke;
 }
 
-async function safeInvoke<T>(cmd: string, args?: InvokeArgs): Promise<T | null> {
+async function safeInvoke<T>(
+  cmd: string,
+  args?: InvokeArgs
+): Promise<T | null> {
   try {
     const invoke = await getInvoke();
     if (!invoke) return null;
@@ -85,7 +89,9 @@ export async function loadDesktopPreferences(): Promise<DesktopPreferences | nul
   }
 }
 
-export async function saveDesktopPreferences(prefs: DesktopPreferences): Promise<boolean> {
+export async function saveDesktopPreferences(
+  prefs: DesktopPreferences
+): Promise<boolean> {
   if (!isTauriRuntime) return false;
 
   try {
@@ -104,7 +110,9 @@ export async function saveDesktopPreferences(prefs: DesktopPreferences): Promise
   }
 }
 
-export async function openPdfFileViaNativeDialog(): Promise<File | File[] | null> {
+export async function openPdfFileViaNativeDialog(): Promise<
+  File | File[] | null
+> {
   if (!isTauriRuntime) return null;
 
   try {
@@ -127,25 +135,28 @@ export async function openPdfFileViaNativeDialog(): Promise<File | File[] | null
 
     const paths = Array.isArray(selection) ? selection : [selection];
 
-    const files = await Promise.all(paths.map(async (path) => {
-      const data = await fs.readFile(path as string);
-      const bytes = data as unknown as Uint8Array;
-      const buffer = bytes.buffer as ArrayBuffer;
-      const blob = new Blob([buffer], { type: "application/pdf" });
-      const fileName = (path as string).split(/[\\/]/).pop() ?? "document.pdf";
+    const files = await Promise.all(
+      paths.map(async (path) => {
+        const data = await fs.readFile(path as string);
+        const bytes = data as unknown as Uint8Array;
+        const buffer = bytes.buffer as ArrayBuffer;
+        const blob = new Blob([buffer], { type: "application/pdf" });
+        const fileName =
+          (path as string).split(/[\\/]/).pop() ?? "document.pdf";
 
-      const file = new File([blob], fileName, { type: "application/pdf" });
+        const file = new File([blob], fileName, { type: "application/pdf" });
 
-      try {
-        Object.defineProperty(file, "__nativePath", {
-          value: path,
-          configurable: true,
-        });
-      } catch {
-        // best effort
-      }
-      return file;
-    }));
+        try {
+          Object.defineProperty(file, "__nativePath", {
+            value: path,
+            configurable: true,
+          });
+        } catch {
+          // best effort
+        }
+        return file;
+      })
+    );
 
     if (files.length === 1) return files[0];
     return files;
@@ -197,7 +208,8 @@ export async function openPdfFolderViaNativeDialog(): Promise<File[] | null> {
           const buffer = bytes.buffer as ArrayBuffer;
           const blob = new Blob([buffer], { type: "application/pdf" });
 
-          const fileName = entry.name || entry.path.split(/[\\/]/).pop() || "document.pdf";
+          const fileName =
+            entry.name || entry.path.split(/[\\/]/).pop() || "document.pdf";
           const file = new File([blob], fileName, { type: "application/pdf" });
 
           const fullNormalized = String(entry.path).replace(/\\/g, "/");
@@ -238,7 +250,10 @@ export async function openPdfFolderViaNativeDialog(): Promise<File[] | null> {
   }
 }
 
-export async function readPdfFileAtPath(path: string, fileName?: string): Promise<File | null> {
+export async function readPdfFileAtPath(
+  path: string,
+  fileName?: string
+): Promise<File | null> {
   if (!isTauriRuntime) return null;
 
   try {
@@ -276,13 +291,19 @@ export async function revealInFileManager(path: string): Promise<boolean> {
   return result ?? false;
 }
 
-export async function renameFile(path: string, newName: string): Promise<boolean> {
+export async function renameFile(
+  path: string,
+  newName: string
+): Promise<boolean> {
   if (!isTauriRuntime) return false;
 
   const trimmed = newName.trim();
   if (!trimmed) return false;
 
-  const result = await safeInvoke<boolean>("rename_file", { path, new_name: trimmed });
+  const result = await safeInvoke<boolean>("rename_file", {
+    path,
+    new_name: trimmed,
+  });
   return result ?? false;
 }
 

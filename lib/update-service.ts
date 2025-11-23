@@ -1,5 +1,5 @@
-import { check } from '@tauri-apps/plugin-updater';
-import { relaunch } from '@tauri-apps/plugin-process';
+import { check } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
 
 export interface UpdateStatus {
   available: boolean;
@@ -11,7 +11,7 @@ export interface UpdateStatus {
 export const checkForAppUpdates = async (): Promise<UpdateStatus> => {
   try {
     const update = await check();
-    
+
     if (update?.available) {
       return {
         available: true,
@@ -19,13 +19,13 @@ export const checkForAppUpdates = async (): Promise<UpdateStatus> => {
         body: update.body,
       };
     }
-    
+
     return { available: false };
   } catch (error) {
-    console.error('Failed to check for updates:', error);
-    return { 
-      available: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    console.error("Failed to check for updates:", error);
+    return {
+      available: false,
+      error: error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
 };
@@ -38,7 +38,7 @@ export const installAppUpdate = async () => {
       await relaunch();
     }
   } catch (error) {
-    console.error('Failed to install update:', error);
+    console.error("Failed to install update:", error);
     throw error;
   }
 };

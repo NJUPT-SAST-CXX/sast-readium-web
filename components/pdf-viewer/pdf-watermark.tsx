@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo } from "react";
 
 interface PDFWatermarkProps {
   text: string;
@@ -28,7 +28,7 @@ const PDFWatermarkComponent = ({
   // Calculate spacing based on text length and size to ensure good coverage
   const spacingX = size * text.length * gapX;
   const spacingY = size * gapY;
-  
+
   // Calculate number of repetitions needed to cover the area
   const cols = Math.ceil(width / spacingX) + 1;
   const rows = Math.ceil(height / spacingY) + 1;
@@ -55,8 +55,8 @@ const PDFWatermarkComponent = ({
               fontSize: `${size}px`,
               width: spacingX,
               height: spacingY,
-              fontFamily: 'sans-serif',
-              fontWeight: 'bold',
+              fontFamily: "sans-serif",
+              fontWeight: "bold",
               transform: `rotate(${rotation}deg)`,
             }}
           >

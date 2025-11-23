@@ -1,8 +1,8 @@
-import React, { useRef, useEffect } from 'react';
-import { cn } from '@/lib/utils';
-import { X, FileText } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import React, { useRef, useEffect } from "react";
+import { cn } from "@/lib/utils";
+import { X, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface OpenDocument {
   id: string;
@@ -31,9 +31,9 @@ export function PDFTabBar({
   useEffect(() => {
     if (activeTabRef.current) {
       activeTabRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'nearest',
+        behavior: "smooth",
+        block: "nearest",
+        inline: "nearest",
       });
     }
   }, [activeDocumentId]);
@@ -59,12 +59,17 @@ export function PDFTabBar({
                   onClick={() => onSwitch(doc.id)}
                   className="flex items-center gap-2 mr-1 outline-none focus-visible:ring-0"
                 >
-                  <FileText className={cn("h-3.5 w-3.5", isActive ? "text-primary" : "text-muted-foreground/70")} />
+                  <FileText
+                    className={cn(
+                      "h-3.5 w-3.5",
+                      isActive ? "text-primary" : "text-muted-foreground/70"
+                    )}
+                  />
                   <span className="text-xs font-medium max-w-[160px] truncate leading-none">
                     {doc.title}
                   </span>
                 </button>
-                
+
                 <Button
                   variant="ghost"
                   size="icon"

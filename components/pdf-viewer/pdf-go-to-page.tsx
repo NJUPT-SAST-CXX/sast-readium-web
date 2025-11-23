@@ -1,23 +1,27 @@
-'use client';
+"use client";
 
-import { useState, useEffect, type FormEvent } from 'react';
-import { usePDFStore } from '@/lib/pdf-store';
-import { useTranslation } from 'react-i18next';
+import { useState, useEffect, type FormEvent } from "react";
+import { usePDFStore } from "@/lib/pdf-store";
+import { useTranslation } from "react-i18next";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Navigation2 } from 'lucide-react';
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Navigation2 } from "lucide-react";
 
 export function PDFGoToPage() {
   const { t } = useTranslation();
   const { currentPage, numPages, goToPage } = usePDFStore();
-  const [pageInput, setPageInput] = useState('');
+  const [pageInput, setPageInput] = useState("");
   const [open, setOpen] = useState(false);
 
   // Sync local input with current page when popover opens
@@ -52,13 +56,18 @@ export function PDFGoToPage() {
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
-        <TooltipContent>{t('toolbar.tooltip.go_to_page')}</TooltipContent>
+        <TooltipContent>{t("toolbar.tooltip.go_to_page")}</TooltipContent>
       </Tooltip>
       <PopoverContent className="w-60 p-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="page-input">
-              {t('toolbar.go_to.label')} ({t('viewer.page_n_of_m', { current: currentPage, total: numPages })})
+              {t("toolbar.go_to.label")} (
+              {t("viewer.page_n_of_m", {
+                current: currentPage,
+                total: numPages,
+              })}
+              )
             </Label>
             <Input
               id="page-input"
@@ -67,14 +76,14 @@ export function PDFGoToPage() {
               max={numPages}
               value={pageInput}
               onChange={(e) => setPageInput(e.target.value)}
-              placeholder={t('toolbar.go_to.placeholder', { total: numPages })}
+              placeholder={t("toolbar.go_to.placeholder", { total: numPages })}
               className="w-full"
               autoFocus
             />
           </div>
           <div className="flex justify-end">
             <Button type="submit" size="sm">
-              {t('toolbar.go_to.go')}
+              {t("toolbar.go_to.go")}
             </Button>
           </div>
         </form>

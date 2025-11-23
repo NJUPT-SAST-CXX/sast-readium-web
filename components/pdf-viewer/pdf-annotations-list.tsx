@@ -1,11 +1,18 @@
-'use client';
+"use client";
 
-import { useState, useMemo } from 'react';
-import { MessageSquare, Highlighter, Square, Type, Search, X } from 'lucide-react';
-import { usePDFStore, Annotation } from '@/lib/pdf-store';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
+import { useState, useMemo } from "react";
+import {
+  MessageSquare,
+  Highlighter,
+  Square,
+  Type,
+  Search,
+  X,
+} from "lucide-react";
+import { usePDFStore, Annotation } from "@/lib/pdf-store";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 interface PDFAnnotationsListProps {
   onNavigate: (pageNumber: number, annotationId: string) => void;
@@ -19,15 +26,15 @@ function getAnnotationDisplayText(annotation: Annotation): string {
   if (annotation.content) {
     return annotation.content;
   }
-  
+
   // For annotations without content (like highlights and shapes)
   switch (annotation.type) {
-    case 'highlight':
-      return 'Highlighted text';
-    case 'shape':
-      return 'Shape annotation';
+    case "highlight":
+      return "Highlighted text";
+    case "shape":
+      return "Shape annotation";
     default:
-      return 'Annotation';
+      return "Annotation";
   }
 }
 
@@ -40,7 +47,11 @@ interface AnnotationItemProps {
 /**
  * Individual annotation list item component
  */
-function AnnotationItem({ annotation, isActive, onNavigate }: AnnotationItemProps) {
+function AnnotationItem({
+  annotation,
+  isActive,
+  onNavigate,
+}: AnnotationItemProps) {
   const displayText = getAnnotationDisplayText(annotation);
   const date = new Date(annotation.timestamp).toLocaleDateString();
 
@@ -48,17 +59,17 @@ function AnnotationItem({ annotation, isActive, onNavigate }: AnnotationItemProp
   const renderIcon = () => {
     const iconProps = {
       className: "h-4 w-4",
-      style: { color: annotation.color }
+      style: { color: annotation.color },
     };
 
     switch (annotation.type) {
-      case 'highlight':
+      case "highlight":
         return <Highlighter {...iconProps} />;
-      case 'comment':
+      case "comment":
         return <MessageSquare {...iconProps} />;
-      case 'shape':
+      case "shape":
         return <Square {...iconProps} />;
-      case 'text':
+      case "text":
         return <Type {...iconProps} />;
       default:
         return <MessageSquare {...iconProps} />;
@@ -69,18 +80,19 @@ function AnnotationItem({ annotation, isActive, onNavigate }: AnnotationItemProp
     <button
       onClick={() => onNavigate(annotation.pageNumber, annotation.id)}
       className={cn(
-        'flex w-full items-start gap-2 rounded px-3 py-2 text-left text-sm hover:bg-accent transition-colors',
-        isActive && 'bg-accent/50'
+        "flex w-full items-start gap-2 rounded px-3 py-2 text-left text-sm hover:bg-accent transition-colors",
+        isActive && "bg-accent/50"
       )}
     >
       {/* Icon with color indicator */}
-      <div className="flex-shrink-0 mt-0.5">
-        {renderIcon()}
-      </div>
-      
+      <div className="flex-shrink-0 mt-0.5">{renderIcon()}</div>
+
       {/* Annotation content */}
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-foreground truncate" title={displayText}>
+        <p
+          className="text-xs font-medium text-foreground truncate"
+          title={displayText}
+        >
           {displayText}
         </p>
         <div className="flex items-center gap-2 mt-1">
@@ -88,9 +100,7 @@ function AnnotationItem({ annotation, isActive, onNavigate }: AnnotationItemProp
             Page {annotation.pageNumber}
           </span>
           <span className="text-xs text-muted-foreground">•</span>
-          <span className="text-xs text-muted-foreground">
-            {date}
-          </span>
+          <span className="text-xs text-muted-foreground">{date}</span>
         </div>
       </div>
     </button>
@@ -100,27 +110,30 @@ function AnnotationItem({ annotation, isActive, onNavigate }: AnnotationItemProp
 /**
  * Filter annotations based on search query
  */
-function filterAnnotations(annotations: Annotation[], query: string): Annotation[] {
+function filterAnnotations(
+  annotations: Annotation[],
+  query: string
+): Annotation[] {
   if (!query.trim()) return annotations;
 
   const lowerQuery = query.toLowerCase();
-  
+
   return annotations.filter((annotation) => {
     // Search in content
     if (annotation.content?.toLowerCase().includes(lowerQuery)) {
       return true;
     }
-    
+
     // Search in type
     if (annotation.type.toLowerCase().includes(lowerQuery)) {
       return true;
     }
-    
+
     // Search in page number
     if (annotation.pageNumber.toString().includes(lowerQuery)) {
       return true;
     }
-    
+
     return false;
   });
 }
@@ -129,9 +142,12 @@ function filterAnnotations(annotations: Annotation[], query: string): Annotation
  * PDFAnnotationsList component - displays all annotations in a sidebar
  * Allows users to view and navigate to annotations throughout the document
  */
-export function PDFAnnotationsList({ onNavigate, currentPage }: PDFAnnotationsListProps) {
+export function PDFAnnotationsList({
+  onNavigate,
+  currentPage,
+}: PDFAnnotationsListProps) {
   const { annotations } = usePDFStore();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Filter and sort annotations: first by page number, then by timestamp
   const filteredAnnotations = useMemo(() => {
@@ -149,13 +165,13 @@ export function PDFAnnotationsList({ onNavigate, currentPage }: PDFAnnotationsLi
   // Group annotations by page for better organization
   const annotationsByPage = useMemo(() => {
     const grouped = new Map<number, Annotation[]>();
-    
+
     filteredAnnotations.forEach((annotation) => {
       const pageAnnotations = grouped.get(annotation.pageNumber) || [];
       pageAnnotations.push(annotation);
       grouped.set(annotation.pageNumber, pageAnnotations);
     });
-    
+
     return grouped;
   }, [filteredAnnotations]);
 
@@ -184,7 +200,7 @@ export function PDFAnnotationsList({ onNavigate, currentPage }: PDFAnnotationsLi
           />
           {searchQuery && (
             <button
-              onClick={() => setSearchQuery('')}
+              onClick={() => setSearchQuery("")}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Clear search"
             >
@@ -200,32 +216,34 @@ export function PDFAnnotationsList({ onNavigate, currentPage }: PDFAnnotationsLi
           <div className="mb-2 px-2 text-xs font-semibold uppercase text-muted-foreground">
             Annotations ({filteredAnnotations.length})
           </div>
-          
+
           {filteredAnnotations.length > 0 ? (
             <div className="space-y-3">
               {/* Render annotations grouped by page */}
-              {Array.from(annotationsByPage.entries()).map(([pageNumber, pageAnnotations]) => (
-                <div key={pageNumber}>
-                  {/* Page header (only show if there are multiple pages with annotations) */}
-                  {annotationsByPage.size > 1 && (
-                    <div className="px-2 text-xs font-medium text-muted-foreground mb-1">
-                      Page {pageNumber}
+              {Array.from(annotationsByPage.entries()).map(
+                ([pageNumber, pageAnnotations]) => (
+                  <div key={pageNumber}>
+                    {/* Page header (only show if there are multiple pages with annotations) */}
+                    {annotationsByPage.size > 1 && (
+                      <div className="px-2 text-xs font-medium text-muted-foreground mb-1">
+                        Page {pageNumber}
+                      </div>
+                    )}
+
+                    {/* Annotations for this page */}
+                    <div className="space-y-1">
+                      {pageAnnotations.map((annotation) => (
+                        <AnnotationItem
+                          key={annotation.id}
+                          annotation={annotation}
+                          isActive={annotation.pageNumber === currentPage}
+                          onNavigate={onNavigate}
+                        />
+                      ))}
                     </div>
-                  )}
-                  
-                  {/* Annotations for this page */}
-                  <div className="space-y-1">
-                    {pageAnnotations.map((annotation) => (
-                      <AnnotationItem
-                        key={annotation.id}
-                        annotation={annotation}
-                        isActive={annotation.pageNumber === currentPage}
-                        onNavigate={onNavigate}
-                      />
-                    ))}
                   </div>
-                </div>
-              ))}
+                )
+              )}
             </div>
           ) : (
             <div className="px-2 py-4 text-sm text-muted-foreground text-center">

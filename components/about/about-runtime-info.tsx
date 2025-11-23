@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAppRuntimeInfo, getSystemInfo, type AppRuntimeInfo, type SystemInfo } from "@/lib/tauri-bridge";
+import {
+  getAppRuntimeInfo,
+  getSystemInfo,
+  type AppRuntimeInfo,
+  type SystemInfo,
+} from "@/lib/tauri-bridge";
 
 export function AboutRuntimeInfo() {
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
@@ -12,7 +17,10 @@ export function AboutRuntimeInfo() {
     let cancelled = false;
 
     async function load() {
-      const [sys, app] = await Promise.all([getSystemInfo(), getAppRuntimeInfo()]);
+      const [sys, app] = await Promise.all([
+        getSystemInfo(),
+        getAppRuntimeInfo(),
+      ]);
       if (cancelled) return;
       if (sys) setSystemInfo(sys);
       if (app) setRuntimeInfo(app);
@@ -35,7 +43,8 @@ export function AboutRuntimeInfo() {
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">运行环境</h2>
         <div className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-          当前在浏览器环境运行，未使用 Tauri 桌面运行时，因此不提供本地系统级信息。
+          当前在浏览器环境运行，未使用 Tauri
+          桌面运行时，因此不提供本地系统级信息。
         </div>
       </section>
     );
@@ -62,7 +71,9 @@ export function AboutRuntimeInfo() {
               </div>
               <div>
                 <span className="text-muted-foreground">构建模式：</span>
-                <span className="font-mono">{runtimeInfo.debug ? "debug" : "release"}</span>
+                <span className="font-mono">
+                  {runtimeInfo.debug ? "debug" : "release"}
+                </span>
               </div>
             </div>
           )}
@@ -83,13 +94,17 @@ export function AboutRuntimeInfo() {
             {runtimeInfo?.exe_path && (
               <div>
                 <span className="text-muted-foreground">可执行文件：</span>
-                <span className="font-mono break-all">{runtimeInfo.exe_path}</span>
+                <span className="font-mono break-all">
+                  {runtimeInfo.exe_path}
+                </span>
               </div>
             )}
             {runtimeInfo?.current_dir && (
               <div>
                 <span className="text-muted-foreground">当前工作目录：</span>
-                <span className="font-mono break-all">{runtimeInfo.current_dir}</span>
+                <span className="font-mono break-all">
+                  {runtimeInfo.current_dir}
+                </span>
               </div>
             )}
           </div>

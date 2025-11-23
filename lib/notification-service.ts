@@ -1,4 +1,8 @@
-import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
+import {
+  isPermissionGranted,
+  requestPermission,
+  sendNotification,
+} from "@tauri-apps/plugin-notification";
 
 export interface NotificationOptions {
   title: string;
@@ -11,7 +15,7 @@ export const sendSystemNotification = async (options: NotificationOptions) => {
 
     if (!permissionGranted) {
       const permission = await requestPermission();
-      permissionGranted = permission === 'granted';
+      permissionGranted = permission === "granted";
     }
 
     if (permissionGranted) {
@@ -19,11 +23,11 @@ export const sendSystemNotification = async (options: NotificationOptions) => {
         title: options.title,
         body: options.body,
       });
-      console.log('Notification sent:', options);
+      console.log("Notification sent:", options);
     } else {
-      console.warn('Notification permission not granted');
+      console.warn("Notification permission not granted");
     }
   } catch (error) {
-    console.error('Failed to send notification:', error);
+    console.error("Failed to send notification:", error);
   }
 };

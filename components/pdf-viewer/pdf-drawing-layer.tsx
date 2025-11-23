@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useRef, useState, useEffect } from 'react';
-import { usePDFStore } from '@/lib/pdf-store';
-import { PDFPageProxy } from '@/lib/pdf-utils';
-import { cn } from '@/lib/utils';
+import { useRef, useState, useEffect } from "react";
+import { usePDFStore } from "@/lib/pdf-store";
+import { PDFPageProxy } from "@/lib/pdf-utils";
+import { cn } from "@/lib/utils";
 
 interface PDFDrawingLayerProps {
   page: PDFPageProxy | null;
@@ -25,14 +25,16 @@ export function PDFDrawingLayer({
   const { addAnnotation, currentPage, annotations } = usePDFStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [currentPath, setCurrentPath] = useState<Array<{ x: number; y: number }>>([]);
+  const [currentPath, setCurrentPath] = useState<
+    Array<{ x: number; y: number }>
+  >([]);
 
   // Get viewport dimensions
   const viewport = page?.getViewport({ scale, rotation });
 
   // Filter drawings for current page
   const currentPageDrawings = annotations.filter(
-    (a) => a.pageNumber === currentPage && a.type === 'drawing'
+    (a) => a.pageNumber === currentPage && a.type === "drawing"
   );
 
   // Draw existing annotations on canvas
@@ -40,7 +42,7 @@ export function PDFDrawingLayer({
     const canvas = canvasRef.current;
     if (!canvas || !viewport) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     // Clear canvas
@@ -53,8 +55,8 @@ export function PDFDrawingLayer({
       ctx.beginPath();
       ctx.strokeStyle = drawing.color;
       ctx.lineWidth = drawing.strokeWidth || 2;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
 
       // Convert normalized coordinates to canvas coordinates
       const startPoint = {
@@ -79,8 +81,8 @@ export function PDFDrawingLayer({
       ctx.beginPath();
       ctx.strokeStyle = strokeColor;
       ctx.lineWidth = strokeWidth;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
 
       ctx.moveTo(currentPath[0].x, currentPath[0].y);
       currentPath.slice(1).forEach((point) => {
@@ -133,7 +135,7 @@ export function PDFDrawingLayer({
       const maxY = Math.max(...normalizedPath.map((p) => p.y));
 
       addAnnotation({
-        type: 'drawing',
+        type: "drawing",
         pageNumber: currentPage,
         color: strokeColor,
         position: {
@@ -159,8 +161,8 @@ export function PDFDrawingLayer({
       width={viewport.width}
       height={viewport.height}
       className={cn(
-        'absolute inset-0 pointer-events-auto',
-        isDrawingMode && 'cursor-crosshair'
+        "absolute inset-0 pointer-events-auto",
+        isDrawingMode && "cursor-crosshair"
       )}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

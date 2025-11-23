@@ -1,9 +1,9 @@
-import React, { useState, useRef } from 'react';
-import { PDFPageProxy, TextItem } from '@/lib/pdf-utils';
-import { usePDFStore } from '@/lib/pdf-store';
-import { Button } from '@/components/ui/button';
-import { Copy, Download, FileText, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import React, { useState, useRef } from "react";
+import { PDFPageProxy, TextItem } from "@/lib/pdf-utils";
+import { usePDFStore } from "@/lib/pdf-store";
+import { Button } from "@/components/ui/button";
+import { Copy, Download, FileText, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface PDFSelectionLayerProps {
   page: PDFPageProxy | null;
@@ -19,7 +19,12 @@ interface Selection {
   endY: number;
 }
 
-export function PDFSelectionLayer({ page, scale, rotation, pageNumber }: PDFSelectionLayerProps) {
+export function PDFSelectionLayer({
+  page,
+  scale,
+  rotation,
+  pageNumber,
+}: PDFSelectionLayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -40,13 +45,13 @@ export function PDFSelectionLayer({ page, scale, rotation, pageNumber }: PDFSele
   const handleMouseDown = (e: React.MouseEvent) => {
     if (showMenu) {
       // If clicking outside menu, clear selection
-      if (!(e.target as HTMLElement).closest('.selection-menu')) {
+      if (!(e.target as HTMLElement).closest(".selection-menu")) {
         setSelection(null);
         setShowMenu(false);
       }
       return;
     }
-    
+
     e.preventDefault(); // Prevent text selection
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -72,7 +77,11 @@ export function PDFSelectionLayer({ page, scale, rotation, pageNumber }: PDFSele
   const handleMouseUp = () => {
     if (isSelecting) {
       setIsSelecting(false);
-      if (selection && (Math.abs(selection.endX - selection.startX) > 5 || Math.abs(selection.endY - selection.startY) > 5)) {
+      if (
+        selection &&
+        (Math.abs(selection.endX - selection.startX) > 5 ||
+          Math.abs(selection.endY - selection.startY) > 5)
+      ) {
         setShowMenu(true);
       } else {
         setSelection(null);
@@ -85,7 +94,9 @@ export function PDFSelectionLayer({ page, scale, rotation, pageNumber }: PDFSele
     // In structure: div (relative) -> PDFPage (div -> canvas)
     // PDFSelectionLayer is sibling of PDFPage
     // We need to find the canvas in the parent container
-    return containerRef.current?.parentElement?.querySelector('canvas') as HTMLCanvasElement | null;
+    return containerRef.current?.parentElement?.querySelector(
+      "canvas"
+    ) as HTMLCanvasElement | null;
   };
 
   const handleCopyImage = async () => {
@@ -93,10 +104,10 @@ export function PDFSelectionLayer({ page, scale, rotation, pageNumber }: PDFSele
     const canvas = getCanvas();
     if (!rect || !canvas) return;
 
-    const tempCanvas = document.createElement('canvas');
+    const tempCanvas = document.createElement("canvas");
     tempCanvas.width = rect.width;
     tempCanvas.height = rect.height;
-    const ctx = tempCanvas.getContext('2d');
+    const ctx = tempCanvas.getContext("2d");
     if (!ctx) return;
 
     // Draw cropped area
@@ -126,7 +137,7 @@ export function PDFSelectionLayer({ page, scale, rotation, pageNumber }: PDFSele
       tempCanvas.toBlob(async (blob) => {
         if (blob) {
           await navigator.clipboard.write([
-            new ClipboardItem({ 'image/png': blob })
+            new ClipboardItem({ "image/png": blob }),
           ]);
           // Show success toast/notification?
           setSelection(null);
@@ -135,7 +146,7 @@ export function PDFSelectionLayer({ page, scale, rotation, pageNumber }: PDFSele
         }
       });
     } catch (err) {
-      console.error('Failed to copy image:', err);
+      console.error("Failed to copy image:", err);
     }
   };
 
@@ -144,10 +155,10 @@ export function PDFSelectionLayer({ page, scale, rotation, pageNumber }: PDFSele
     const canvas = getCanvas();
     if (!rect || !canvas) return;
 
-    const tempCanvas = document.createElement('canvas');
+    const tempCanvas = document.createElement("canvas");
     tempCanvas.width = rect.width;
     tempCanvas.height = rect.height;
-    const ctx = tempCanvas.getContext('2d');
+    const ctx = tempCanvas.getContext("2d");
     if (!ctx) return;
 
     const scaleX = canvas.width / canvas.clientWidth;
@@ -165,12 +176,12 @@ export function PDFSelectionLayer({ page, scale, rotation, pageNumber }: PDFSele
       rect.height
     );
 
-    const url = tempCanvas.toDataURL('image/png');
-    const link = document.createElement('a');
+    const url = tempCanvas.toDataURL("image/png");
+    const link = document.createElement("a");
     link.href = url;
     link.download = `pdf-selection-page-${pageNumber}.png`;
     link.click();
-    
+
     setSelection(null);
     setShowMenu(false);
     toggleSelectionMode();
@@ -183,23 +194,23 @@ export function PDFSelectionLayer({ page, scale, rotation, pageNumber }: PDFSele
     try {
       const textContent = await page.getTextContent();
       const viewport = page.getViewport({ scale, rotation });
-      
+
       // Map items to selection
       // items[i].transform is [scaleX, skewY, skewX, scaleY, tx, ty]
       // In standard PDF coords, (0,0) is bottom-left?
       // viewport.convertToViewportPoint maps PDF (x,y) to Viewport (x,y).
-      
+
       const selectedText = textContent.items
         .filter((item: TextItem) => {
           if (!item.transform) return false;
           const tx = item.transform[4];
           const ty = item.transform[5];
-          
+
           // Convert PDF point to viewport point
           // PDF coordinates: y grows UP. Viewport: y grows DOWN.
           // viewport.convertToViewportPoint(x, y) handles this.
           const [vx, vy] = viewport.convertToViewportPoint(tx, ty);
-          
+
           // Check if point is inside rect
           // Note: item coordinates are usually the baseline start.
           // Ideally we check bounding box, but point check is a start.
@@ -211,19 +222,21 @@ export function PDFSelectionLayer({ page, scale, rotation, pageNumber }: PDFSele
           );
         })
         .map((item: TextItem) => item.str)
-        .join(' ');
+        .join(" ");
 
       if (selectedText) {
         await navigator.clipboard.writeText(selectedText);
-        alert('Text copied to clipboard: ' + selectedText.substring(0, 50) + '...');
+        alert(
+          "Text copied to clipboard: " + selectedText.substring(0, 50) + "..."
+        );
         setSelection(null);
         setShowMenu(false);
         toggleSelectionMode();
       } else {
-        alert('No text found in selection');
+        alert("No text found in selection");
       }
     } catch (err) {
-      console.error('Failed to extract text:', err);
+      console.error("Failed to extract text:", err);
     }
   };
 
@@ -257,21 +270,45 @@ export function PDFSelectionLayer({ page, scale, rotation, pageNumber }: PDFSele
         >
           {/* Menu */}
           {showMenu && (
-            <div 
+            <div
               className="selection-menu absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex items-center gap-1 p-1 bg-background border border-border rounded-md shadow-lg whitespace-nowrap z-50"
               onMouseDown={(e) => e.stopPropagation()}
             >
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCopyImage} title="Copy Image">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={handleCopyImage}
+                title="Copy Image"
+              >
                 <Copy className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSaveImage} title="Save Image">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={handleSaveImage}
+                title="Save Image"
+              >
                 <Download className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleExtractText} title="Extract Text">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={handleExtractText}
+                title="Extract Text"
+              >
                 <FileText className="h-4 w-4" />
               </Button>
               <div className="w-px h-4 bg-border mx-1" />
-              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive" onClick={() => setSelection(null)} title="Cancel">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => setSelection(null)}
+                title="Cancel"
+              >
                 <X className="h-4 w-4" />
               </Button>
             </div>

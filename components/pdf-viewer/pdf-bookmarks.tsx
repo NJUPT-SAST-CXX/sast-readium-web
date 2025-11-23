@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { Star, Trash2, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { usePDFStore } from '@/lib/pdf-store';
-import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { Star, Trash2, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { usePDFStore } from "@/lib/pdf-store";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface PDFBookmarksProps {
   onNavigate: (pageNumber: number) => void;
@@ -16,17 +16,19 @@ interface PDFBookmarksProps {
 export function PDFBookmarks({ onNavigate, currentPage }: PDFBookmarksProps) {
   const { bookmarks, addBookmark, removeBookmark } = usePDFStore();
   const [isAdding, setIsAdding] = useState(false);
-  const [bookmarkTitle, setBookmarkTitle] = useState('');
+  const [bookmarkTitle, setBookmarkTitle] = useState("");
 
   const handleAddBookmark = () => {
     if (bookmarkTitle.trim()) {
       addBookmark(currentPage, bookmarkTitle.trim());
-      setBookmarkTitle('');
+      setBookmarkTitle("");
       setIsAdding(false);
     }
   };
 
-  const sortedBookmarks = [...bookmarks].sort((a, b) => a.pageNumber - b.pageNumber);
+  const sortedBookmarks = [...bookmarks].sort(
+    (a, b) => a.pageNumber - b.pageNumber
+  );
 
   return (
     <div className="flex h-full flex-col">
@@ -42,7 +44,7 @@ export function PDFBookmarks({ onNavigate, currentPage }: PDFBookmarksProps) {
             <Plus className="h-4 w-4" />
           </Button>
         </div>
-        
+
         {isAdding && (
           <div className="flex gap-2">
             <Input
@@ -51,11 +53,11 @@ export function PDFBookmarks({ onNavigate, currentPage }: PDFBookmarksProps) {
               value={bookmarkTitle}
               onChange={(e) => setBookmarkTitle(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   handleAddBookmark();
-                } else if (e.key === 'Escape') {
+                } else if (e.key === "Escape") {
                   setIsAdding(false);
-                  setBookmarkTitle('');
+                  setBookmarkTitle("");
                 }
               }}
               className="h-8 text-sm"
@@ -84,8 +86,8 @@ export function PDFBookmarks({ onNavigate, currentPage }: PDFBookmarksProps) {
                 <div
                   key={bookmark.id}
                   className={cn(
-                    'group flex items-center gap-2 rounded-md p-2 transition-colors hover:bg-accent',
-                    bookmark.pageNumber === currentPage && 'bg-accent/50'
+                    "group flex items-center gap-2 rounded-md p-2 transition-colors hover:bg-accent",
+                    bookmark.pageNumber === currentPage && "bg-accent/50"
                   )}
                 >
                   <button

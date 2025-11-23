@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
-import { usePDFStore } from '@/lib/pdf-store';
-import { cn } from '@/lib/utils';
-import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect, FormEvent, ChangeEvent } from "react";
+import { usePDFStore } from "@/lib/pdf-store";
+import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from "@/components/ui/tooltip";
 import {
   BarChart3,
   Navigation2,
@@ -19,7 +19,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface PDFProgressBarProps {
   className?: string;
@@ -43,7 +43,7 @@ export function PDFProgressBar({ className }: PDFProgressBarProps) {
 
   // Update page input when currentPage changes externally
   useEffect(() => {
-    if (document.activeElement?.tagName !== 'INPUT') {
+    if (document.activeElement?.tagName !== "INPUT") {
       const timeoutId = setTimeout(() => {
         setPageInput(currentPage.toString());
       }, 0);
@@ -66,24 +66,25 @@ export function PDFProgressBar({ className }: PDFProgressBarProps) {
   };
 
   // Calculate progress percentage
-  const progress = numPages > 0 ? ((currentPage - 1) / (numPages - 1)) * 100 : 0;
+  const progress =
+    numPages > 0 ? ((currentPage - 1) / (numPages - 1)) * 100 : 0;
 
   return (
     <TooltipProvider>
       <div
         className={cn(
           // Fixed positioning at bottom of viewport
-          'fixed bottom-0 left-0 right-0 z-50',
+          "fixed bottom-0 left-0 right-0 z-50",
           // Hide on mobile
-          'hidden sm:block',
+          "hidden sm:block",
           // Background and border styling
-          'bg-background/95 backdrop-blur-sm border-t border-border',
+          "bg-background/95 backdrop-blur-sm border-t border-border",
           // Padding - responsive for mobile (more compact)
-          'px-3 py-1.5 sm:px-4 sm:py-2',
+          "px-3 py-1.5 sm:px-4 sm:py-2",
           // Shadow for depth
-          'shadow-lg',
+          "shadow-lg",
           // Fixed height for consistency (more compact)
-          'h-[56px] sm:h-[60px]',
+          "h-[56px] sm:h-[60px]",
           className
         )}
       >
@@ -106,8 +107,8 @@ export function PDFProgressBar({ className }: PDFProgressBarProps) {
             </TooltipTrigger>
             <TooltipContent>
               {showPageNavigationInBottomBar
-                ? 'Show Reading Progress'
-                : 'Show Page Navigation'}
+                ? "Show Reading Progress"
+                : "Show Page Navigation"}
             </TooltipContent>
           </Tooltip>
 
@@ -150,7 +151,10 @@ export function PDFProgressBar({ className }: PDFProgressBarProps) {
                   <TooltipContent>Previous Page (←)</TooltipContent>
                 </Tooltip>
 
-                <form onSubmit={handlePageInputSubmit} className="flex items-center gap-1 sm:gap-2">
+                <form
+                  onSubmit={handlePageInputSubmit}
+                  className="flex items-center gap-1 sm:gap-2"
+                >
                   <Input
                     type="text"
                     value={pageInput}
@@ -199,7 +203,9 @@ export function PDFProgressBar({ className }: PDFProgressBarProps) {
                 <Progress value={Math.min(100, Math.max(0, progress))} />
                 <div className="mt-1 sm:mt-1.5 flex justify-between text-xs sm:text-sm text-muted-foreground">
                   <span className="font-medium">Page {currentPage}</span>
-                  <span className="font-semibold tabular-nums">{Math.round(progress)}%</span>
+                  <span className="font-semibold tabular-nums">
+                    {Math.round(progress)}%
+                  </span>
                   <span className="font-medium">{numPages} pages</span>
                 </div>
               </div>
