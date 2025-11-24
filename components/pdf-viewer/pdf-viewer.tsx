@@ -61,7 +61,7 @@ import { AnnotationStamp } from "@/lib/pdf-store";
 import { Button } from "@/components/ui/button";
 import { PDFLoadingAnimation } from "./loading-animations";
 import { useTranslation } from "react-i18next";
-import { revealInFileManager } from "@/lib/tauri-bridge";
+import { revealInFileManager, isTauri, getFileTimes } from "@/lib/tauri-bridge";
 import { SignatureDialog } from "./signature-dialog";
 
 interface PDFViewerProps {
@@ -123,6 +123,13 @@ export function PDFViewer({
     isSelectionMode,
     pdfLoadingAnimation,
     updateRecentFileByUrl,
+    scrollSensitivity,
+    scrollThreshold,
+    scrollDebounce,
+    enableSmoothScrolling,
+    invertWheel,
+    zoomStep,
+    sidebarInitialWidth,
   } = usePDFStore();
 
   const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null);
@@ -157,9 +164,9 @@ export function PDFViewer({
       const saved = localStorage.getItem("pdf-sidebar-width");
       if (saved) return parseInt(saved, 10);
       // Responsive default: smaller on mobile
-      return window.innerWidth < 640 ? 200 : 240;
+      return window.innerWidth < 640 ? 200 : sidebarInitialWidth;
     }
-    return 240;
+    return sidebarInitialWidth;
   });
   const [isResizing, setIsResizing] = useState(false);
   const [showBookmarksPanel, setShowBookmarksPanel] = useState(false);
@@ -259,10 +266,31 @@ export function PDFViewer({
         try {
           const metadata = await pdf.getMetadata();
           if (metadata) {
+            const nativePath =
+              (file as File & { __nativePath?: string | null }).__nativePath ??
+              null;
+            let fileCreatedAt: string | undefined;
+            let fileModifiedAt: string | undefined =
+              Number.isFinite(file.lastModified)
+                ? new Date(file.lastModified).toISOString()
+                : undefined;
+
+            if (isTauri() && nativePath) {
+              const times = await getFileTimes(nativePath);
+              if (times?.createdAt) {
+                fileCreatedAt = times.createdAt;
+              }
+              if (times?.modifiedAt) {
+                fileModifiedAt = times.modifiedAt;
+              }
+            }
+
             setMetadata({
               info: metadata.info,
               metadata: metadata.metadata,
               contentLength: file.size,
+              fileCreatedAt,
+              fileModifiedAt,
             });
           }
         } catch (err) {
@@ -439,8 +467,9 @@ export function PDFViewer({
   }, [pdfDocument, currentPage, pageOrder]);
 
   // Load visible pages for continuous and two-page views (Lazy Loading)
+  // Also enable for single view to support smooth transitions and pre-loading
   useEffect(() => {
-    if (!pdfDocument || viewMode === "single") {
+    if (!pdfDocument) {
       setAllPages([]);
       loadedPagesRef.current.clear();
       return;
@@ -455,8 +484,9 @@ export function PDFViewer({
     });
 
     // Determine range to load based on current page and view mode
+    // For single view, load current + neighbors for smoother transitions
     const buffer =
-      viewMode === "continuous" ? 4 : viewMode === "twoPage" ? 3 : 0;
+      viewMode === "continuous" ? 4 : viewMode === "twoPage" ? 3 : 1;
     const start = Math.max(1, currentPage - buffer);
     const end = Math.min(pdfDocument.numPages, currentPage + buffer);
 
@@ -568,10 +598,10 @@ export function PDFViewer({
         const newZoom = Math.min(zoomWidth, zoomHeight);
         setZoom(newZoom);
       }
-    }, 100); // 100ms debounce
+    }, scrollDebounce); // Reuse scroll debounce setting
 
     return () => clearTimeout(timeoutId);
-  }, [currentPageObj, containerWidth, fitMode, rotation, setZoom]);
+  }, [currentPageObj, containerWidth, fitMode, rotation, setZoom, scrollDebounce]);
 
   // Load thumbnail pages in chunks (lazy loading)
   useEffect(() => {
@@ -764,7 +794,7 @@ export function PDFViewer({
 
     let wheelTimeout: NodeJS.Timeout | null = null;
     let accumulatedDelta = 0;
-    const WHEEL_THRESHOLD = 150; // Increased threshold for better control
+    const WHEEL_THRESHOLD = scrollSensitivity; // Use user setting
 
     const handleWheel = (e: WheelEvent) => {
       // Skip if scrolling programmatically (during page change)
@@ -780,7 +810,9 @@ export function PDFViewer({
         const currentZoom = zoom;
 
         // Determine zoom direction (negative deltaY = scroll up = zoom in)
-        const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
+        // Apply invertWheel if set, but usually zoom direction is standard
+        // Let's apply invertWheel only to scrolling, not zooming for now unless requested
+        const zoomDelta = e.deltaY > 0 ? -zoomStep : zoomStep;
 
         // Calculate new zoom level with limits (50% to 300%)
         const newZoom = Math.min(Math.max(currentZoom + zoomDelta, 0.5), 3.0);
@@ -796,25 +828,42 @@ export function PDFViewer({
           Math.abs(scrollHeight - clientHeight - scrollTop) < 2;
         const contentOverflows = scrollHeight > clientHeight;
 
+        // Apply inversion if enabled
+        const effectiveDeltaY = invertWheel ? -e.deltaY : e.deltaY;
+
         // If content overflows and we're not at the edges, let native scroll happen
+        // Note: We might need to manually handle scroll if invertWheel is true and we are NOT turning pages
         if (contentOverflows && !isAtTop && !isAtBottom) {
-          return;
+           // If invertWheel is on, we must prevent default and scroll manually
+           if (invertWheel) {
+             e.preventDefault();
+             scrollContainer.scrollTop += effectiveDeltaY;
+           }
+           return;
         }
 
         // If we are at top but scrolling down (positive delta), let native scroll happen
-        if (isAtTop && e.deltaY > 0 && contentOverflows) {
+        if (isAtTop && effectiveDeltaY > 0 && contentOverflows) {
+           if (invertWheel) {
+             e.preventDefault();
+             scrollContainer.scrollTop += effectiveDeltaY;
+           }
           return;
         }
 
         // If we are at bottom but scrolling up (negative delta), let native scroll happen
-        if (isAtBottom && e.deltaY < 0 && contentOverflows) {
+        if (isAtBottom && effectiveDeltaY < 0 && contentOverflows) {
+           if (invertWheel) {
+             e.preventDefault();
+             scrollContainer.scrollTop += effectiveDeltaY;
+           }
           return;
         }
 
         e.preventDefault();
 
         // Accumulate wheel delta to handle trackpad/smooth scrolling
-        accumulatedDelta += e.deltaY;
+        accumulatedDelta += effectiveDeltaY;
 
         // Clear existing timeout
         if (wheelTimeout) {
@@ -850,7 +899,7 @@ export function PDFViewer({
             }
           }
           accumulatedDelta = 0;
-        }, 150); // 150ms debounce
+        }, scrollDebounce); // Use user setting
       }
     };
 
@@ -863,7 +912,19 @@ export function PDFViewer({
         clearTimeout(wheelTimeout);
       }
     };
-  }, [zoom, setZoom, viewMode, currentPage, numPages, nextPage, previousPage]);
+  }, [
+    zoom,
+    setZoom,
+    viewMode,
+    currentPage,
+    numPages,
+    nextPage,
+    previousPage,
+    scrollSensitivity,
+    scrollDebounce,
+    invertWheel,
+    zoomStep,
+  ]);
 
   // Auto page turn on vertical scroll
   useEffect(() => {
@@ -879,7 +940,7 @@ export function PDFViewer({
       // Continuous mode: Update current page based on scroll position
       if (viewMode === "continuous" || viewMode === "twoPage") {
         const now = Date.now();
-        if (now - lastThrottleTimeRef.current >= 100) {
+        if (now - lastThrottleTimeRef.current >= scrollDebounce) {
           lastThrottleTimeRef.current = now;
 
           requestAnimationFrame(() => {
@@ -938,7 +999,7 @@ export function PDFViewer({
         const clientHeight = scrollContainer.clientHeight;
 
         // Threshold for triggering page turn (in pixels)
-        const threshold = 10;
+        const threshold = scrollThreshold;
 
         // Check if scrolled to the bottom
         if (scrollTop + clientHeight >= scrollHeight - threshold) {
@@ -995,7 +1056,7 @@ export function PDFViewer({
 
         // Update last scroll position
         lastScrollTop.current = scrollTop;
-      }, 150); // 150ms debounce delay
+      }, scrollDebounce); // Use user setting
     };
 
     scrollContainer.addEventListener("scroll", handleScroll);
@@ -1015,6 +1076,8 @@ export function PDFViewer({
     viewMode,
     setCurrentPage,
     isLoading,
+    scrollThreshold,
+    scrollDebounce,
   ]);
 
   // Handle sidebar resize
@@ -1567,7 +1630,7 @@ export function PDFViewer({
             }
           }}
           className="flex-1 overflow-auto bg-muted/50"
-          style={{ scrollBehavior: "smooth" }}
+          style={{ scrollBehavior: enableSmoothScrolling ? "smooth" : "auto" }}
         >
           {viewMode === "single" && (
             <div
@@ -1611,13 +1674,13 @@ export function PDFViewer({
               <div
                 key={currentPage}
                 className={cn(
-                  "relative animate-in fade-in duration-300",
-                  pageDirection === "forward" && "slide-in-from-right",
-                  pageDirection === "backward" && "slide-in-from-left"
+                  "relative animate-in fade-in zoom-in-95 duration-500 ease-in-out",
+                  pageDirection === "forward" && "slide-in-from-right-8",
+                  pageDirection === "backward" && "slide-in-from-left-8"
                 )}
               >
                 <PDFPage
-                  page={currentPageObj}
+                  page={allPages[currentPage - 1] || currentPageObj}
                   scale={zoom}
                   rotation={
                     (rotation + (pageRotations[currentPage] || 0)) % 360
@@ -1626,7 +1689,7 @@ export function PDFViewer({
                   onRenderSuccess={handleRenderSuccess}
                 />
                 <PDFTextLayer
-                  page={currentPageObj}
+                  page={allPages[currentPage - 1] || currentPageObj}
                   scale={zoom}
                   rotation={
                     (rotation + (pageRotations[currentPage] || 0)) % 360
@@ -1636,7 +1699,7 @@ export function PDFViewer({
                   pageNumber={currentPage}
                 />
                 <PDFAnnotationLayer
-                  page={currentPageObj}
+                  page={allPages[currentPage - 1] || currentPageObj}
                   scale={zoom}
                   rotation={
                     (rotation + (pageRotations[currentPage] || 0)) % 360
@@ -1649,7 +1712,7 @@ export function PDFViewer({
                 />
                 {selectedAnnotationType === "drawing" && (
                   <PDFDrawingLayer
-                    page={currentPageObj}
+                    page={allPages[currentPage - 1] || currentPageObj}
                     scale={zoom}
                     rotation={
                       (rotation + (pageRotations[currentPage] || 0)) % 360
@@ -1661,7 +1724,7 @@ export function PDFViewer({
                 )}
                 {isSelectionMode && (
                   <PDFSelectionLayer
-                    page={currentPageObj}
+                    page={allPages[currentPage - 1] || currentPageObj}
                     scale={zoom}
                     rotation={
                       (rotation + (pageRotations[currentPage] || 0)) % 360

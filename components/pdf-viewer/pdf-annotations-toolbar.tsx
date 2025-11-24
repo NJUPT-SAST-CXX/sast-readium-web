@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Highlighter,
   MessageSquare,
@@ -46,6 +47,7 @@ export function PDFAnnotationsToolbar({
   className,
   onOpenSignatureDialog,
 }: PDFAnnotationsToolbarProps) {
+  const { t } = useTranslation();
   const {
     annotations,
     removeAnnotation,
@@ -111,7 +113,7 @@ export function PDFAnnotationsToolbar({
       >
         <div className="flex items-center gap-2 p-2">
           <div className="text-xs font-medium text-muted-foreground">
-            Annotations:
+            {t("annotations.toolbar.title")}
           </div>
 
           <Tooltip>
@@ -129,7 +131,7 @@ export function PDFAnnotationsToolbar({
                 <Highlighter className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Highlight Text</TooltipContent>
+            <TooltipContent>{t("annotations.toolbar.highlight")}</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -147,7 +149,7 @@ export function PDFAnnotationsToolbar({
                 <MessageSquare className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Add Comment</TooltipContent>
+            <TooltipContent>{t("annotations.toolbar.comment")}</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -165,7 +167,7 @@ export function PDFAnnotationsToolbar({
                 <Square className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Draw Shape</TooltipContent>
+            <TooltipContent>{t("annotations.toolbar.shape")}</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -183,7 +185,7 @@ export function PDFAnnotationsToolbar({
                 <Type className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Add Text</TooltipContent>
+            <TooltipContent>{t("annotations.toolbar.text")}</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -201,7 +203,7 @@ export function PDFAnnotationsToolbar({
                 <Pen className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Free-hand Drawing</TooltipContent>
+            <TooltipContent>{t("annotations.toolbar.drawing")}</TooltipContent>
           </Tooltip>
 
           <Separator orientation="vertical" className="h-6" />
@@ -218,7 +220,7 @@ export function PDFAnnotationsToolbar({
                 <Undo2 className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
+            <TooltipContent>{t("annotations.toolbar.undo")}</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -233,7 +235,7 @@ export function PDFAnnotationsToolbar({
                 <Redo2 className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Redo (Ctrl+Y)</TooltipContent>
+            <TooltipContent>{t("annotations.toolbar.redo")}</TooltipContent>
           </Tooltip>
 
           <Separator orientation="vertical" className="h-6" />
@@ -247,7 +249,9 @@ export function PDFAnnotationsToolbar({
             <>
               <Separator orientation="vertical" className="h-6" />
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Width:</span>
+                <span className="text-xs text-muted-foreground">
+                  {t("annotations.toolbar.width_label")}
+                </span>
                 <Slider
                   value={[selectedStrokeWidth]}
                   onValueChange={([value]) => setSelectedStrokeWidth(value)}
@@ -257,7 +261,9 @@ export function PDFAnnotationsToolbar({
                   className="w-24"
                 />
                 <span className="text-xs text-muted-foreground w-6">
-                  {selectedStrokeWidth}px
+                  {t("annotations.toolbar.stroke_width_value", {
+                    value: selectedStrokeWidth,
+                  })}
                 </span>
               </div>
             </>
@@ -276,7 +282,7 @@ export function PDFAnnotationsToolbar({
                 <Stamp className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Stamps</TooltipContent>
+            <TooltipContent>{t("annotations.toolbar.stamps")}</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -290,7 +296,7 @@ export function PDFAnnotationsToolbar({
                 <PenLine className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Signature</TooltipContent>
+            <TooltipContent>{t("annotations.toolbar.signature")}</TooltipContent>
           </Tooltip>
 
           <Separator orientation="vertical" className="h-6" />
@@ -306,7 +312,7 @@ export function PDFAnnotationsToolbar({
                 <Download className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Export Annotations</TooltipContent>
+            <TooltipContent>{t("annotations.toolbar.export")}</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -320,14 +326,16 @@ export function PDFAnnotationsToolbar({
                 <Upload className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Import Annotations</TooltipContent>
+            <TooltipContent>{t("annotations.toolbar.import")}</TooltipContent>
           </Tooltip>
 
           <Separator orientation="vertical" className="h-6" />
 
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">
-              {currentPageAnnotations.length} on this page
+              {t("annotations.toolbar.count", {
+                count: currentPageAnnotations.length,
+              })}
             </span>
 
             {currentPageAnnotations.length > 0 && (
@@ -346,7 +354,7 @@ export function PDFAnnotationsToolbar({
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Clear Page Annotations</TooltipContent>
+                <TooltipContent>{t("annotations.toolbar.clear_page")}</TooltipContent>
               </Tooltip>
             )}
           </div>

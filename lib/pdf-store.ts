@@ -18,6 +18,8 @@ export interface PDFMetadata {
   };
   metadata?: unknown;
   contentLength?: number; // File size
+  fileCreatedAt?: string;
+  fileModifiedAt?: string;
 }
 
 export interface RecentFile {
@@ -108,6 +110,15 @@ interface DocumentStateSnapshot {
   watermarkGapX: number;
   watermarkGapY: number;
   watermarkRotation: number;
+
+  // Scrolling & Interaction
+  scrollSensitivity: number;
+  scrollThreshold: number;
+  scrollDebounce: number;
+  enableSmoothScrolling: boolean;
+  invertWheel: boolean;
+  zoomStep: number;
+  sidebarInitialWidth: number;
 }
 
 export interface PDFOutlineNode {
@@ -224,6 +235,23 @@ interface PDFState {
   setWatermarkGapX: (gap: number) => void;
   setWatermarkGapY: (gap: number) => void;
   setWatermarkRotation: (rotation: number) => void;
+
+  // Scrolling & Interaction
+  scrollSensitivity: number;
+  scrollThreshold: number;
+  scrollDebounce: number;
+  enableSmoothScrolling: boolean;
+  invertWheel: boolean;
+  zoomStep: number;
+  sidebarInitialWidth: number;
+
+  setScrollSensitivity: (val: number) => void;
+  setScrollThreshold: (val: number) => void;
+  setScrollDebounce: (val: number) => void;
+  setEnableSmoothScrolling: (val: boolean) => void;
+  setInvertWheel: (val: boolean) => void;
+  setZoomStep: (val: number) => void;
+  setSidebarInitialWidth: (val: number) => void;
 
   // App Settings
   enableSplashScreen: boolean;
@@ -363,6 +391,13 @@ const createSnapshotFromState = (state: PDFState): DocumentStateSnapshot => ({
   watermarkGapX: state.watermarkGapX,
   watermarkGapY: state.watermarkGapY,
   watermarkRotation: state.watermarkRotation,
+  scrollSensitivity: state.scrollSensitivity,
+  scrollThreshold: state.scrollThreshold,
+  scrollDebounce: state.scrollDebounce,
+  enableSmoothScrolling: state.enableSmoothScrolling,
+  invertWheel: state.invertWheel,
+  zoomStep: state.zoomStep,
+  sidebarInitialWidth: state.sidebarInitialWidth,
 });
 
 export const usePDFStore = create<PDFState>()(
@@ -428,6 +463,15 @@ export const usePDFStore = create<PDFState>()(
       watermarkGapY: 4,
       watermarkRotation: -45,
 
+      // Scrolling & Interaction Defaults
+      scrollSensitivity: 150,
+      scrollThreshold: 10,
+      scrollDebounce: 150,
+      enableSmoothScrolling: true,
+      invertWheel: false,
+      zoomStep: 0.1,
+      sidebarInitialWidth: 240,
+
       // Actions
       setCurrentPDF: (file) => set({ currentPDF: file }),
 
@@ -440,6 +484,13 @@ export const usePDFStore = create<PDFState>()(
       setWatermarkGapY: (gap: number) => set({ watermarkGapY: gap }),
       setWatermarkRotation: (rotation: number) =>
         set({ watermarkRotation: rotation }),
+      setScrollSensitivity: (val) => set({ scrollSensitivity: val }),
+      setScrollThreshold: (val) => set({ scrollThreshold: val }),
+      setScrollDebounce: (val) => set({ scrollDebounce: val }),
+      setEnableSmoothScrolling: (val) => set({ enableSmoothScrolling: val }),
+      setInvertWheel: (val) => set({ invertWheel: val }),
+      setZoomStep: (val) => set({ zoomStep: val }),
+      setSidebarInitialWidth: (val) => set({ sidebarInitialWidth: val }),
 
       setPdfUrl: (url) => set({ pdfUrl: url }),
 
@@ -1150,6 +1201,13 @@ export const usePDFStore = create<PDFState>()(
             watermarkColor: nextSnapshot.watermarkColor,
             watermarkOpacity: nextSnapshot.watermarkOpacity,
             watermarkSize: nextSnapshot.watermarkSize,
+            scrollSensitivity: nextSnapshot.scrollSensitivity,
+            scrollThreshold: nextSnapshot.scrollThreshold,
+            scrollDebounce: nextSnapshot.scrollDebounce,
+            enableSmoothScrolling: nextSnapshot.enableSmoothScrolling,
+            invertWheel: nextSnapshot.invertWheel,
+            zoomStep: nextSnapshot.zoomStep,
+            sidebarInitialWidth: nextSnapshot.sidebarInitialWidth,
           };
         });
       },
@@ -1199,6 +1257,13 @@ export const usePDFStore = create<PDFState>()(
         enableSplashScreen: state.enableSplashScreen,
         pdfLoadingAnimation: state.pdfLoadingAnimation,
         pageRotations: state.pageRotations,
+        scrollSensitivity: state.scrollSensitivity,
+        scrollThreshold: state.scrollThreshold,
+        scrollDebounce: state.scrollDebounce,
+        enableSmoothScrolling: state.enableSmoothScrolling,
+        invertWheel: state.invertWheel,
+        zoomStep: state.zoomStep,
+        sidebarInitialWidth: state.sidebarInitialWidth,
       }),
     }
   ) as StateCreator<PDFState, [], []>

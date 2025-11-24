@@ -31,6 +31,7 @@ import {
   Copy,
   Volume2,
   Square,
+  FoldHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -153,6 +154,7 @@ export function PDFToolbar({
   } = usePDFStore();
 
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+  const [annotationsCollapsed, setAnnotationsCollapsed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -281,11 +283,29 @@ export function PDFToolbar({
                   </div>
                 </TooltipContent>
               </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setAnnotationsCollapsed((prev) => !prev)}
+                    className={cn(
+                      "shrink-0 flex",
+                      annotationsCollapsed ? "bg-accent" : ""
+                    )}
+                  >
+                    <FoldHorizontal className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {t("toolbar.tooltip.toggle_annotation_toolbar")}
+                </TooltipContent>
+              </Tooltip>
               <Separator
                 orientation="vertical"
                 className="h-6 hidden sm:block"
               />
-              <ButtonGroup className="gap-0.5 sm:gap-1">
+              <ButtonGroup>
                 <div className="hidden sm:block">
                   <PDFGoToPage />
                 </div>
@@ -396,7 +416,7 @@ export function PDFToolbar({
             {/* Center Section - Zoom and View Controls */}
             <div className="flex items-center gap-1 sm:gap-2">
               {/* Zoom Controls */}
-              <ButtonGroup className="hidden sm:flex gap-0.5 sm:gap-1">
+              <ButtonGroup className="hidden sm:flex overflow-visible">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -422,10 +442,10 @@ export function PDFToolbar({
                       value={zoom.toString()}
                       onValueChange={(value) => setZoom(parseFloat(value))}
                     >
-                      <SelectTrigger className="h-9 min-w-[70px] sm:min-w-[96px] px-2">
+                      <SelectTrigger className="h-9 min-w-[70px] sm:min-w-[96px] px-2 relative z-10 shrink-0">
                         <SelectValue>{Math.round(zoom * 100)}%</SelectValue>
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[100]">
                         {zoomLevels.map((level) => (
                           <SelectItem key={level} value={level.toString()}>
                             {level === 1.0
@@ -493,7 +513,7 @@ export function PDFToolbar({
               />
 
               {/* Rotation Controls */}
-              <ButtonGroup className="hidden md:flex gap-1">
+              <ButtonGroup className="hidden md:flex">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -531,7 +551,7 @@ export function PDFToolbar({
               />
 
               {/* View Mode Controls */}
-              <ButtonGroup className="hidden lg:flex gap-1">
+              <ButtonGroup className="hidden lg:flex">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -587,7 +607,7 @@ export function PDFToolbar({
               />
 
               {/* Fit Mode Controls */}
-              <ButtonGroup className="hidden xl:flex gap-1">
+              <ButtonGroup className="hidden xl:flex">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -624,7 +644,7 @@ export function PDFToolbar({
 
             {/* Right Section */}
             <div className="flex items-center gap-1 sm:gap-2">
-              <ButtonGroup className="gap-0.5 sm:gap-1">
+              <ButtonGroup>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -714,7 +734,7 @@ export function PDFToolbar({
                 className="h-6 hidden sm:block"
               />
 
-              <ButtonGroup className="gap-0.5 sm:gap-1">
+              <ButtonGroup>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -881,12 +901,21 @@ export function PDFToolbar({
 
         {/* Annotations Toolbar */}
         {!isPresentationMode && (
-          <PDFAnnotationsToolbar
-            onAnnotationTypeSelect={onAnnotationTypeSelect || (() => {})}
-            selectedType={selectedAnnotationType || null}
-            onStampSelect={onStampSelect || (() => {})}
-            onOpenSignatureDialog={onOpenSignatureDialog}
-          />
+          <div
+            className={cn(
+              "transition-[max-height,opacity] duration-200 ease-out overflow-hidden",
+              annotationsCollapsed
+                ? "max-h-0 opacity-0 pointer-events-none"
+                : "max-h-[420px] opacity-100"
+            )}
+          >
+            <PDFAnnotationsToolbar
+              onAnnotationTypeSelect={onAnnotationTypeSelect || (() => {})}
+              selectedType={selectedAnnotationType || null}
+              onStampSelect={onStampSelect || (() => {})}
+              onOpenSignatureDialog={onOpenSignatureDialog}
+            />
+          </div>
         )}
 
         {showSettings && (

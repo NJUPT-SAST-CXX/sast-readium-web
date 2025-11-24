@@ -23,9 +23,10 @@ import {
 
 interface PDFProgressBarProps {
   className?: string;
+  alwaysShow?: boolean;
 }
 
-export function PDFProgressBar({ className }: PDFProgressBarProps) {
+export function PDFProgressBar({ className, alwaysShow }: PDFProgressBarProps) {
   const {
     currentPage,
     numPages,
@@ -74,9 +75,9 @@ export function PDFProgressBar({ className }: PDFProgressBarProps) {
       <div
         className={cn(
           // Fixed positioning at bottom of viewport
-          "fixed bottom-0 left-0 right-0 z-50",
-          // Hide on mobile
-          "hidden sm:block",
+          "fixed bottom-0 left-0 right-0 z-40",
+          // Hide on mobile portrait unless forced
+          alwaysShow ? "block" : "hidden sm:block",
           // Background and border styling
           "bg-background/95 backdrop-blur-sm border-t border-border",
           // Padding - responsive for mobile (more compact)

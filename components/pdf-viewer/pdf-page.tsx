@@ -32,7 +32,7 @@ const PDFPageComponent = ({
     cancel: () => void;
     promise: Promise<void>;
   } | null>(null);
-  const renderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Removed renderTimeoutRef as we use requestAnimationFrame now
   const [isZooming, setIsZooming] = useState(false);
   const {
     setZoom,
@@ -52,9 +52,11 @@ const PDFPageComponent = ({
     return { width: viewport.width, height: viewport.height };
   }, [page, scale, rotation, width, height]);
 
+  const rafRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (!page || !canvasRef.current) {
-      // If no page but dimensions provided, set canvas size for placeholder
+      // ... placeholder setup ...
       if (dimensions.width > 0 && dimensions.height > 0 && canvasRef.current) {
         const canvas = canvasRef.current;
         canvas.width = dimensions.width;
@@ -68,27 +70,40 @@ const PDFPageComponent = ({
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d", {
       // Performance optimization: disable alpha channel if not needed
-      alpha: false,
+      alpha: true,
       // Enable hardware acceleration
       willReadFrequently: false,
     });
     if (!context) return;
 
-    // Cancel any ongoing render task
-    if (renderTaskRef.current) {
-      renderTaskRef.current.cancel();
+    const waitForPreviousRender = async () => {
+      if (!renderTaskRef.current) return;
+
+      const currentTask = renderTaskRef.current;
+      currentTask.cancel();
+
+      try {
+        await currentTask.promise;
+      } catch (error) {
+        if ((error as Error)?.name !== "RenderingCancelledException") {
+          console.error("Error while waiting for previous render", error);
+        }
+      } finally {
+        if (renderTaskRef.current === currentTask) {
+          renderTaskRef.current = null;
+        }
+      }
+    };
+
+    // Cancel any pending RAF
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
     }
 
-    // Clear any pending timeout
-    if (renderTimeoutRef.current) {
-      clearTimeout(renderTimeoutRef.current);
-    }
-
-    let isMounted = true;
-
-    // Throttle rendering to prevent excessive re-renders during scale/rotation changes
-    renderTimeoutRef.current = setTimeout(() => {
-      if (!isMounted || !canvasRef.current) return;
+    // Immediate rendering for first load or page change
+    const renderPage = async () => {
+      await waitForPreviousRender();
+      if (!canvasRef.current || !page) return;
 
       // Get device pixel ratio for high-DPI displays (Retina, 4K, etc.)
       // Limit to 2 for performance in fit modes
@@ -108,6 +123,7 @@ const PDFPageComponent = ({
       canvas.style.height = `${Math.floor(viewport.height)}px`;
 
       // Scale the context to match the output scale
+      context.setTransform(1, 0, 0, 1, 0, 0);
       context.scale(outputScale, outputScale);
 
       // Enable image smoothing for better quality
@@ -126,25 +142,27 @@ const PDFPageComponent = ({
 
       renderTaskRef.current.promise
         .then(() => {
-          if (isMounted) {
-            // Rendering complete
-            onRenderSuccess?.();
-          }
+          // Rendering complete
+          onRenderSuccess?.();
         })
         .catch((error: Error) => {
-          if (isMounted && error.name !== "RenderingCancelledException") {
+          if (error.name !== "RenderingCancelledException") {
             console.error("Error rendering page:", error);
           }
         });
-    }, 50); // 50ms throttle for rendering
+    };
+
+    // Use requestAnimationFrame to ensure canvas is ready
+    rafRef.current = requestAnimationFrame(() => {
+      void renderPage();
+    });
 
     return () => {
-      isMounted = false;
       if (renderTaskRef.current) {
         renderTaskRef.current.cancel();
       }
-      if (renderTimeoutRef.current) {
-        clearTimeout(renderTimeoutRef.current);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
       }
     };
   }, [
@@ -274,8 +292,16 @@ const PDFPageComponent = ({
 // Memoize the component to prevent unnecessary re-renders
 // Only re-render when page, scale, or rotation changes
 export const PDFPage = memo(PDFPageComponent, (prevProps, nextProps) => {
+  // Check if it's effectively the same page (same page index)
+  const prevIndex = prevProps.page ? (prevProps.page as unknown as { _pageIndex: number })._pageIndex : -1;
+  const nextIndex = nextProps.page ? (nextProps.page as unknown as { _pageIndex: number })._pageIndex : -1;
+
+  const isSamePage =
+    (prevProps.page === nextProps.page) ||
+    (prevIndex !== -1 && nextIndex !== -1 && prevIndex === nextIndex);
+
   return (
-    prevProps.page === nextProps.page &&
+    isSamePage &&
     Math.abs(prevProps.scale - nextProps.scale) < 0.001 && // Avoid re-render for tiny scale changes
     prevProps.rotation === nextProps.rotation &&
     prevProps.className === nextProps.className

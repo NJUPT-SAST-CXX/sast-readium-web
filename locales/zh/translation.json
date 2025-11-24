@@ -4,6 +4,44 @@
     "subtitle": "更高效的 PDF 阅读与批注体验",
     "tagline": "专注高效的 PDF 阅读与批注"
   },
+  "about": {
+    "title": "关于 SAST Readium",
+    "description": "一个为性能和易用性打造的现代高效 PDF 阅读与批注工具。",
+    "version": "版本",
+    "project_info": "项目信息",
+    "team": "团队",
+    "team_desc": "由南京邮电大学大学生科学技术协会（SAST）C++ 组开发。",
+    "links": "相关链接",
+    "website": "官方网站",
+    "github": "GitHub 仓库",
+    "issues": "反馈问题",
+    "license": "开源协议",
+    "tech_stack": "技术栈",
+    "dependencies": "运行依赖",
+    "dev_dependencies": "开发依赖",
+    "scripts": "脚本命令",
+    "copyright": "© {{year}} SAST-CXX. All rights reserved.",
+    "check_update": "检查更新",
+    "update": {
+      "checking": "正在检查更新...",
+      "latest": "当前已是最新版本。",
+      "available": "发现新版本 {{version}}！",
+      "error": "检查更新失败：{{error}}"
+    },
+    "runtime": {
+      "title": "运行环境",
+      "browser": "当前在浏览器环境运行，未使用 Tauri 桌面运行时，因此不提供本地系统级信息。",
+      "desktop": "运行环境（Tauri 桌面）",
+      "rust_package": "Rust 包名",
+      "app_version": "应用版本",
+      "tauri_version": "Tauri 版本",
+      "build_mode": "构建模式",
+      "os": "操作系统",
+      "arch": "架构",
+      "executable": "可执行文件",
+      "cwd": "当前工作目录"
+    }
+  },
   "welcome": {
     "start": "开始",
     "open_pdf": "打开 PDF 文件…",
@@ -45,8 +83,11 @@
   },
   "properties": {
     "title": "文档属性",
+    "recent_files": "最近文件",
     "filename": "文件名",
     "filesize": "文件大小",
+    "file_created_at": "文件创建时间",
+    "file_modified_at": "文件修改时间",
     "page_count": "页数",
     "page_size": "页面尺寸",
     "pdf_version": "PDF 版本",
@@ -122,7 +163,8 @@
     },
     "settings": {
       "label": "设置",
-      "preferences": "首选项"
+      "preferences": "首选项",
+      "language": "语言"
     }
   },
   "toolbar": {
@@ -131,6 +173,7 @@
       "toggle_thumbnails": "切换缩略图",
       "toggle_bookmarks": "切换书签",
       "toggle_annotations": "切换注释",
+      "toggle_annotation_toolbar": "折叠标注工具栏",
       "toggle_tts_start": "开始朗读",
       "toggle_tts_stop": "停止朗读",
       "zoom_in": "放大",
@@ -174,6 +217,7 @@
       "display": "显示与布局",
       "interface": "界面与导航",
       "appearance": "外观",
+      "scrolling": "滚动与交互",
       "watermark": "水印",
       "system": "系统与更新"
     },
@@ -181,7 +225,8 @@
       "watermark_text": "输入水印文本"
     },
     "hint": {
-      "watermark_text": "文本将重复覆盖整个页面"
+      "watermark_text": "文本将重复覆盖整个页面",
+      "scroll_sensitivity": "数值越小 = 越灵敏"
     },
     "option": {
       "view_mode": "视图模式",
@@ -199,7 +244,16 @@
       "show_outline": "显示目录",
       "show_annotations": "显示注释",
       "behavior": "行为",
+      "scroll_behavior": "滚动行为",
+      "enable_smooth_scrolling": "启用平滑滚动",
+      "invert_wheel": "反转鼠标滚轮方向",
+      "interaction_tweaks": "交互微调",
+      "scroll_sensitivity": "滚动灵敏度（滚轮阈值）",
+      "scroll_debounce": "滚动防抖（响应速度）",
+      "scroll_threshold": "翻页触发阈值",
+      "zoom_step": "缩放步长",
       "case_sensitive": "区分大小写搜索",
+      "bottom_bar": "底部导航栏",
       "color_theme": "颜色主题",
       "light": "浅色",
       "dark": "深色",
@@ -216,9 +270,13 @@
       "annotation_defaults": "标注默认值",
       "highlight_color": "高亮颜色",
       "stroke_width": "笔触宽度",
+      "theme": "主题",
       "watermark_text": "水印文本",
+      "watermark_style": "水印样式",
       "watermark_color": "水印颜色",
       "watermark_opacity": "不透明度",
+      "opacity": "不透明度",
+      "size": "尺寸",
       "watermark_size": "字体大小",
       "watermark_gap_x": "水平间距",
       "watermark_gap_y": "垂直间距",
@@ -266,6 +324,26 @@
       "show_help": "显示快捷键",
       "show_help_alt": "显示快捷键 (Alt)",
       "close_dialogs": "关闭对话框"
+    }
+  },
+  "annotations": {
+    "toolbar": {
+      "title": "标注工具：",
+      "highlight": "高亮文本",
+      "comment": "添加评论",
+      "shape": "绘制形状",
+      "text": "添加文本",
+      "drawing": "自由绘制",
+      "undo": "撤销 (Ctrl+Z)",
+      "redo": "重做 (Ctrl+Y)",
+      "width_label": "线宽：",
+      "stroke_width_value": "{{value}}px",
+      "stamps": "印章",
+      "signature": "签名",
+      "export": "导出标注",
+      "import": "导入标注",
+      "count": "本页共有 {{count}} 条",
+      "clear_page": "清除本页标注"
     }
   },
   "viewer": {

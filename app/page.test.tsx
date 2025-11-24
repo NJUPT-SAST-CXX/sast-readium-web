@@ -1,87 +1,92 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import Home from "./page";
+import { usePDFStore } from "@/lib/pdf-store";
+
+// Mock dependencies
+jest.mock("@/lib/pdf-store");
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: "en" },
+  }),
+}));
+jest.mock("@/components/welcome-page/welcome-page", () => ({
+  WelcomePage: ({ onFileSelect }: { onFileSelect: (f: File[]) => void }) => (
+    <div data-testid="welcome-page">
+      <button onClick={() => onFileSelect([new File([""], "test.pdf", { type: "application/pdf" })])}>
+        Open PDF
+      </button>
+    </div>
+  ),
+}));
+jest.mock("@/components/pdf-viewer/pdf-viewer", () => ({
+  PDFViewer: ({ onClose }: { onClose: () => void }) => (
+    <div data-testid="pdf-viewer">
+      <button onClick={() => onClose()}>Close PDF</button>
+    </div>
+  ),
+}));
+jest.mock("@/components/pdf-viewer/pdf-tab-bar", () => ({
+  PDFTabBar: () => <div data-testid="pdf-tab-bar">Tabs</div>,
+}));
+jest.mock("@/lib/pdf-utils", () => ({
+  unloadPDFDocument: jest.fn(),
+}));
 
 describe("Home Page", () => {
-  it("renders the Next.js logo", () => {
-    render(<Home />);
-    const logo = screen.getByAltText("Next.js logo");
-    expect(logo).toBeInTheDocument();
+  const mockStore = {
+    isDarkMode: false,
+    resetPDF: jest.fn(),
+    openDocumentSession: jest.fn(),
+    closeDocumentSession: jest.fn(),
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (usePDFStore as unknown as jest.Mock).mockReturnValue(mockStore);
   });
 
-  it("renders the main heading", () => {
+  it("renders welcome page initially", () => {
     render(<Home />);
-    const heading = screen.getByRole("heading", {
-      name: /to get started, edit the page\.tsx file/i,
+    expect(screen.getByTestId("welcome-page")).toBeInTheDocument();
+  });
+
+  it("opens PDF viewer when file is selected", async () => {
+    render(<Home />);
+    
+    const openBtn = screen.getByText("Open PDF");
+    fireEvent.click(openBtn);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("pdf-viewer")).toBeInTheDocument();
     });
-    expect(heading).toBeInTheDocument();
+    expect(mockStore.openDocumentSession).toHaveBeenCalled();
   });
 
-  it("renders the description text", () => {
+  it("closes PDF viewer and returns to welcome page", async () => {
     render(<Home />);
-    const description = screen.getByText(/looking for a starting point/i);
-    expect(description).toBeInTheDocument();
+    
+    // Open first
+    fireEvent.click(screen.getByText("Open PDF"));
+    await waitFor(() => {
+      expect(screen.getByTestId("pdf-viewer")).toBeInTheDocument();
+    });
+
+    // Close
+    fireEvent.click(screen.getByText("Close PDF"));
+    await waitFor(() => {
+      expect(screen.getByTestId("welcome-page")).toBeInTheDocument();
+    });
+    expect(mockStore.closeDocumentSession).toHaveBeenCalled();
   });
 
-  it("renders the Templates link", () => {
+  it("applies dark mode class", () => {
+    (usePDFStore as unknown as jest.Mock).mockReturnValue({
+      ...mockStore,
+      isDarkMode: true,
+    });
+
     render(<Home />);
-    const templatesLink = screen.getByRole("link", { name: /templates/i });
-    expect(templatesLink).toBeInTheDocument();
-    expect(templatesLink).toHaveAttribute(
-      "href",
-      expect.stringContaining("vercel.com/templates")
-    );
-  });
-
-  it("renders the Learning link", () => {
-    render(<Home />);
-    const learningLink = screen.getByRole("link", { name: /learning/i });
-    expect(learningLink).toBeInTheDocument();
-    expect(learningLink).toHaveAttribute(
-      "href",
-      expect.stringContaining("nextjs.org/learn")
-    );
-  });
-
-  it("renders the Deploy Now button", () => {
-    render(<Home />);
-    const deployButton = screen.getByRole("link", { name: /deploy now/i });
-    expect(deployButton).toBeInTheDocument();
-    expect(deployButton).toHaveAttribute(
-      "href",
-      expect.stringContaining("vercel.com/new")
-    );
-    expect(deployButton).toHaveAttribute("target", "_blank");
-    expect(deployButton).toHaveAttribute("rel", "noopener noreferrer");
-  });
-
-  it("renders the Documentation button", () => {
-    render(<Home />);
-    const docsButton = screen.getByRole("link", { name: /documentation/i });
-    expect(docsButton).toBeInTheDocument();
-    expect(docsButton).toHaveAttribute(
-      "href",
-      expect.stringContaining("nextjs.org/docs")
-    );
-    expect(docsButton).toHaveAttribute("target", "_blank");
-    expect(docsButton).toHaveAttribute("rel", "noopener noreferrer");
-  });
-
-  it("renders the Vercel logomark", () => {
-    render(<Home />);
-    const vercelLogo = screen.getByAltText("Vercel logomark");
-    expect(vercelLogo).toBeInTheDocument();
-  });
-
-  it("has correct layout structure", () => {
-    const { container } = render(<Home />);
-    const main = container.querySelector("main");
-    expect(main).toBeInTheDocument();
-    expect(main).toHaveClass("flex", "min-h-screen");
-  });
-
-  it("applies dark mode classes", () => {
-    const { container } = render(<Home />);
-    const wrapper = container.firstChild as HTMLElement;
-    expect(wrapper).toHaveClass("dark:bg-black");
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
   });
 });

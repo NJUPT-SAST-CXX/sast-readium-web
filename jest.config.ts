@@ -126,6 +126,9 @@ const config: Config = {
 
     // Handle image imports
     "^.+\\.(png|jpg|jpeg|gif|webp|avif|ico|bmp|svg)$/i": "<rootDir>/__mocks__/fileMock.js",
+
+    // Mock pdfjs-dist to avoid ESM import.meta errors
+    "^pdfjs-dist/legacy/build/pdf.mjs$": "<rootDir>/__mocks__/pdfjs-mock.js",
   },
 
   // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader

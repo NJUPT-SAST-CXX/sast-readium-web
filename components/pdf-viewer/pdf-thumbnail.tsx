@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { PDFPageProxy } from "@/lib/pdf-utils";
+import { PDFPageProxy, PDFRenderTask } from "@/lib/pdf-utils";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -21,6 +21,7 @@ export function PDFThumbnail({
   rotation = 0,
 }: PDFThumbnailProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const renderTaskRef = useRef<PDFRenderTask | null>(null);
   const [renderedState, setRenderedState] = useState<{
     page: PDFPageProxy | null;
     rotation: number;
@@ -38,6 +39,15 @@ export function PDFThumbnail({
       willReadFrequently: false,
     });
     if (!context) return;
+
+    const cancelPreviousRender = () => {
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+        renderTaskRef.current = null;
+      }
+    };
+
+    cancelPreviousRender();
 
     // Use lower scale for thumbnails to improve performance
     const thumbnailScale = 0.3;
@@ -62,9 +72,17 @@ export function PDFThumbnail({
       intent: "display",
     };
 
-    page
-      .render(renderContext)
-      .promise.then(() => {
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.scale(outputScale, outputScale);
+
+    const renderTask = page.render(renderContext);
+    renderTaskRef.current = renderTask;
+
+    renderTask.promise
+      .then(() => {
+        if (renderTaskRef.current === renderTask) {
+          renderTaskRef.current = null;
+        }
         setRenderedState({ page, rotation });
       })
       .catch((error: Error) => {
@@ -72,6 +90,10 @@ export function PDFThumbnail({
           console.error("Error rendering thumbnail:", error);
         }
       });
+
+    return () => {
+      cancelPreviousRender();
+    };
   }, [page, rotation]);
 
   return (

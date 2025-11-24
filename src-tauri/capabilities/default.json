@@ -9,6 +9,7 @@
     "core:default",
     "dialog:default",
     "fs:default",
+    "fs:allow-stat",
     {
       "identifier": "fs:scope",
       "allow": [

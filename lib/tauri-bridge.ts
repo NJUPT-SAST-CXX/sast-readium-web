@@ -53,6 +53,11 @@ export interface DesktopPreferences {
   pdfLoadingAnimation?: "spinner" | "pulse" | "bar";
 }
 
+export interface FileTimes {
+  createdAt?: string;
+  modifiedAt?: string;
+}
+
 export function isTauri() {
   return isTauriRuntime;
 }
@@ -274,12 +279,69 @@ export async function readPdfFileAtPath(
         configurable: true,
       });
     } catch {
-      // best effort; ignore if we cannot define the property
+      // best effort; ignore if the property cannot be defined
     }
 
     return file;
   } catch (error) {
     console.error("Failed to read PDF file at path", path, error);
+    return null;
+  }
+}
+
+type TauriFileInfo = {
+  createdAt?: Date | string | number;
+  modifiedAt?: Date | string | number;
+  creationTime?: Date | string | number;
+  updatedAt?: Date | string | number;
+  birthtime?: Date | string | number;
+  ctime?: Date | string | number;
+  mtime?: Date | string | number;
+};
+
+export async function getFileTimes(path: string): Promise<FileTimes | null> {
+  if (!isTauriRuntime) return null;
+
+  try {
+    const fs = await import("@tauri-apps/plugin-fs");
+    const stats = (await fs.stat(path as string)) as TauriFileInfo | null;
+    if (!stats) return null;
+
+    const normalizeDate = (value?: Date | string | number): string | undefined => {
+      if (value instanceof Date) {
+        return Number.isNaN(value.valueOf()) ? undefined : value.toISOString();
+      }
+      if (typeof value === "number" && Number.isFinite(value)) {
+        return new Date(value).toISOString();
+      }
+      if (typeof value === "string") {
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.valueOf()) ? undefined : parsed.toISOString();
+      }
+      return undefined;
+    };
+
+    const createdAt =
+      normalizeDate(stats.createdAt) ||
+      normalizeDate(stats.creationTime) ||
+      normalizeDate(stats.birthtime) ||
+      normalizeDate(stats.ctime);
+
+    const modifiedAt =
+      normalizeDate(stats.modifiedAt) ||
+      normalizeDate(stats.mtime) ||
+      normalizeDate(stats.updatedAt);
+
+    if (!createdAt && !modifiedAt) {
+      return null;
+    }
+
+    return {
+      createdAt,
+      modifiedAt,
+    };
+  } catch (error) {
+    console.error("Failed to read file times", path, error);
     return null;
   }
 }

@@ -98,6 +98,20 @@ export function PDFSettingsDialog({
     setWatermarkRotation,
     autoCheckUpdate,
     toggleAutoCheckUpdate,
+    scrollSensitivity,
+    scrollThreshold,
+    scrollDebounce,
+    enableSmoothScrolling,
+    invertWheel,
+    zoomStep,
+    sidebarInitialWidth,
+    setScrollSensitivity,
+    setScrollThreshold,
+    setScrollDebounce,
+    setEnableSmoothScrolling,
+    setInvertWheel,
+    setZoomStep,
+    setSidebarInitialWidth,
   } = usePDFStore();
 
   const [localViewMode, setLocalViewMode] = useState<ViewMode>(viewMode);
@@ -147,10 +161,31 @@ export function PDFSettingsDialog({
   const [localWatermarkRotation, setLocalWatermarkRotation] =
     useState<number>(watermarkRotation);
 
+  // Scrolling & Interaction local state
+  const [localScrollSensitivity, setLocalScrollSensitivity] =
+    useState<number>(scrollSensitivity);
+  const [localScrollThreshold, setLocalScrollThreshold] =
+    useState<number>(scrollThreshold);
+  const [localScrollDebounce, setLocalScrollDebounce] =
+    useState<number>(scrollDebounce);
+  const [localEnableSmoothScrolling, setLocalEnableSmoothScrolling] =
+    useState<boolean>(enableSmoothScrolling);
+  const [localInvertWheel, setLocalInvertWheel] =
+    useState<boolean>(invertWheel);
+  const [localZoomStep, setLocalZoomStep] = useState<number>(zoomStep);
+  const [localSidebarInitialWidth, setLocalSidebarInitialWidth] =
+    useState<number>(sidebarInitialWidth);
+
   const [localAutoCheckUpdate, setLocalAutoCheckUpdate] =
     useState<boolean>(autoCheckUpdate);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
+
+  const handleThemeChange = (mode: "light" | "dark" | "sepia" | "auto") => {
+    setLocalThemeMode(mode);
+    setThemeMode(mode);
+    setLocalIsDarkMode(mode === "dark");
+  };
 
   const handleSave = () => {
     if (localViewMode !== viewMode) {
@@ -229,6 +264,28 @@ export function PDFSettingsDialog({
       setWatermarkRotation(localWatermarkRotation);
     }
 
+    if (localScrollSensitivity !== scrollSensitivity) {
+      setScrollSensitivity(localScrollSensitivity);
+    }
+    if (localScrollThreshold !== scrollThreshold) {
+      setScrollThreshold(localScrollThreshold);
+    }
+    if (localScrollDebounce !== scrollDebounce) {
+      setScrollDebounce(localScrollDebounce);
+    }
+    if (localEnableSmoothScrolling !== enableSmoothScrolling) {
+      setEnableSmoothScrolling(localEnableSmoothScrolling);
+    }
+    if (localInvertWheel !== invertWheel) {
+      setInvertWheel(localInvertWheel);
+    }
+    if (localZoomStep !== zoomStep) {
+      setZoomStep(localZoomStep);
+    }
+    if (localSidebarInitialWidth !== sidebarInitialWidth) {
+      setSidebarInitialWidth(localSidebarInitialWidth);
+    }
+
     if (localAutoCheckUpdate !== autoCheckUpdate) {
       toggleAutoCheckUpdate();
     }
@@ -268,6 +325,13 @@ export function PDFSettingsDialog({
     setLocalWatermarkGapX(watermarkGapX);
     setLocalWatermarkGapY(watermarkGapY);
     setLocalWatermarkRotation(watermarkRotation);
+    setLocalScrollSensitivity(scrollSensitivity);
+    setLocalScrollThreshold(scrollThreshold);
+    setLocalScrollDebounce(scrollDebounce);
+    setLocalEnableSmoothScrolling(enableSmoothScrolling);
+    setLocalInvertWheel(invertWheel);
+    setLocalZoomStep(zoomStep);
+    setLocalSidebarInitialWidth(sidebarInitialWidth);
     setLocalAutoCheckUpdate(autoCheckUpdate);
     setUpdateStatus(null);
 
@@ -297,6 +361,13 @@ export function PDFSettingsDialog({
     setLocalWatermarkGapX(1.5);
     setLocalWatermarkGapY(4.0);
     setLocalWatermarkRotation(-45);
+    setLocalScrollSensitivity(150);
+    setLocalScrollThreshold(10);
+    setLocalScrollDebounce(150);
+    setLocalEnableSmoothScrolling(true);
+    setLocalInvertWheel(false);
+    setLocalZoomStep(0.1);
+    setLocalSidebarInitialWidth(240);
     setLocalAutoCheckUpdate(false);
   };
 
@@ -340,7 +411,7 @@ export function PDFSettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings2 className="h-5 w-5" />
@@ -349,17 +420,70 @@ export function PDFSettingsDialog({
           <DialogDescription>{t("settings.description")}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-8 py-4">
-          {/* Display section */}
-          <section className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <Monitor className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-medium">
+        <Tabs defaultValue="display" className="flex-1 flex flex-col overflow-hidden mt-4">
+          <TabsList className="flex flex-wrap gap-2 w-full mb-4 h-auto flex-shrink-0 bg-muted/40 p-1 rounded-xl">
+            <TabsTrigger
+              value="display"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm rounded-lg"
+            >
+              <Monitor className="h-4 w-4" />
+              <span className="text-[10px] sm:text-xs">
                 {t("settings.section.display")}
-              </h3>
-            </div>
+              </span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="interface"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm rounded-lg"
+            >
+              <Layout className="h-4 w-4" />
+              <span className="text-[10px] sm:text-xs">
+                {t("settings.section.interface")}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="scrolling"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm rounded-lg"
+            >
+              <RotateCcw className="h-4 w-4" />
+              <span className="text-[10px] sm:text-xs">
+                {t("settings.section.scrolling")}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="appearance"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm rounded-lg"
+            >
+              <Palette className="h-4 w-4" />
+              <span className="text-[10px] sm:text-xs">
+                {t("settings.section.appearance")}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="watermark"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm rounded-lg"
+            >
+              <Stamp className="h-4 w-4" />
+              <span className="text-[10px] sm:text-xs">
+                {t("settings.section.watermark")}
+              </span>
+            </TabsTrigger>
+            {isTauri() && (
+              <TabsTrigger
+                value="system"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm rounded-lg"
+              >
+                <RefreshCcw className="h-4 w-4" />
+                <span className="text-[10px] sm:text-xs">
+                  {t("settings.section.system")}
+                </span>
+              </TabsTrigger>
+            )}
+          </TabsList>
 
-            <div className="grid gap-6 sm:grid-cols-2">
+          <div className="flex-1 overflow-y-auto pr-1 pb-2">
+            {/* Display section */}
+            <TabsContent value="display" className="space-y-4 mt-0">
+              <div className="grid gap-6 sm:grid-cols-2">
               <div className="space-y-3">
                 <div className="text-xs font-medium text-muted-foreground">
                   {t("settings.option.view_mode")}
@@ -463,19 +587,12 @@ export function PDFSettingsDialog({
                 <span>200%</span>
                 <span>300%</span>
               </div>
-            </div>
-          </section>
+              </div>
+            </TabsContent>
 
-          {/* Panels / navigation section */}
-          <section className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <Layout className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-medium">
-                {t("settings.section.interface")}
-              </h3>
-            </div>
-
-            <div className="grid gap-6 sm:grid-cols-2">
+            {/* Interface section */}
+            <TabsContent value="interface" className="space-y-4 mt-0">
+              <div className="grid gap-6 sm:grid-cols-2">
               <div className="space-y-3">
                 <div className="text-xs font-medium text-muted-foreground">
                   {t("settings.option.side_panels")}
@@ -536,214 +653,304 @@ export function PDFSettingsDialog({
                   </Label>
                 </div>
               </div>
-            </div>
-          </section>
+              </div>
+            </TabsContent>
 
-          {/* Appearance section */}
-          <section className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <Palette className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-medium">
-                {t("settings.section.appearance")}
-              </h3>
-            </div>
-
-            <div className="grid gap-6 sm:grid-cols-2">
+            {/* Scrolling section */}
+            <TabsContent value="scrolling" className="space-y-4 mt-0">
+              <div className="grid gap-6 sm:grid-cols-2">
               <div className="space-y-3">
                 <div className="text-xs font-medium text-muted-foreground">
-                  {t("settings.option.theme")}
+                  {t("settings.option.scroll_behavior")}
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2 p-2 rounded border border-transparent">
-                    <span className="text-sm">
-                      {t("settings.option.color_theme")}
-                    </span>
-                    <div className="flex rounded-lg border bg-muted p-1">
-                      <Button
-                        type="button"
-                        variant={
-                          localThemeMode === "light" ? "default" : "ghost"
-                        }
-                        size="sm"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => setLocalThemeMode("light")}
-                      >
-                        <Sun className="h-3.5 w-3.5 mr-1" />
-                        {t("settings.option.light")}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={
-                          localThemeMode === "dark" ? "default" : "ghost"
-                        }
-                        size="sm"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => setLocalThemeMode("dark")}
-                      >
-                        <Moon className="h-3.5 w-3.5 mr-1" />
-                        {t("settings.option.dark")}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={
-                          localThemeMode === "sepia" ? "default" : "ghost"
-                        }
-                        size="sm"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => setLocalThemeMode("sepia")}
-                      >
-                        <div className="h-3.5 w-3.5 mr-1 rounded-full bg-[#f4ecd8] border border-amber-900/20" />
-                        {t("settings.option.sepia")}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={
-                          localThemeMode === "auto" ? "default" : "ghost"
-                        }
-                        size="sm"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => setLocalThemeMode("auto")}
-                      >
-                        <Monitor className="h-3.5 w-3.5 mr-1" />
-                        {t("settings.option.auto")}
-                      </Button>
-                    </div>
-                  </div>
+                  <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
+                    <span>{t("settings.option.enable_smooth_scrolling")}</span>
+                    <Checkbox
+                      checked={localEnableSmoothScrolling}
+                      onCheckedChange={(checked) =>
+                        setLocalEnableSmoothScrolling(!!checked)
+                      }
+                    />
+                  </Label>
+                  <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
+                    <span>{t("settings.option.invert_wheel")}</span>
+                    <Checkbox
+                      checked={localInvertWheel}
+                      onCheckedChange={(checked) =>
+                        setLocalInvertWheel(!!checked)
+                      }
+                    />
+                  </Label>
+                </div>
 
-                  <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
-                    <span>{t("settings.option.presentation")}</span>
-                    <Checkbox
-                      checked={localIsPresentationMode}
-                      onCheckedChange={(checked) =>
-                        setLocalIsPresentationMode(!!checked)
-                      }
-                    />
-                  </Label>
-                  <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
-                    <span>{t("settings.option.splash_screen")}</span>
-                    <Checkbox
-                      checked={localEnableSplashScreen}
-                      onCheckedChange={(checked) =>
-                        setLocalEnableSplashScreen(!!checked)
-                      }
-                    />
-                  </Label>
-                  <div className="flex flex-col gap-2 p-2 rounded border border-transparent">
-                    <span className="text-sm">
-                      {t("settings.option.loading_animation")}
+                <div className="space-y-2 pt-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span>{t("settings.option.scroll_sensitivity")}</span>
+                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                      {localScrollSensitivity}
                     </span>
-                    <div className="flex rounded-lg border bg-muted p-1">
-                      <Button
-                        type="button"
-                        variant={
-                          localPdfLoadingAnimation === "spinner"
-                            ? "default"
-                            : "ghost"
-                        }
-                        size="sm"
-                        className="h-7 px-2 text-xs flex-1"
-                        onClick={() => setLocalPdfLoadingAnimation("spinner")}
-                      >
-                        {t("settings.option.loading_type.spinner")}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={
-                          localPdfLoadingAnimation === "pulse"
-                            ? "default"
-                            : "ghost"
-                        }
-                        size="sm"
-                        className="h-7 px-2 text-xs flex-1"
-                        onClick={() => setLocalPdfLoadingAnimation("pulse")}
-                      >
-                        {t("settings.option.loading_type.pulse")}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={
-                          localPdfLoadingAnimation === "bar"
-                            ? "default"
-                            : "ghost"
-                        }
-                        size="sm"
-                        className="h-7 px-2 text-xs flex-1"
-                        onClick={() => setLocalPdfLoadingAnimation("bar")}
-                      >
-                        {t("settings.option.loading_type.bar")}
-                      </Button>
-                    </div>
                   </div>
+                  <Slider
+                    min={50}
+                    max={500}
+                    step={10}
+                    value={[localScrollSensitivity]}
+                    onValueChange={(values) =>
+                      setLocalScrollSensitivity(values[0])
+                    }
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    {t("settings.hint.scroll_sensitivity")}
+                  </p>
                 </div>
               </div>
 
               <div className="space-y-3">
                 <div className="text-xs font-medium text-muted-foreground">
-                  {t("settings.option.annotation_defaults")}
+                  {t("settings.option.interaction_tweaks")}
                 </div>
-                <div className="p-3 rounded-lg border bg-card space-y-4">
-                  <label className="flex items-center justify-between gap-2 cursor-pointer">
-                    <span className="text-xs">
-                      {t("settings.option.highlight_color")}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span>{t("settings.option.scroll_debounce")}</span>
+                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                      {localScrollDebounce}ms
                     </span>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-4 h-4 rounded-full border shadow-sm"
-                        style={{
-                          backgroundColor: localSelectedAnnotationColor,
-                        }}
-                      />
-                      <Input
-                        type="color"
-                        className="h-8 w-16 p-1 cursor-pointer"
-                        value={localSelectedAnnotationColor}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          setLocalSelectedAnnotationColor(e.target.value)
+                  </div>
+                  <Slider
+                    min={50}
+                    max={500}
+                    step={10}
+                    value={[localScrollDebounce]}
+                    onValueChange={(values) =>
+                      setLocalScrollDebounce(values[0])
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span>{t("settings.option.scroll_threshold")}</span>
+                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                      {localScrollThreshold}px
+                    </span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={[localScrollThreshold]}
+                    onValueChange={(values) =>
+                      setLocalScrollThreshold(values[0])
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span>{t("settings.option.zoom_step")}</span>
+                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                      {Math.round(localZoomStep * 100)}%
+                    </span>
+                  </div>
+                  <Slider
+                    min={0.05}
+                    max={0.5}
+                    step={0.05}
+                    value={[localZoomStep]}
+                    onValueChange={(values) => setLocalZoomStep(values[0])}
+                  />
+                </div>
+              </div>
+              </div>
+            </TabsContent>
+
+            {/* Appearance section */}
+            <TabsContent value="appearance" className="mt-0">
+              <div className="grid gap-6 lg:grid-cols-2 items-start">
+                <div className="space-y-4 rounded-xl border bg-card/40 p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t("settings.option.theme")}
+                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <span className="text-sm font-medium">
+                        {t("settings.option.color_theme")}
+                      </span>
+                      <div className="flex flex-wrap gap-2 rounded-lg border bg-muted/70 p-1">
+                        <Button
+                          type="button"
+                          variant={
+                            localThemeMode === "light" ? "default" : "ghost"
+                          }
+                          size="sm"
+                          className="h-8 px-3 text-xs"
+                          onClick={() => handleThemeChange("light")}
+                        >
+                          <Sun className="mr-1 h-3.5 w-3.5" />
+                          {t("settings.option.light")}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={
+                            localThemeMode === "dark" ? "default" : "ghost"
+                          }
+                          size="sm"
+                          className="h-8 px-3 text-xs"
+                          onClick={() => handleThemeChange("dark")}
+                        >
+                          <Moon className="mr-1 h-3.5 w-3.5" />
+                          {t("settings.option.dark")}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={
+                            localThemeMode === "sepia" ? "default" : "ghost"
+                          }
+                          size="sm"
+                          className="h-8 px-3 text-xs"
+                          onClick={() => handleThemeChange("sepia")}
+                        >
+                          <div className="mr-1 h-3.5 w-3.5 rounded-full border border-amber-900/20 bg-[#f4ecd8]" />
+                          {t("settings.option.sepia")}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={
+                            localThemeMode === "auto" ? "default" : "ghost"
+                          }
+                          size="sm"
+                          className="h-8 px-3 text-xs"
+                          onClick={() => handleThemeChange("auto")}
+                        >
+                          <Monitor className="mr-1 h-3.5 w-3.5" />
+                          {t("settings.option.auto")}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="flex items-center justify-between gap-3 rounded-lg border bg-background/60 px-3 py-2 text-sm font-medium">
+                        <span>{t("settings.option.presentation")}</span>
+                        <Checkbox
+                          checked={localIsPresentationMode}
+                          onCheckedChange={(checked) =>
+                            setLocalIsPresentationMode(!!checked)
+                          }
+                        />
+                      </Label>
+                      <Label className="flex items-center justify-between gap-3 rounded-lg border bg-background/60 px-3 py-2 text-sm font-medium">
+                        <span>{t("settings.option.splash_screen")}</span>
+                        <Checkbox
+                          checked={localEnableSplashScreen}
+                          onCheckedChange={(checked) =>
+                            setLocalEnableSplashScreen(!!checked)
+                          }
+                        />
+                      </Label>
+                    </div>
+
+                    <div className="space-y-2">
+                      <span className="text-sm font-medium">
+                        {t("settings.option.loading_animation")}
+                      </span>
+                      <div className="grid gap-2 sm:grid-cols-3">
+                        <Button
+                          type="button"
+                          variant={
+                            localPdfLoadingAnimation === "spinner"
+                              ? "default"
+                              : "outline"
+                          }
+                          size="sm"
+                          className="w-full"
+                          onClick={() => setLocalPdfLoadingAnimation("spinner")}
+                        >
+                          {t("settings.option.loading_type.spinner")}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={
+                            localPdfLoadingAnimation === "pulse"
+                              ? "default"
+                              : "outline"
+                          }
+                          size="sm"
+                          className="w-full"
+                          onClick={() => setLocalPdfLoadingAnimation("pulse")}
+                        >
+                          {t("settings.option.loading_type.pulse")}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={
+                            localPdfLoadingAnimation === "bar" ? "default" : "outline"
+                          }
+                          size="sm"
+                          className="w-full"
+                          onClick={() => setLocalPdfLoadingAnimation("bar")}
+                        >
+                          {t("settings.option.loading_type.bar")}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4 rounded-xl border bg-card/40 p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t("settings.option.annotation_defaults")}
+                  </div>
+                  <div className="space-y-4">
+                    <label className="flex items-center justify-between gap-3 text-sm font-medium">
+                      <span>{t("settings.option.highlight_color")}</span>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="h-5 w-5 rounded-full border shadow-sm"
+                          style={{ backgroundColor: localSelectedAnnotationColor }}
+                        />
+                        <Input
+                          type="color"
+                          className="h-8 w-20 cursor-pointer border bg-background"
+                          value={localSelectedAnnotationColor}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setLocalSelectedAnnotationColor(e.target.value)
+                          }
+                        />
+                      </div>
+                    </label>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        <span>{t("settings.option.stroke_width")}</span>
+                        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px]">
+                          {localSelectedStrokeWidth}px
+                        </span>
+                      </div>
+                      <Slider
+                        min={1}
+                        max={10}
+                        step={1}
+                        value={[localSelectedStrokeWidth]}
+                        onValueChange={(values) =>
+                          setLocalSelectedStrokeWidth(values[0])
                         }
                       />
-                    </div>
-                  </label>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span>{t("settings.option.stroke_width")}</span>
-                      <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                        {localSelectedStrokeWidth}px
-                      </span>
-                    </div>
-                    <Slider
-                      min={1}
-                      max={10}
-                      step={1}
-                      value={[localSelectedStrokeWidth]}
-                      onValueChange={(values) =>
-                        setLocalSelectedStrokeWidth(values[0])
-                      }
-                    />
-                    <div className="h-2 bg-muted rounded mt-2 overflow-hidden">
-                      <div
-                        className="h-full bg-primary transition-all"
-                        style={{
-                          width: `${(localSelectedStrokeWidth / 10) * 100}%`,
-                        }}
-                      />
+                      <div className="mt-2 h-2 overflow-hidden rounded bg-muted">
+                        <div
+                          className="h-full bg-primary transition-all"
+                          style={{ width: `${(localSelectedStrokeWidth / 10) * 100}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
+            </TabsContent>
 
-          {/* Watermark section */}
-          <section className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <Stamp className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-medium">
-                {t("settings.section.watermark")}
-              </h3>
-            </div>
-
-            <div className="grid gap-6 sm:grid-cols-2">
+            {/* Watermark section */}
+            <TabsContent value="watermark" className="space-y-4 mt-0">
+              <div className="grid gap-6 sm:grid-cols-2">
               <div className="space-y-3">
                 <div className="text-xs font-medium text-muted-foreground">
                   {t("settings.option.watermark_text")}
@@ -855,20 +1062,13 @@ export function PDFSettingsDialog({
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
-
-          {/* System section (only in Tauri) */}
-          {isTauri() && (
-            <section className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b">
-                <RefreshCcw className="h-4 w-4 text-muted-foreground" />
-                <h3 className="text-sm font-medium">
-                  {t("settings.section.system")}
-                </h3>
               </div>
+            </TabsContent>
 
-              <div className="grid gap-6 sm:grid-cols-2">
+            {/* System section */}
+            {isTauri() && (
+              <TabsContent value="system" className="space-y-4 mt-0">
+                <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-3">
                   <div className="text-xs font-medium text-muted-foreground">
                     {t("settings.option.behavior")}
@@ -901,10 +1101,7 @@ export function PDFSettingsDialog({
                     >
                       {isCheckingUpdate ? (
                         <>
-                          {t("message.check_error").replace(
-                            "failed",
-                            "checking"
-                          )}
+                          {t("update.checking")}
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         </>
                       ) : (
@@ -964,10 +1161,11 @@ export function PDFSettingsDialog({
                     </Button>
                   </div>
                 </div>
-              </div>
-            </section>
-          )}
-        </div>
+                </div>
+              </TabsContent>
+            )}
+          </div>
+        </Tabs>
 
         <DialogFooter className="flex items-center justify-between sm:justify-between w-full gap-2 mt-2 border-t pt-4">
           <Button

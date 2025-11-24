@@ -110,6 +110,10 @@ export function PDFPropertiesDialog({
           `${year}-${month}-${day}T${hour}:${minute}:00`
         ).toLocaleString();
       }
+      const parsed = new Date(dateStr);
+      if (!Number.isNaN(parsed.valueOf())) {
+        return parsed.toLocaleString();
+      }
       return dateStr;
     } catch {
       return dateStr;
@@ -330,17 +334,25 @@ export function PDFPropertiesDialog({
               </h4>
               <div className="grid grid-cols-3 gap-2 text-sm">
                 <div className="text-muted-foreground">
-                  {t("properties.creation_date")}
+                  {metadata.fileCreatedAt
+                    ? t("properties.file_created_at")
+                    : t("properties.creation_date")}
                 </div>
                 <div className="col-span-2 font-medium">
-                  {formatDate(info.CreationDate as string)}
+                  {formatDate(
+                    metadata.fileCreatedAt || (info.CreationDate as string)
+                  )}
                 </div>
 
                 <div className="text-muted-foreground">
-                  {t("properties.mod_date")}
+                  {metadata.fileModifiedAt
+                    ? t("properties.file_modified_at")
+                    : t("properties.mod_date")}
                 </div>
                 <div className="col-span-2 font-medium">
-                  {formatDate(info.ModDate as string)}
+                  {formatDate(
+                    metadata.fileModifiedAt || (info.ModDate as string)
+                  )}
                 </div>
               </div>
             </section>

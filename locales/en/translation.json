@@ -4,6 +4,44 @@
     "subtitle": "More efficient PDF reading and annotation experience",
     "tagline": "Focus on efficient PDF reading and annotation"
   },
+  "about": {
+    "title": "About SAST Readium",
+    "description": "A modern, efficient PDF reading and annotation tool built for performance and usability.",
+    "version": "Version",
+    "project_info": "Project Info",
+    "team": "Team",
+    "team_desc": "Developed by the C++ group of SAST (Students' Association for Science and Technology) at NJUPT.",
+    "links": "Links",
+    "website": "Website",
+    "github": "GitHub Repository",
+    "issues": "Report Issues",
+    "license": "License",
+    "tech_stack": "Tech Stack",
+    "dependencies": "Dependencies",
+    "dev_dependencies": "Dev Dependencies",
+    "scripts": "Scripts",
+    "copyright": "© {{year}} SAST-CXX. All rights reserved.",
+    "check_update": "Check for Updates",
+    "update": {
+      "checking": "Checking for updates...",
+      "latest": "You are using the latest version.",
+      "available": "New version {{version}} available!",
+      "error": "Failed to check updates: {{error}}"
+    },
+    "runtime": {
+      "title": "Runtime Environment",
+      "browser": "Running in browser mode, native system info unavailable.",
+      "desktop": "Runtime Environment (Tauri Desktop)",
+      "rust_package": "Rust Package",
+      "app_version": "App Version",
+      "tauri_version": "Tauri Version",
+      "build_mode": "Build Mode",
+      "os": "OS",
+      "arch": "Architecture",
+      "executable": "Executable",
+      "cwd": "Current Working Dir"
+    }
+  },
   "welcome": {
     "start": "Start",
     "open_pdf": "Open PDF file...",
@@ -48,6 +86,8 @@
     "recent_files": "Recent Files",
     "filename": "File Name",
     "filesize": "File Size",
+    "file_created_at": "File Created",
+    "file_modified_at": "File Modified",
     "page_count": "Page Count",
     "page_size": "Page Size",
     "pdf_version": "PDF Version",
@@ -122,7 +162,8 @@
     },
     "settings": {
       "label": "Settings",
-      "preferences": "Preferences"
+      "preferences": "Preferences",
+      "language": "Language"
     }
   },
   "toolbar": {
@@ -131,6 +172,7 @@
       "toggle_thumbnails": "Toggle Thumbnails",
       "toggle_bookmarks": "Toggle Bookmarks",
       "toggle_annotations": "Toggle Annotations",
+      "toggle_annotation_toolbar": "Toggle Annotation Toolbar",
       "toggle_tts_start": "Start Text-to-Speech",
       "toggle_tts_stop": "Stop Text-to-Speech",
       "zoom_in": "Zoom In",
@@ -174,6 +216,7 @@
       "display": "Display & Layout",
       "interface": "Interface & Navigation",
       "appearance": "Appearance",
+      "scrolling": "Scrolling & Interaction",
       "watermark": "Watermark",
       "system": "System & Updates"
     },
@@ -181,7 +224,8 @@
       "watermark_text": "Enter watermark text"
     },
     "hint": {
-      "watermark_text": "Text will be repeated across the page"
+      "watermark_text": "Text will be repeated across the page",
+      "scroll_sensitivity": "Lower value = More sensitive"
     },
     "option": {
       "view_mode": "View mode",
@@ -199,6 +243,14 @@
       "show_outline": "Show Outline",
       "show_annotations": "Show Annotations",
       "behavior": "Behavior",
+      "scroll_behavior": "Scroll Behavior",
+      "enable_smooth_scrolling": "Enable smooth scrolling",
+      "invert_wheel": "Invert mouse wheel direction",
+      "interaction_tweaks": "Interaction Tweaks",
+      "scroll_sensitivity": "Scroll Sensitivity (Wheel Threshold)",
+      "scroll_debounce": "Scroll Debounce (Response Speed)",
+      "scroll_threshold": "Page Turn Threshold",
+      "zoom_step": "Zoom Step Size",
       "case_sensitive": "Case sensitive search",
       "bottom_bar": "Bottom navigation bar",
       "color_theme": "Color Theme",
@@ -217,10 +269,12 @@
       "annotation_defaults": "Annotation Defaults",
       "highlight_color": "Highlight Color",
       "stroke_width": "Stroke width",
+      "theme": "Theme",
       "watermark_text": "Watermark Text",
       "watermark_style": "Watermark Style",
       "watermark_color": "Watermark Color",
       "watermark_opacity": "Opacity",
+      "size": "Size",
       "watermark_size": "Font Size",
       "watermark_gap_x": "Horizontal Spacing",
       "watermark_gap_y": "Vertical Spacing",
@@ -268,6 +322,26 @@
       "show_help": "Show keyboard shortcuts",
       "show_help_alt": "Show keyboard shortcuts (alt)",
       "close_dialogs": "Close dialogs"
+    }
+  },
+  "annotations": {
+    "toolbar": {
+      "title": "Annotations:",
+      "highlight": "Highlight Text",
+      "comment": "Add Comment",
+      "shape": "Draw Shape",
+      "text": "Add Text",
+      "drawing": "Free-hand Drawing",
+      "undo": "Undo (Ctrl+Z)",
+      "redo": "Redo (Ctrl+Y)",
+      "width_label": "Width:",
+      "stroke_width_value": "{{value}}px",
+      "stamps": "Stamps",
+      "signature": "Signature",
+      "export": "Export Annotations",
+      "import": "Import Annotations",
+      "count": "{{count}} on this page",
+      "clear_page": "Clear Page Annotations"
     }
   },
   "viewer": {

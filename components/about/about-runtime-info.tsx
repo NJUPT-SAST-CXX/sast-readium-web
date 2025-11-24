@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import {
   getAppRuntimeInfo,
@@ -9,6 +10,7 @@ import {
 } from "@/lib/tauri-bridge";
 
 export function AboutRuntimeInfo() {
+  const { t } = useTranslation();
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [runtimeInfo, setRuntimeInfo] = useState<AppRuntimeInfo | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -41,10 +43,9 @@ export function AboutRuntimeInfo() {
   if (!systemInfo && !runtimeInfo) {
     return (
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold">运行环境</h2>
+        <h2 className="text-xl font-semibold">{t("about.runtime.title")}</h2>
         <div className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-          当前在浏览器环境运行，未使用 Tauri
-          桌面运行时，因此不提供本地系统级信息。
+          {t("about.runtime.browser")}
         </div>
       </section>
     );
@@ -52,25 +53,33 @@ export function AboutRuntimeInfo() {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-xl font-semibold">运行环境（Tauri 桌面）</h2>
+      <h2 className="text-xl font-semibold">{t("about.runtime.desktop")}</h2>
       <div className="rounded-lg border bg-card p-4 text-sm">
         <div className="grid gap-3 sm:grid-cols-2">
           {runtimeInfo && (
             <div className="space-y-1">
               <div>
-                <span className="text-muted-foreground">Rust 包名：</span>
+                <span className="text-muted-foreground">
+                  {t("about.runtime.rust_package")}：
+                </span>
                 <span className="font-mono break-all">{runtimeInfo.name}</span>
               </div>
               <div>
-                <span className="text-muted-foreground">应用版本：</span>
+                <span className="text-muted-foreground">
+                  {t("about.runtime.app_version")}：
+                </span>
                 <span className="font-mono">{runtimeInfo.version}</span>
               </div>
               <div>
-                <span className="text-muted-foreground">Tauri 版本：</span>
+                <span className="text-muted-foreground">
+                  {t("about.runtime.tauri_version")}：
+                </span>
                 <span className="font-mono">{runtimeInfo.tauri_version}</span>
               </div>
               <div>
-                <span className="text-muted-foreground">构建模式：</span>
+                <span className="text-muted-foreground">
+                  {t("about.runtime.build_mode")}：
+                </span>
                 <span className="font-mono">
                   {runtimeInfo.debug ? "debug" : "release"}
                 </span>
@@ -82,18 +91,24 @@ export function AboutRuntimeInfo() {
             {systemInfo && (
               <>
                 <div>
-                  <span className="text-muted-foreground">操作系统：</span>
+                  <span className="text-muted-foreground">
+                    {t("about.runtime.os")}：
+                  </span>
                   <span className="font-mono">{systemInfo.os}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">架构：</span>
+                  <span className="text-muted-foreground">
+                    {t("about.runtime.arch")}：
+                  </span>
                   <span className="font-mono">{systemInfo.arch}</span>
                 </div>
               </>
             )}
             {runtimeInfo?.exe_path && (
               <div>
-                <span className="text-muted-foreground">可执行文件：</span>
+                <span className="text-muted-foreground">
+                  {t("about.runtime.executable")}：
+                </span>
                 <span className="font-mono break-all">
                   {runtimeInfo.exe_path}
                 </span>
@@ -101,7 +116,9 @@ export function AboutRuntimeInfo() {
             )}
             {runtimeInfo?.current_dir && (
               <div>
-                <span className="text-muted-foreground">当前工作目录：</span>
+                <span className="text-muted-foreground">
+                  {t("about.runtime.cwd")}：
+                </span>
                 <span className="font-mono break-all">
                   {runtimeInfo.current_dir}
                 </span>

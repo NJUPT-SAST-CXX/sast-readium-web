@@ -35,6 +35,17 @@ jest.mock('next/navigation', () => ({
   },
 }));
 
+// Mock ResizeObserver
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
+// Mock URL.createObjectURL
+global.URL.createObjectURL = jest.fn(() => 'blob:mock-url');
+global.URL.revokeObjectURL = jest.fn();
+
 // Suppress console errors in tests (optional)
 // global.console = {
 //   ...console,
