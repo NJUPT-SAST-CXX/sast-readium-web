@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { usePDFStore } from "@/lib/pdf-store";
+import { cn } from "@/lib/utils";
 import {
   ChevronLeft,
   ChevronRight,
@@ -28,11 +29,13 @@ import { useTranslation } from "react-i18next";
 interface PDFMobileToolbarProps {
   onSearch: () => void;
   onOpenSettings: () => void;
+  orientation?: "portrait" | "landscape";
 }
 
 export function PDFMobileToolbar({
   onSearch,
   onOpenSettings,
+  orientation = "portrait",
 }: PDFMobileToolbarProps) {
   const { t } = useTranslation();
   const {
@@ -50,10 +53,20 @@ export function PDFMobileToolbar({
     setFitMode,
   } = usePDFStore();
 
+  const isLandscape = orientation === "landscape";
+  const sectionGap = isLandscape ? "gap-0.5" : "gap-1";
+
   return (
-    <div className="flex h-14 items-center justify-between border-t border-border bg-background px-4 sm:hidden z-50 pb-safe">
+    <div
+      className={cn(
+        "flex w-full items-center justify-between border-t border-border bg-background sm:hidden z-50",
+        "pt-safe pb-safe pr-safe pl-safe",
+        isLandscape ? "h-12 px-2" : "h-14 px-4"
+      )}
+      data-orientation={orientation}
+    >
       {/* Left: Thumbnails & Outline */}
-      <div className="flex items-center gap-1">
+      <div className={cn("flex items-center", sectionGap)}>
         <Button variant="ghost" size="icon" onClick={toggleThumbnails}>
           <LayoutGrid className="h-5 w-5" />
         </Button>
@@ -72,7 +85,12 @@ export function PDFMobileToolbar({
         >
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <span className="text-sm font-medium w-16 text-center">
+        <span
+          className={cn(
+            "text-sm font-medium w-16 text-center",
+            isLandscape && "text-xs w-14"
+          )}
+        >
           {currentPage} / {numPages}
         </span>
         <Button
@@ -86,7 +104,7 @@ export function PDFMobileToolbar({
       </div>
 
       {/* Right: Search & More Menu */}
-      <div className="flex items-center gap-1">
+      <div className={cn("flex items-center", sectionGap)}>
         <Button variant="ghost" size="icon" onClick={onSearch}>
           <Search className="h-5 w-5" />
         </Button>

@@ -1,20 +1,55 @@
-# React Quick Starter
+# SAST Readium
 
-A modern, full-stack starter template combining **Next.js 16** with **React 19** for web applications and **Tauri 2.9** for cross-platform desktop applications. Built with TypeScript, Tailwind CSS v4, and shadcn/ui components.
+A modern, feature-rich PDF reader and annotation application built for performance and usability. SAST Readium combines powerful PDF viewing capabilities with comprehensive annotation tools, supporting both web and desktop deployment from a single codebase.
 
 [中文文档](./README_zh.md)
 
 ## Features
 
+### PDF Viewing & Navigation
+
+- 📄 **Multiple View Modes**: Single page, continuous scroll, facing pages
+- 🔍 **Flexible Zoom**: 50%-500% zoom range with page fit, width fit, and auto fit modes
+- 🔄 **Page Rotation**: Support for 0°, 90°, 180°, 270° rotation
+- 🎨 **Theme Support**: Light, dark, sepia modes with auto-detection
+- 📑 **Document Outline**: Navigate via table of contents
+- 🖼️ **Thumbnail Sidebar**: Visual page navigation with drag-and-drop reordering
+- 🎯 **Full-Text Search**: Find text across the entire document with highlighting
+- ⌨️ **Keyboard Shortcuts**: Comprehensive keyboard controls for efficient navigation
+
+### Annotation Tools
+
+- ✏️ **Highlighting**: Multi-color text highlighting with custom colors
+- 💬 **Comments**: Add text annotations to any page
+- 🎨 **Drawing Tools**: Freehand drawing with adjustable stroke width
+- 📐 **Shapes**: Insert rectangles, circles, and arrows
+- 🖼️ **Stamps & Signatures**: Add custom stamps and digital signatures
+- ↩️ **Undo/Redo**: Full annotation history with undo/redo support
+
+### Advanced Features
+
+- 🔖 **Bookmarks**: Create and manage custom bookmarks with titles
+- 🔊 **Text-to-Speech**: Read PDFs aloud with adjustable speed and volume
+- 📝 **Metadata Editing**: View and edit PDF metadata
+- 🏷️ **Watermarking**: Add watermarks to PDF documents
+- 📁 **File Operations**: Rename, delete, and reveal files in system file manager
+- 📑 **Multi-Tab Support**: Open and manage multiple PDFs simultaneously
+- 📦 **Archive Support**: Extract and read PDFs from ZIP/RAR archives
+- 🌍 **Internationalization**: English and Chinese language support
+- 📱 **Touch Gestures**: Pinch-to-zoom and swipe navigation on touch devices
+
+### Technical Stack
+
 - ⚡️ **Next.js 16** with App Router and React 19
 - 🖥️ **Tauri 2.9** for native desktop applications (Windows, macOS, Linux)
-- 🎨 **Tailwind CSS v4** with CSS variables and dark mode support
+- 📄 **PDF.js** for high-quality PDF rendering
+- 🎨 **Tailwind CSS v4** with CSS variables and theme support
 - 🧩 **shadcn/ui** component library with Radix UI primitives
-- 📦 **Zustand** for lightweight state management
-- 🔤 **Geist Font** optimized with next/font
+- 📦 **Zustand** for state management with persistence
+- 🌐 **react-i18next** for internationalization
+- 🧪 **Jest** with React Testing Library for testing
 - 🎯 **TypeScript** for type safety
-- 🎭 **Lucide Icons** for beautiful iconography
-- 📱 Dual deployment: Web app OR Desktop app from the same codebase
+- 📱 **PWA Support** for web deployment
 
 ## Prerequisites
 
@@ -23,7 +58,7 @@ Before you begin, ensure you have the following installed:
 ### For Web Development
 
 - **Node.js** 20.x or later ([Download](https://nodejs.org/))
-- **pnpm** 8.x or later (recommended) or npm/yarn
+- **pnpm** 8.x or later (recommended)
 
   ```bash
   npm install -g pnpm
@@ -49,7 +84,7 @@ Before you begin, ensure you have the following installed:
 1. **Clone the repository**
 
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/NJUPT-SAST-CXX/sast-readium-web.git
    cd sast-readium-web
    ```
 
@@ -57,19 +92,15 @@ Before you begin, ensure you have the following installed:
 
    ```bash
    pnpm install
-   # or
-   npm install
-   # or
-   yarn install
    ```
 
 3. **Verify installation**
 
    ```bash
-   # Check if Next.js is ready
+   # Start web development server
    pnpm dev
 
-   # Check if Tauri is ready (optional, for desktop development)
+   # Check Tauri environment (for desktop development)
    pnpm tauri info
    ```
 
@@ -81,19 +112,17 @@ Before you begin, ensure you have the following installed:
 
 ```bash
 pnpm dev
-# or
-npm run dev
 ```
 
 This starts the Next.js development server at [http://localhost:3000](http://localhost:3000). The page auto-reloads when you edit files.
 
 #### Key Development Files
 
-- `app/page.tsx` - Main landing page
-- `app/layout.tsx` - Root layout with global configuration
-- `app/globals.css` - Global styles and Tailwind configuration
-- `components/ui/` - Reusable UI components (shadcn/ui)
-- `lib/utils.ts` - Utility functions
+- `app/page.tsx` - Main application entry point
+- `components/pdf-viewer/` - PDF viewer components
+- `lib/pdf-store.ts` - Zustand state management
+- `lib/pdf-utils.ts` - PDF.js integration utilities
+- `locales/` - Internationalization files
 
 ### Desktop Application Development
 
@@ -111,10 +140,9 @@ This command:
 
 #### Tauri Development Files
 
+- `src-tauri/src/lib.rs` - Custom Tauri commands (file operations, system info)
 - `src-tauri/src/main.rs` - Main Rust application entry point
-- `src-tauri/src/lib.rs` - Rust library code
 - `src-tauri/tauri.conf.json` - Tauri configuration
-- `src-tauri/Cargo.toml` - Rust dependencies
 
 ## Available Scripts
 
@@ -126,7 +154,9 @@ This command:
 | `pnpm build` | Build Next.js app for production (outputs to `out/` directory) |
 | `pnpm start` | Start Next.js production server (after `pnpm build`) |
 | `pnpm lint` | Run ESLint to check code quality |
-| `pnpm lint --fix` | Auto-fix ESLint issues |
+| `pnpm test` | Run Jest tests |
+| `pnpm test:watch` | Run Jest tests in watch mode |
+| `pnpm test:coverage` | Generate test coverage report |
 
 ### Tauri (Desktop) Scripts
 
@@ -135,7 +165,6 @@ This command:
 | `pnpm tauri dev` | Start Tauri development mode with hot-reload |
 | `pnpm tauri build` | Build production desktop application |
 | `pnpm tauri info` | Display Tauri environment information |
-| `pnpm tauri icon` | Generate app icons from source image |
 | `pnpm tauri --help` | Show all available Tauri commands |
 
 ### Adding UI Components (shadcn/ui)
@@ -150,31 +179,40 @@ pnpm dlx shadcn@latest add button card dialog
 
 ## Project Structure
 
-```
+```text
 sast-readium-web/
-├── app/                      # Next.js App Router
-│   ├── layout.tsx           # Root layout with fonts and metadata
-│   ├── page.tsx             # Main landing page
-│   ├── globals.css          # Global styles and Tailwind config
-│   └── favicon.ico          # App favicon
-├── components/              # React components
-│   └── ui/                  # shadcn/ui components (Button, etc.)
-├── lib/                     # Utility functions
-│   └── utils.ts            # Helper functions (cn, etc.)
-├── public/                  # Static assets (images, SVGs)
-├── src-tauri/              # Tauri desktop application
-│   ├── src/
-│   │   ├── main.rs         # Rust main entry point
-│   │   └── lib.rs          # Rust library code
-│   ├── icons/              # Desktop app icons
-│   ├── tauri.conf.json     # Tauri configuration
-│   └── Cargo.toml          # Rust dependencies
-├── components.json          # shadcn/ui configuration
-├── next.config.ts          # Next.js configuration
-├── tailwind.config.ts      # Tailwind CSS configuration
-├── tsconfig.json           # TypeScript configuration
-├── eslint.config.mjs       # ESLint configuration
-└── package.json            # Node.js dependencies and scripts
+├── app/                          # Next.js App Router
+│   ├── layout.tsx               # Root layout with i18n provider
+│   ├── page.tsx                 # Main app page (PDF viewer + welcome)
+│   └── about/page.tsx           # About page with runtime info
+├── components/
+│   ├── pdf-viewer/              # PDF viewer components
+│   │   ├── pdf-viewer.tsx       # Main PDF viewer component
+│   │   ├── pdf-toolbar.tsx      # Desktop toolbar
+│   │   ├── pdf-annotation-layer.tsx # Annotation rendering
+│   │   ├── pdf-drawing-layer.tsx    # Drawing tools
+│   │   ├── pdf-outline.tsx      # PDF table of contents
+│   │   ├── pdf-bookmarks.tsx    # User bookmarks
+│   │   ├── pdf-tts-reader.tsx   # Text-to-speech reader
+│   │   └── ...                  # More PDF components
+│   ├── ui/                      # shadcn/ui components
+│   ├── welcome-page/            # Welcome screen
+│   └── ...                      # Other components
+├── lib/
+│   ├── pdf-store.ts             # Zustand store for PDF state
+│   ├── pdf-utils.ts             # PDF.js utilities
+│   ├── tauri-bridge.ts          # Tauri command wrappers
+│   ├── archive-utils.ts         # ZIP/RAR extraction
+│   ├── i18n.ts                  # i18next configuration
+│   └── ...                      # Other utilities
+├── hooks/                       # Custom React hooks
+├── locales/                     # i18n translation files
+│   ├── en/translation.json      # English
+│   └── zh/translation.json      # Chinese
+├── src-tauri/                   # Rust backend
+│   ├── src/lib.rs               # Custom Tauri commands
+│   └── tauri.conf.json          # Tauri configuration
+└── public/                      # Static assets
 ```
 
 ## Configuration
@@ -185,51 +223,21 @@ Create a `.env.local` file in the root directory for environment-specific variab
 
 ```env
 # Example environment variables
-NEXT_PUBLIC_API_URL=https://api.example.com
-NEXT_PUBLIC_APP_NAME=React Quick Starter
-
-# Private variables (not exposed to browser)
-DATABASE_URL=postgresql://...
-API_SECRET_KEY=your-secret-key
+NEXT_PUBLIC_APP_NAME=SAST Readium
 ```
 
 **Important**:
 
 - Only variables prefixed with `NEXT_PUBLIC_` are exposed to the browser
 - Never commit `.env.local` to version control
-- Use `.env.example` to document required variables
-
-### Tauri Configuration
-
-Edit `src-tauri/tauri.conf.json` to customize your desktop app:
-
-```json
-{
-  "productName": "sast-readium-web",    // App name
-  "version": "0.1.0",                      // App version
-  "identifier": "com.tauri.dev",          // Unique app identifier
-  "build": {
-    "frontendDist": "../out",              // Next.js build output
-    "devUrl": "http://localhost:3000"      // Dev server URL
-  },
-  "app": {
-    "windows": [{
-      "title": "sast-readium-web",      // Window title
-      "width": 800,                        // Default width
-      "height": 600,                       // Default height
-      "resizable": true,                   // Allow resizing
-      "fullscreen": false                  // Start fullscreen
-    }]
-  }
-}
-```
 
 ### Path Aliases
 
-Configured in `components.json` and `tsconfig.json`:
+Configured in `tsconfig.json` and `components.json`:
 
 ```typescript
 import { Button } from "@/components/ui/button"
+import { usePDFStore } from "@/lib/pdf-store"
 import { cn } from "@/lib/utils"
 ```
 
@@ -239,16 +247,6 @@ Available aliases:
 - `@/lib` → `lib/`
 - `@/ui` → `components/ui/`
 - `@/hooks` → `hooks/`
-- `@/utils` → `lib/utils.ts`
-
-### Tailwind CSS Configuration
-
-The project uses Tailwind CSS v4 with:
-
-- CSS variables for theming (defined in `app/globals.css`)
-- Dark mode support via `class` strategy
-- Custom color palette using CSS variables
-- shadcn/ui styling system
 
 ## Building for Production
 
@@ -284,36 +282,18 @@ pnpm tauri build --target x86_64-pc-windows-msvc
 
 # Build with debug symbols
 pnpm tauri build --debug
-
-# Build without bundling
-pnpm tauri build --bundles none
 ```
 
 ## Deployment
 
 ### Web Deployment
 
-#### Vercel (Recommended)
+The application can be deployed as a static site to:
 
-1. Push your code to GitHub/GitLab/Bitbucket
-2. Import project on [Vercel](https://vercel.com/new)
-3. Vercel auto-detects Next.js and deploys
-
-#### Netlify
-
-```bash
-# Build command
-pnpm build
-
-# Publish directory
-out
-```
-
-#### Static Hosting (Nginx, Apache, etc.)
-
-1. Build the project: `pnpm build`
-2. Upload the `out/` directory to your server
-3. Configure server to serve static files
+- **Vercel** (Recommended) - Auto-detects Next.js configuration
+- **Netlify** - Deploy the `out/` directory
+- **GitHub Pages** - Host the static export
+- **Any static hosting** - Upload the `out/` directory
 
 ### Desktop Deployment
 
@@ -326,7 +306,7 @@ out
 
 - Distribute the `.dmg` file from `src-tauri/target/release/bundle/dmg/`
 - Users drag the app to Applications folder
-- **Note**: For distribution outside the App Store, you need to sign the app with an Apple Developer certificate
+- **Note**: For distribution outside the App Store, code signing with Apple Developer certificate is required
 
 #### Linux
 
@@ -334,57 +314,41 @@ out
 - Users make it executable and run: `chmod +x app.AppImage && ./app.AppImage`
 - Alternative formats: `.deb` (Debian/Ubuntu), `.rpm` (Fedora/RHEL)
 
-#### Code Signing (Recommended for Production)
-
-- **Windows**: Use a code signing certificate
-- **macOS**: Requires Apple Developer account and certificate
-- **Linux**: Optional, but recommended for distribution
-
 See [Tauri Distribution Guide](https://tauri.app/v1/guides/distribution/) for detailed instructions.
 
-## Development Workflow
+## Testing
 
-### Typical Development Cycle
+The project uses Jest with React Testing Library for testing:
 
-1. **Start development server**
+```bash
+# Run all tests
+pnpm test
 
-   ```bash
-   pnpm dev  # For web development
-   # or
-   pnpm tauri dev  # For desktop development
-   ```
+# Run tests in watch mode
+pnpm test:watch
 
-2. **Make changes**
-   - Edit files in `app/`, `components/`, or `lib/`
-   - Changes auto-reload in the browser/desktop app
+# Generate coverage report
+pnpm test:coverage
+```
 
-3. **Add new components**
+- Test files: `*.test.ts`, `*.test.tsx`, `*.spec.ts`, `*.spec.tsx`
+- Coverage thresholds: 70% lines/statements, 60% branches/functions
+- Test environment: jsdom
 
-   ```bash
-   pnpm dlx shadcn@latest add [component-name]
-   ```
+## Keyboard Shortcuts
 
-4. **Lint your code**
+| Shortcut | Action |
+|----------|--------|
+| `←` / `→` | Previous/Next page |
+| `Home` / `End` | First/Last page |
+| `+` / `-` | Zoom in/out |
+| `0` | Reset zoom |
+| `F` | Toggle fullscreen |
+| `Ctrl+F` | Search |
+| `Ctrl+B` | Toggle bookmarks |
+| `Ctrl+Z` / `Ctrl+Y` | Undo/Redo annotations |
 
-   ```bash
-   pnpm lint
-   ```
-
-5. **Build and test**
-
-   ```bash
-   pnpm build  # Test web build
-   pnpm tauri build  # Test desktop build
-   ```
-
-### Best Practices
-
-- **Code Style**: Follow ESLint rules (`pnpm lint`)
-- **Commits**: Use conventional commits (feat:, fix:, docs:, etc.)
-- **Components**: Keep components small and reusable
-- **State**: Use Zustand for global state, React hooks for local state
-- **Styling**: Use Tailwind utility classes, avoid custom CSS when possible
-- **Types**: Leverage TypeScript for type safety
+Press `?` in the app to view all keyboard shortcuts.
 
 ## Troubleshooting
 
@@ -416,40 +380,28 @@ cd src-tauri
 cargo clean
 ```
 
-**Module not found errors**
+**PDF rendering issues**
 
-```bash
-# Clear Next.js cache
-rm -rf .next
-
-# Reinstall dependencies
-rm -rf node_modules pnpm-lock.yaml
-pnpm install
-```
+- Ensure PDF.js worker is properly configured in `lib/pdf-utils.ts`
+- Check browser console for errors
+- Try a different PDF file to isolate the issue
 
 ## Learn More
 
-### Next.js Resources
+### Documentation
 
 - [Next.js Documentation](https://nextjs.org/docs) - Learn about Next.js features and API
-- [Learn Next.js](https://nextjs.org/learn) - Interactive Next.js tutorial
-- [Next.js GitHub](https://github.com/vercel/next.js) - Next.js repository
-
-### Tauri Resources
-
 - [Tauri Documentation](https://tauri.app/) - Official Tauri documentation
-- [Tauri API Reference](https://tauri.app/v1/api/js/) - JavaScript API reference
-- [Tauri GitHub](https://github.com/tauri-apps/tauri) - Tauri repository
-
-### UI & Styling
-
+- [PDF.js Documentation](https://mozilla.github.io/pdf.js/) - PDF.js API reference
 - [shadcn/ui](https://ui.shadcn.com/) - Component library documentation
 - [Tailwind CSS](https://tailwindcss.com/docs) - Tailwind CSS documentation
-- [Radix UI](https://www.radix-ui.com/) - Radix UI primitives
+- [Zustand](https://zustand-demo.pmnd.rs/) - Zustand state management
 
-### State Management
+### Related Projects
 
-- [Zustand](https://zustand-demo.pmnd.rs/) - Zustand documentation
+- [PDF.js](https://github.com/mozilla/pdf.js) - PDF rendering engine
+- [react-pdf](https://github.com/wojtekmaj/react-pdf) - React PDF viewer components
+- [Tauri](https://github.com/tauri-apps/tauri) - Desktop application framework
 
 ## Contributing
 
@@ -461,15 +413,36 @@ Contributions are welcome! Please follow these steps:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+Please ensure your code:
+
+- Follows the existing code style (run `pnpm lint`)
+- Includes tests for new features
+- Updates documentation as needed
+
 ## License
 
 This project is open source and available under the [MIT License](LICENSE).
+
+## Team
+
+Developed by the C++ group of SAST (Students' Association for Science and Technology) at NJUPT.
+
+- **Organization**: [SAST-CXX](https://github.com/NJUPT-SAST-CXX)
+- **Website**: [SAST](https://sast.fun/)
 
 ## Support
 
 If you encounter any issues or have questions:
 
 - Check the [Troubleshooting](#troubleshooting) section
-- Review [Next.js Documentation](https://nextjs.org/docs)
-- Review [Tauri Documentation](https://tauri.app/)
-- Open an issue on GitHub
+- Open an issue on [GitHub](https://github.com/NJUPT-SAST-CXX/sast-readium-web/issues)
+- Review the documentation links above
+
+---
+
+**Note**: This project supports dual deployment:
+
+- **Web Mode**: Progressive Web App with service worker support
+- **Desktop Mode**: Native desktop application with full file system access
+
+Both modes share the same codebase and provide a seamless user experience.

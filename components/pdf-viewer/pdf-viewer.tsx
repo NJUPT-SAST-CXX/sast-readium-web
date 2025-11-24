@@ -63,6 +63,7 @@ import { PDFLoadingAnimation } from "./loading-animations";
 import { useTranslation } from "react-i18next";
 import { revealInFileManager, isTauri, getFileTimes } from "@/lib/tauri-bridge";
 import { SignatureDialog } from "./signature-dialog";
+import { useDeviceOrientation } from "@/hooks/use-device-orientation";
 
 interface PDFViewerProps {
   file: File;
@@ -170,6 +171,11 @@ export function PDFViewer({
   });
   const [isResizing, setIsResizing] = useState(false);
   const [showBookmarksPanel, setShowBookmarksPanel] = useState(false);
+  const {
+    orientation,
+    isMobile,
+    isMobileLandscape,
+  } = useDeviceOrientation();
   const [selectedAnnotationType, setSelectedAnnotationType] = useState<
     "highlight" | "comment" | "shape" | "text" | "drawing" | null
   >(null);
@@ -1385,6 +1391,12 @@ export function PDFViewer({
       : visualPageNumber;
   };
 
+  const contentBottomPadding = isMobile
+    ? isMobileLandscape
+      ? "pb-12"
+      : "pb-20"
+    : "pb-16";
+
   return (
     <div
       ref={viewerRef}
@@ -1393,6 +1405,7 @@ export function PDFViewer({
         isDarkMode && "dark",
         themeMode === "sepia" && "sepia"
       )}
+      data-orientation={orientation}
     >
       {header}
       <PDFToolbar
@@ -1482,7 +1495,7 @@ export function PDFViewer({
         </DialogContent>
       </Dialog>
 
-      <div className="flex flex-1 overflow-hidden pb-14 sm:pb-16">
+      <div className={cn("flex flex-1 overflow-hidden", contentBottomPadding)}>
         <div
           className={cn(
             "relative flex flex-col bg-muted/30 overflow-hidden transition-[width,opacity,transform] duration-250 ease-out will-change-transform z-20",
@@ -2070,8 +2083,9 @@ export function PDFViewer({
       <PDFMobileToolbar
         onSearch={() => setShowSearch(true)}
         onOpenSettings={() => setShowSettings(true)}
+        orientation={orientation}
       />
-      <PDFProgressBar />
+      <PDFProgressBar alwaysShow={isMobileLandscape || !isMobile} />
     </div>
   );
 }
