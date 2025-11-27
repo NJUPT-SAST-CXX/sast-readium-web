@@ -148,24 +148,28 @@ This command:
 
 ### Frontend Scripts
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Start Next.js development server on port 3000 |
-| `pnpm build` | Build Next.js app for production (outputs to `out/` directory) |
-| `pnpm start` | Start Next.js production server (after `pnpm build`) |
-| `pnpm lint` | Run ESLint to check code quality |
-| `pnpm test` | Run Jest tests |
-| `pnpm test:watch` | Run Jest tests in watch mode |
-| `pnpm test:coverage` | Generate test coverage report |
+| Command              | Description                                                    |
+| -------------------- | -------------------------------------------------------------- |
+| `pnpm dev`           | Start Next.js development server on port 3000                  |
+| `pnpm build`         | Build Next.js app for production (outputs to `out/` directory) |
+| `pnpm start`         | Start Next.js production server (after `pnpm build`)           |
+| `pnpm lint`          | Run ESLint to check code quality                               |
+| `pnpm lint:fix`      | Run ESLint with auto-fix                                       |
+| `pnpm typecheck`     | Run TypeScript type checking                                   |
+| `pnpm format`        | Format all files with Prettier                                 |
+| `pnpm format:check`  | Check formatting without modifying files                       |
+| `pnpm test`          | Run Jest tests                                                 |
+| `pnpm test:watch`    | Run Jest tests in watch mode                                   |
+| `pnpm test:coverage` | Generate test coverage report                                  |
 
 ### Tauri (Desktop) Scripts
 
-| Command | Description |
-|---------|-------------|
-| `pnpm tauri dev` | Start Tauri development mode with hot-reload |
-| `pnpm tauri build` | Build production desktop application |
-| `pnpm tauri info` | Display Tauri environment information |
-| `pnpm tauri --help` | Show all available Tauri commands |
+| Command             | Description                                  |
+| ------------------- | -------------------------------------------- |
+| `pnpm tauri dev`    | Start Tauri development mode with hot-reload |
+| `pnpm tauri build`  | Build production desktop application         |
+| `pnpm tauri info`   | Display Tauri environment information        |
+| `pnpm tauri --help` | Show all available Tauri commands            |
 
 ### Adding UI Components (shadcn/ui)
 
@@ -236,9 +240,9 @@ NEXT_PUBLIC_APP_NAME=SAST Readium
 Configured in `tsconfig.json` and `components.json`:
 
 ```typescript
-import { Button } from "@/components/ui/button"
-import { usePDFStore } from "@/lib/pdf-store"
-import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button";
+import { usePDFStore } from "@/lib/pdf-store";
+import { cn } from "@/lib/utils";
 ```
 
 Available aliases:
@@ -337,15 +341,15 @@ pnpm test:coverage
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| `←` / `→` | Previous/Next page |
-| `Home` / `End` | First/Last page |
-| `+` / `-` | Zoom in/out |
-| `0` | Reset zoom |
-| `F` | Toggle fullscreen |
-| `Ctrl+F` | Search |
-| `Ctrl+B` | Toggle bookmarks |
+| Shortcut            | Action                |
+| ------------------- | --------------------- |
+| `←` / `→`           | Previous/Next page    |
+| `Home` / `End`      | First/Last page       |
+| `+` / `-`           | Zoom in/out           |
+| `0`                 | Reset zoom            |
+| `F`                 | Toggle fullscreen     |
+| `Ctrl+F`            | Search                |
+| `Ctrl+B`            | Toggle bookmarks      |
 | `Ctrl+Z` / `Ctrl+Y` | Undo/Redo annotations |
 
 Press `?` in the app to view all keyboard shortcuts.
@@ -415,9 +419,26 @@ Contributions are welcome! Please follow these steps:
 
 Please ensure your code:
 
+- Passes all pre-commit checks (ESLint, Prettier)
 - Follows the existing code style (run `pnpm lint`)
+- Passes type checking (run `pnpm typecheck`)
 - Includes tests for new features
 - Updates documentation as needed
+
+### Pre-commit Hooks
+
+This project uses **Husky** and **lint-staged** for automatic code quality checks:
+
+- **ESLint**: Auto-fixes linting issues on staged `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs` files
+- **Prettier**: Formats staged files (JS/TS, JSON, Markdown, YAML, CSS)
+
+Pre-commit hooks are automatically installed when you run `pnpm install`.
+
+To skip pre-commit hooks (not recommended):
+
+```bash
+git commit --no-verify
+```
 
 ## License
 

@@ -9,6 +9,31 @@
 - [AI Components Library](feature/ai-components-library.md): Reusable UI components for message display, tool rendering, suggestions, and confirmation workflows.
 - [Mobile and Responsive Design](feature/mobile-responsive-design.md): Mobile-first responsive architecture including bottom sheet drawers, adaptive dialogs, touch gestures, context menus, and breakpoint-based component switching.
 
+## Development Workflow
+
+### Pre-commit Hooks
+
+The project uses **Husky** and **lint-staged** for automatic code quality checks:
+
+- **ESLint**: Auto-fixes linting issues on staged `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs` files
+- **Prettier**: Formats staged files (JS/TS, JSON, Markdown, YAML, CSS)
+
+Hooks are automatically installed via `pnpm install`.
+
+### Available Scripts
+
+| Command              | Description                  |
+| -------------------- | ---------------------------- |
+| `pnpm dev`           | Start development server     |
+| `pnpm build`         | Build for production         |
+| `pnpm lint`          | Run ESLint                   |
+| `pnpm lint:fix`      | Run ESLint with auto-fix     |
+| `pnpm typecheck`     | Run TypeScript type checking |
+| `pnpm format`        | Format code with Prettier    |
+| `pnpm test`          | Run Jest tests               |
+| `pnpm test:coverage` | Generate coverage report     |
+| `pnpm tauri dev`     | Run desktop app              |
+
 ## Standard Operating Procedures
 
 (None currently documented)

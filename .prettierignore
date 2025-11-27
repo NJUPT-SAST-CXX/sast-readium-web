@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+pnpm-lock.yaml
+
+# Build outputs
+.next/
+out/
+build/
+dist/
+
+# Tauri
+src-tauri/target/
+
+# Coverage
+coverage/
+
+# PWA generated files
+public/sw.js
+public/workbox-*.js
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Generated types
+next-env.d.ts
+
+# Test snapshots
+**/__snapshots__/

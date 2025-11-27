@@ -2,49 +2,104 @@
 
 This file provides guidance to WARP (warp.dev) when working with code in this repository.
 
-Project overview
+## Project Overview
 
-- Framework: Next.js (App Router) with TypeScript and Tailwind CSS v4.
-- Key entrypoints: `app/layout.tsx`, `app/page.tsx`, global styles in `app/globals.css`.
-- Config: `next.config.ts` (minimal), `tsconfig.json` (strict TS, `@/*` path alias), `eslint.config.mjs` (Next core-web-vitals + TS), `postcss.config.mjs` (Tailwind v4 plugin).
-- UI utilities: `lib/utils.ts` exports `cn()` (clsx + tailwind-merge). Example component: `components/ui/button.tsx` (Radix Slot + class-variance-authority variants).
-- Assets: `public/*`.
+**SAST Readium** is a modern PDF reader and annotation application with AI integration.
 
-Package manager
+- **Framework**: Next.js 16 (App Router) with React 19, TypeScript, and Tailwind CSS v4
+- **Desktop**: Tauri 2.9 for cross-platform desktop (Windows, macOS, Linux)
+- **Key entrypoints**: `app/layout.tsx`, `app/page.tsx`, global styles in `app/globals.css`
+- **Config files**: `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`, `postcss.config.mjs`, `.prettierrc.json`
+- **UI utilities**: `lib/utils.ts` exports `cn()` (clsx + tailwind-merge)
+- **State management**: Zustand stores in `lib/pdf-store.ts` and `lib/ai-chat-store.ts`
+- **i18n**: react-i18next with translations in `locales/en/` and `locales/zh/`
 
-- Use pnpm (lockfile present). Substitute npm/yarn if you prefer, but examples below use pnpm.
+## Package Manager
 
-Common commands
+Use **pnpm** (lockfile present). Examples below use pnpm.
 
-- Install deps: `pnpm install`
-- Dev server: `pnpm dev` (Next.js dev at <http://localhost:3000>)
-- Build (production): `pnpm build`
-- Start (after build): `pnpm start`
-- Lint all (ESLint flat config): `pnpm run lint`
-  - Lint a single file: `pnpm exec eslint components/ui/button.tsx`
-  - Auto-fix: `pnpm exec eslint . --fix`
-- Type check (no emit): `pnpm exec tsc --noEmit`
+## Common Commands
 
-Testing
+### Development
 
-- No test runner or scripts are configured in this repo. There is no single-test command at present.
+| Command        | Description                                        |
+| -------------- | -------------------------------------------------- |
+| `pnpm install` | Install dependencies                               |
+| `pnpm dev`     | Start Next.js dev server (<http://localhost:3000>) |
+| `pnpm build`   | Build for production (outputs to `out/`)           |
+| `pnpm start`   | Start production server                            |
 
-Architecture and conventions
+### Code Quality
 
-- Routing: App Router under `app/`.
-  - `app/layout.tsx` defines fonts (Geist via `next/font`) and wraps the app; it imports `app/globals.css`.
-  - `app/page.tsx` is the home route and demonstrates Tailwind classes and `next/image`.
-- Styling: Tailwind CSS v4 via PostCSS plugin (`@tailwindcss/postcss`).
-  - `app/globals.css` imports Tailwind and `tw-animate-css`, defines CSS variables for theme (light/dark) and uses `@layer base` with Tailwind `@apply`.
-- TypeScript: Strict, bundler module resolution, JSX `react-jsx`.
-  - Path alias: `@/*` → repo root (e.g., `@/lib/utils`).
-- ESLint: Flat config using `eslint-config-next` (core web vitals + TypeScript), with default ignores for `.next`, `out`, `build`, and `next-env.d.ts`.
-- Next config: `next.config.ts` currently uses default options.
+| Command             | Description                  |
+| ------------------- | ---------------------------- |
+| `pnpm lint`         | Run ESLint                   |
+| `pnpm lint:fix`     | Run ESLint with auto-fix     |
+| `pnpm typecheck`    | Run TypeScript type checking |
+| `pnpm format`       | Format code with Prettier    |
+| `pnpm format:check` | Check formatting             |
 
-Notes from README.md
+### Testing
 
-- Start dev server with `pnpm dev` and edit `app/page.tsx`; app runs at <http://localhost:3000>.
+| Command              | Description              |
+| -------------------- | ------------------------ |
+| `pnpm test`          | Run Jest tests           |
+| `pnpm test:watch`    | Run tests in watch mode  |
+| `pnpm test:coverage` | Generate coverage report |
 
-AI/Assistant rules
+### Desktop (Tauri)
 
-- No CLAUDE, Cursor, or Copilot rule files are present in this repository.
+| Command            | Description                     |
+| ------------------ | ------------------------------- |
+| `pnpm tauri dev`   | Run desktop app with hot-reload |
+| `pnpm tauri build` | Build distributable desktop app |
+| `pnpm tauri info`  | Display Tauri environment info  |
+
+## Pre-commit Hooks
+
+The project uses **Husky** and **lint-staged** for automatic code quality checks:
+
+- **ESLint**: Auto-fixes linting issues on staged `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs` files
+- **Prettier**: Formats staged files (JS/TS, JSON, Markdown, YAML, CSS)
+
+Hooks are automatically installed via `pnpm install` (the `prepare` script runs `husky`).
+
+To skip hooks: `git commit --no-verify`
+
+## Architecture and Conventions
+
+### Routing
+
+- App Router under `app/`
+- `app/layout.tsx` defines fonts and wraps the app with providers
+- `app/page.tsx` is the main PDF viewer + welcome page
+
+### Styling
+
+- Tailwind CSS v4 via PostCSS plugin (`@tailwindcss/postcss`)
+- `app/globals.css` imports Tailwind, defines CSS variables for theming
+- shadcn/ui components in `components/ui/`
+
+### TypeScript
+
+- Strict mode enabled
+- Path alias: `@/*` → repo root (e.g., `@/lib/utils`, `@/components/ui/button`)
+
+### Linting & Formatting
+
+- ESLint: Flat config using `eslint-config-next` (core web vitals + TypeScript)
+- Prettier: Configured via `.prettierrc.json`
+
+### Test Configuration
+
+- Jest 30.x with React Testing Library
+- Test environment: jsdom
+- Coverage thresholds: 70% lines/statements, 60% branches/functions
+- Test files: `*.test.ts`, `*.test.tsx`
+
+## AI/Assistant Rules
+
+- `CLAUDE.md` - Claude Code guidance
+- `GEMINI.md` - Gemini guidance
+- `AGENTS.md` - Repository guidelines for all AI assistants
+- `llmdoc/` - AI feature documentation

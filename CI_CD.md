@@ -260,12 +260,12 @@ concurrency:
 
 All jobs upload artifacts that are retained for 7-30 days:
 
-| Artifact | Retention | Description |
-|----------|-----------|-------------|
-| `test-results` | 30 days | JUnit XML test results |
-| `coverage-report` | 30 days | HTML coverage reports |
-| `nextjs-build` | 7 days | Built Next.js application |
-| `tauri-*` | 30 days | Platform-specific installers |
+| Artifact          | Retention | Description                  |
+| ----------------- | --------- | ---------------------------- |
+| `test-results`    | 30 days   | JUnit XML test results       |
+| `coverage-report` | 30 days   | HTML coverage reports        |
+| `nextjs-build`    | 7 days    | Built Next.js application    |
+| `tauri-*`         | 30 days   | Platform-specific installers |
 
 ## Required GitHub Secrets
 
@@ -323,16 +323,42 @@ All jobs upload artifacts that are retained for 7-30 days:
 3. Review deployment logs in GitHub Actions
 4. Ensure build artifacts are generated correctly
 
+## Pre-commit Hooks
+
+The project uses **Husky** and **lint-staged** for local code quality checks before commits:
+
+### What Runs on Commit
+
+- **ESLint**: Auto-fixes linting issues on staged `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs` files
+- **Prettier**: Formats staged files (JS/TS, JSON, Markdown, YAML, CSS)
+
+### Setup
+
+Pre-commit hooks are automatically installed when you run `pnpm install` (via the `prepare` script).
+
+### Skipping Hooks
+
+To skip pre-commit hooks (not recommended):
+
+```bash
+git commit --no-verify
+```
+
+### Relationship with CI
+
+Pre-commit hooks provide fast local feedback before code reaches CI. The CI pipeline runs the same checks (`pnpm lint`, `pnpm typecheck`) but on the entire codebase, not just staged files.
+
 ## Best Practices
 
 1. **Always test locally** before pushing
-2. **Use feature branches** for development
-3. **Create pull requests** for code review
-4. **Tag releases** with semantic versioning (v1.0.0)
-5. **Review draft releases** before publishing
-6. **Monitor CI/CD costs** and optimize as needed
-7. **Keep dependencies updated** regularly
-8. **Review security audit** results
+2. **Let pre-commit hooks run** - they catch issues early
+3. **Use feature branches** for development
+4. **Create pull requests** for code review
+5. **Tag releases** with semantic versioning (v1.0.0)
+6. **Review draft releases** before publishing
+7. **Monitor CI/CD costs** and optimize as needed
+8. **Keep dependencies updated** regularly
+9. **Review security audit** results
 
 ## Monitoring and Notifications
 

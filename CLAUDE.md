@@ -30,6 +30,18 @@ pnpm build
 # Lint code
 pnpm lint
 
+# Lint with auto-fix
+pnpm lint:fix
+
+# TypeScript type checking
+pnpm typecheck
+
+# Format code with Prettier
+pnpm format
+
+# Check formatting without modifying
+pnpm format:check
+
 # Run tests
 pnpm test
 
@@ -223,6 +235,17 @@ The application supports both **web** and **desktop** deployment from the same c
 - **Tauri Frontend Dist**: Points to `../out` in tauri.conf.json
 - **Dev Server**: Runs on `http://localhost:3000`
 - **PWA**: Enabled in production builds via @ducanh2912/next-pwa
+
+### Pre-commit Hooks
+
+The project uses **Husky** and **lint-staged** for automatic code quality checks:
+
+- **ESLint**: Auto-fixes linting issues on staged `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs` files
+- **Prettier**: Formats staged files (JS/TS, JSON, Markdown, YAML, CSS)
+
+Hooks are automatically installed via `pnpm install` (the `prepare` script runs `husky`).
+
+To skip hooks: `git commit --no-verify`
 
 ### Important Patterns
 

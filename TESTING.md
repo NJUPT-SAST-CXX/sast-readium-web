@@ -46,7 +46,7 @@ pnpm test --testNamePattern="Button"
 
 Test files should be placed next to the files they test with the `.test.ts` or `.test.tsx` extension:
 
-```
+```text
 components/
   ui/
     button.tsx
@@ -77,10 +77,10 @@ describe('Button', () => {
   it('handles click events', async () => {
     const handleClick = jest.fn();
     const user = userEvent.setup();
-    
+
     render(<Button onClick={handleClick}>Click me</Button>);
     await user.click(screen.getByRole('button'));
-    
+
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 });
@@ -89,12 +89,12 @@ describe('Button', () => {
 ### Utility Function Test Example
 
 ```typescript
-import { cn } from './utils';
+import { cn } from "./utils";
 
-describe('cn utility function', () => {
-  it('merges class names correctly', () => {
-    const result = cn('class1', 'class2');
-    expect(result).toBe('class1 class2');
+describe("cn utility function", () => {
+  it("merges class names correctly", () => {
+    const result = cn("class1", "class2");
+    expect(result).toBe("class1 class2");
   });
 });
 ```
@@ -140,6 +140,15 @@ The following Next.js modules are automatically mocked in `jest.setup.ts`:
 - `next/image` - Mocked to render as standard `<img>` tag
 - `next/navigation` - Mocked router hooks (useRouter, usePathname, useSearchParams)
 
+## Pre-commit Hooks
+
+The project uses **Husky** and **lint-staged** for automatic code quality checks before commits:
+
+- **ESLint**: Auto-fixes linting issues on staged files
+- **Prettier**: Formats staged files
+
+Pre-commit hooks are automatically installed when you run `pnpm install`.
+
 ## CI/CD Integration
 
 Tests run automatically on:
@@ -151,10 +160,11 @@ The CI pipeline:
 
 1. Installs dependencies
 2. Runs linting (`pnpm lint`)
-3. Runs tests with coverage (`pnpm test:coverage`)
-4. Uploads coverage to Codecov (if configured)
-5. Uploads test results and coverage as artifacts
-6. Builds the Next.js application (`pnpm build`)
+3. Runs type checking (`pnpm typecheck`)
+4. Runs tests with coverage (`pnpm test:coverage`)
+5. Uploads coverage to Codecov (if configured)
+6. Uploads test results and coverage as artifacts
+7. Builds the Next.js application (`pnpm build`)
 
 ### GitHub Actions Workflow
 
@@ -182,7 +192,7 @@ expect(component.state.count).toBe(1);
 ✅ Good:
 
 ```typescript
-expect(screen.getByText('Count: 1')).toBeInTheDocument();
+expect(screen.getByText("Count: 1")).toBeInTheDocument();
 ```
 
 ### 2. Use Accessible Queries

@@ -148,24 +148,28 @@ pnpm tauri dev
 
 ### 前端脚本
 
-| 命令 | 描述 |
-|------|------|
-| `pnpm dev` | 在 3000 端口启动 Next.js 开发服务器 |
-| `pnpm build` | 构建生产环境的 Next.js 应用（输出到 `out/` 目录） |
-| `pnpm start` | 启动 Next.js 生产服务器（在 `pnpm build` 之后） |
-| `pnpm lint` | 运行 ESLint 检查代码质量 |
-| `pnpm test` | 运行 Jest 测试 |
-| `pnpm test:watch` | 以监视模式运行 Jest 测试 |
-| `pnpm test:coverage` | 生成测试覆盖率报告 |
+| 命令                 | 描述                                              |
+| -------------------- | ------------------------------------------------- |
+| `pnpm dev`           | 在 3000 端口启动 Next.js 开发服务器               |
+| `pnpm build`         | 构建生产环境的 Next.js 应用（输出到 `out/` 目录） |
+| `pnpm start`         | 启动 Next.js 生产服务器（在 `pnpm build` 之后）   |
+| `pnpm lint`          | 运行 ESLint 检查代码质量                          |
+| `pnpm lint:fix`      | 运行 ESLint 并自动修复                            |
+| `pnpm typecheck`     | 运行 TypeScript 类型检查                          |
+| `pnpm format`        | 使用 Prettier 格式化所有文件                      |
+| `pnpm format:check`  | 检查格式而不修改文件                              |
+| `pnpm test`          | 运行 Jest 测试                                    |
+| `pnpm test:watch`    | 以监视模式运行 Jest 测试                          |
+| `pnpm test:coverage` | 生成测试覆盖率报告                                |
 
 ### Tauri（桌面）脚本
 
-| 命令 | 描述 |
-|------|------|
-| `pnpm tauri dev` | 启动 Tauri 开发模式，支持热重载 |
-| `pnpm tauri build` | 构建生产环境的桌面应用 |
-| `pnpm tauri info` | 显示 Tauri 环境信息 |
-| `pnpm tauri --help` | 显示所有可用的 Tauri 命令 |
+| 命令                | 描述                            |
+| ------------------- | ------------------------------- |
+| `pnpm tauri dev`    | 启动 Tauri 开发模式，支持热重载 |
+| `pnpm tauri build`  | 构建生产环境的桌面应用          |
+| `pnpm tauri info`   | 显示 Tauri 环境信息             |
+| `pnpm tauri --help` | 显示所有可用的 Tauri 命令       |
 
 ### 添加 UI 组件（shadcn/ui）
 
@@ -236,9 +240,9 @@ NEXT_PUBLIC_APP_NAME=SAST Readium
 在 `tsconfig.json` 和 `components.json` 中配置：
 
 ```typescript
-import { Button } from "@/components/ui/button"
-import { usePDFStore } from "@/lib/pdf-store"
-import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button";
+import { usePDFStore } from "@/lib/pdf-store";
+import { cn } from "@/lib/utils";
 ```
 
 可用别名：
@@ -337,16 +341,16 @@ pnpm test:coverage
 
 ## 键盘快捷键
 
-| 快捷键 | 操作 |
-|--------|------|
-| `←` / `→` | 上一页/下一页 |
-| `Home` / `End` | 第一页/最后一页 |
-| `+` / `-` | 放大/缩小 |
-| `0` | 重置缩放 |
-| `F` | 切换全屏 |
-| `Ctrl+F` | 搜索 |
-| `Ctrl+B` | 切换书签 |
-| `Ctrl+Z` / `Ctrl+Y` | 撤销/重做注释 |
+| 快捷键              | 操作            |
+| ------------------- | --------------- |
+| `←` / `→`           | 上一页/下一页   |
+| `Home` / `End`      | 第一页/最后一页 |
+| `+` / `-`           | 放大/缩小       |
+| `0`                 | 重置缩放        |
+| `F`                 | 切换全屏        |
+| `Ctrl+F`            | 搜索            |
+| `Ctrl+B`            | 切换书签        |
+| `Ctrl+Z` / `Ctrl+Y` | 撤销/重做注释   |
 
 在应用中按 `?` 查看所有键盘快捷键。
 
@@ -415,9 +419,26 @@ cargo clean
 
 请确保您的代码：
 
+- 通过所有 pre-commit 检查（ESLint、Prettier）
 - 遵循现有的代码风格（运行 `pnpm lint`）
+- 通过类型检查（运行 `pnpm typecheck`）
 - 为新功能包含测试
 - 根据需要更新文档
+
+### Pre-commit 钩子
+
+本项目使用 **Husky** 和 **lint-staged** 进行自动代码质量检查：
+
+- **ESLint**：自动修复暂存的 `.js`、`.jsx`、`.ts`、`.tsx`、`.mjs` 文件中的 lint 问题
+- **Prettier**：格式化暂存的文件（JS/TS、JSON、Markdown、YAML、CSS）
+
+当您运行 `pnpm install` 时，pre-commit 钩子会自动安装。
+
+跳过 pre-commit 钩子（不推荐）：
+
+```bash
+git commit --no-verify
+```
 
 ## 许可证
 
