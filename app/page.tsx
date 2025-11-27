@@ -7,6 +7,7 @@ import { PDFViewer } from "@/components/pdf-viewer/pdf-viewer";
 import { PDFTabBar } from "@/components/pdf-viewer/pdf-tab-bar";
 import { usePDFStore } from "@/lib/pdf-store";
 import { unloadPDFDocument } from "@/lib/pdf-utils";
+import { usePDFContext } from "@/hooks/use-pdf-context";
 
 interface OpenDocument {
   id: string;
@@ -20,6 +21,9 @@ export default function Home() {
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const { resetPDF, isDarkMode, openDocumentSession, closeDocumentSession } = usePDFStore();
+
+  // Sync PDF context with AI chat
+  usePDFContext();
 
   // Apply dark mode class to document
   useEffect(() => {
@@ -168,8 +172,36 @@ export default function Home() {
     };
   }, [handleFileSelect, t]);
 
+  const mainContent = openDocuments.length > 0
+    ? (() => {
+        const activeDoc =
+          openDocuments.find((doc) => doc.id === activeDocumentId) ??
+          openDocuments[0];
+
+        const header = (
+          <PDFTabBar
+            documents={openDocuments}
+            activeDocumentId={activeDocumentId}
+            onSwitch={handleSwitchDocument}
+            onClose={handleClose}
+          />
+        );
+
+        return (
+          <PDFViewer
+            key={activeDoc.id}
+            file={activeDoc.file}
+            onClose={handleClose}
+            header={header}
+            onOpenFileFromMenu={handleFileSelect}
+            onFileUpdate={handleFileUpdate}
+          />
+        );
+      })()
+    : <WelcomePage onFileSelect={handleFileSelect} />;
+
   return (
-    <>
+    <div className="relative h-screen w-full bg-background">
       {/* Drag and Drop Overlay */}
       {isDragging && openDocuments.length === 0 && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
@@ -181,36 +213,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Main Content */}
-      {openDocuments.length > 0 ? (
-        (() => {
-          const activeDoc =
-            openDocuments.find((doc) => doc.id === activeDocumentId) ??
-            openDocuments[0];
-
-          const header = (
-            <PDFTabBar
-              documents={openDocuments}
-              activeDocumentId={activeDocumentId}
-              onSwitch={handleSwitchDocument}
-              onClose={handleClose}
-            />
-          );
-
-          return (
-            <PDFViewer
-              key={activeDoc.id}
-              file={activeDoc.file}
-              onClose={handleClose}
-              header={header}
-              onOpenFileFromMenu={handleFileSelect}
-              onFileUpdate={handleFileUpdate}
-            />
-          );
-        })()
-      ) : (
-        <WelcomePage onFileSelect={handleFileSelect} />
-      )}
-    </>
+      {mainContent}
+    </div>
   );
 }

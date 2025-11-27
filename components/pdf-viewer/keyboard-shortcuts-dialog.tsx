@@ -82,7 +82,7 @@ export function KeyboardShortcutsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-[95vw] sm:max-w-lg md:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t("shortcuts.title")}</DialogTitle>
           <DialogDescription>{t("shortcuts.description")}</DialogDescription>

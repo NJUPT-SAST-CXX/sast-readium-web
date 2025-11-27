@@ -1,9 +1,11 @@
 import React, { useState, useRef } from "react";
 import { PDFPageProxy, TextItem } from "@/lib/pdf-utils";
 import { usePDFStore } from "@/lib/pdf-store";
+import { useAIChatStore } from "@/lib/ai-chat-store";
 import { Button } from "@/components/ui/button";
-import { Copy, Download, FileText, X } from "lucide-react";
+import { Copy, Download, FileText, X, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface PDFSelectionLayerProps {
   page: PDFPageProxy | null;
@@ -25,10 +27,12 @@ export function PDFSelectionLayer({
   rotation,
   pageNumber,
 }: PDFSelectionLayerProps) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selection, setSelection] = useState<Selection | null>(null);
   const { isSelectionMode, toggleSelectionMode } = usePDFStore();
+  const { updatePDFContext, setSidebarOpen } = useAIChatStore();
   const [showMenu, setShowMenu] = useState(false);
 
   if (!page || !isSelectionMode) return null;
@@ -226,17 +230,93 @@ export function PDFSelectionLayer({
 
       if (selectedText) {
         await navigator.clipboard.writeText(selectedText);
+        // Sync to AI context
+        updatePDFContext({ selectedText });
         alert(
-          "Text copied to clipboard: " + selectedText.substring(0, 50) + "..."
+          t("selection.text_copied", { preview: selectedText.substring(0, 50) + (selectedText.length > 50 ? "..." : "") })
         );
         setSelection(null);
         setShowMenu(false);
         toggleSelectionMode();
       } else {
-        alert("No text found in selection");
+        alert(t("selection.no_text"));
       }
     } catch (err) {
       console.error("Failed to extract text:", err);
+    }
+  };
+
+  const handleSendToAI = async () => {
+    const rect = getRect();
+    if (!rect || !page) return;
+
+    try {
+      const textContent = await page.getTextContent();
+      const viewport = page.getViewport({ scale, rotation });
+
+      const selectedText = textContent.items
+        .filter((item: TextItem) => {
+          if (!item.transform) return false;
+          const tx = item.transform[4];
+          const ty = item.transform[5];
+          const [vx, vy] = viewport.convertToViewportPoint(tx, ty);
+          return (
+            vx >= rect.left &&
+            vx <= rect.left + rect.width &&
+            vy >= rect.top &&
+            vy <= rect.top + rect.height
+          );
+        })
+        .map((item: TextItem) => item.str)
+        .join(" ");
+
+      if (selectedText) {
+        // Sync to AI context and open sidebar
+        updatePDFContext({ selectedText });
+        setSidebarOpen(true);
+        setSelection(null);
+        setShowMenu(false);
+        toggleSelectionMode();
+      } else {
+        // If no text, try to capture image and send
+        const canvas = getCanvas();
+        if (canvas) {
+          const tempCanvas = document.createElement("canvas");
+          tempCanvas.width = rect.width;
+          tempCanvas.height = rect.height;
+          const ctx = tempCanvas.getContext("2d");
+          if (ctx) {
+            const scaleX = canvas.width / canvas.clientWidth;
+            const scaleY = canvas.height / canvas.clientHeight;
+            ctx.drawImage(
+              canvas,
+              rect.left * scaleX,
+              rect.top * scaleY,
+              rect.width * scaleX,
+              rect.height * scaleY,
+              0,
+              0,
+              rect.width,
+              rect.height
+            );
+            const dataUrl = tempCanvas.toDataURL("image/png");
+            updatePDFContext({
+              pageImages: [{
+                dataUrl,
+                width: rect.width,
+                height: rect.height,
+                pageNumber,
+              }],
+            });
+            setSidebarOpen(true);
+          }
+        }
+        setSelection(null);
+        setShowMenu(false);
+        toggleSelectionMode();
+      }
+    } catch (err) {
+      console.error("Failed to send to AI:", err);
     }
   };
 
@@ -297,9 +377,18 @@ export function PDFSelectionLayer({
                 size="icon"
                 className="h-8 w-8"
                 onClick={handleExtractText}
-                title="Extract Text"
+                title={t("selection.extract_text")}
               >
                 <FileText className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-primary hover:bg-primary/10"
+                onClick={handleSendToAI}
+                title={t("selection.send_to_ai")}
+              >
+                <MessageSquare className="h-4 w-4" />
               </Button>
               <div className="w-px h-4 bg-border mx-1" />
               <Button
@@ -307,7 +396,7 @@ export function PDFSelectionLayer({
                 size="icon"
                 className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
                 onClick={() => setSelection(null)}
-                title="Cancel"
+                title={t("selection.cancel")}
               >
                 <X className="h-4 w-4" />
               </Button>

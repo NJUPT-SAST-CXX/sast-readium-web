@@ -1,6 +1,5 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { I18nProvider } from "../i18n-provider";
-import { I18nextProvider } from "react-i18next";
 
 // Mock i18next
 jest.mock("@/lib/i18n", () => ({

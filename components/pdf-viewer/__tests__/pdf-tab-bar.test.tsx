@@ -55,7 +55,6 @@ describe("PDFTabBar", () => {
     );
     
     // Close buttons are buttons inside the tab
-    const closeButtons = screen.getAllByRole("button");
     // Each tab has a button for title (which wraps content) and a close button.
     // The implementation shows:
     /*

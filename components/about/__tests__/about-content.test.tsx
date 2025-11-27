@@ -5,13 +5,14 @@ import { checkForAppUpdates } from "@/lib/update-service";
 // Mock next/image
 jest.mock("next/image", () => ({
   __esModule: true,
-  default: (props: any) => <img {...props} />,
+  // eslint-disable-next-line jsx-a11y/alt-text, @next/next/no-img-element
+  default: (props: Record<string, unknown>) => <img {...(props as React.ImgHTMLAttributes<HTMLImageElement>)} />,
 }));
 
 // Mock translations
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string, options?: any) => {
+    t: (key: string, options?: Record<string, unknown>) => {
       if (key === "about.update.available") return `Update available: ${options?.version}`;
       if (key === "about.update.error") return `Error: ${options?.error}`;
       if (key === "about.copyright") return `Copyright ${options?.year}`;

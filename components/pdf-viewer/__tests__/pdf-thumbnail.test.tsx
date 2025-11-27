@@ -12,7 +12,7 @@ describe("PDFThumbnail", () => {
   it("renders thumbnail", () => {
     render(
       <PDFThumbnail
-        page={mockPage as any}
+        page={mockPage as unknown as Parameters<typeof PDFThumbnail>[0]["page"]}
         pageNumber={1}
         isActive={false}
         onClick={jest.fn()}
@@ -27,7 +27,7 @@ describe("PDFThumbnail", () => {
   it("shows active state", () => {
     render(
       <PDFThumbnail
-        page={mockPage as any}
+        page={mockPage as unknown as Parameters<typeof PDFThumbnail>[0]["page"]}
         pageNumber={1}
         isActive={true}
         onClick={jest.fn()}
@@ -42,7 +42,7 @@ describe("PDFThumbnail", () => {
     const onClick = jest.fn();
     render(
       <PDFThumbnail
-        page={mockPage as any}
+        page={mockPage as unknown as Parameters<typeof PDFThumbnail>[0]["page"]}
         pageNumber={1}
         isActive={false}
         onClick={onClick}

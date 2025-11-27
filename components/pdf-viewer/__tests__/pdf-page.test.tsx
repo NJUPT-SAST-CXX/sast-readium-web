@@ -1,4 +1,4 @@
-import { render, screen, act } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { PDFPage } from "../pdf-page";
 import { usePDFStore } from "@/lib/pdf-store";
 
@@ -34,8 +34,8 @@ describe("PDFPage", () => {
   });
 
   it("renders canvas and handles loading", () => {
-    render(<PDFPage page={mockPage as any} scale={1} rotation={0} />);
-    const canvas = screen.getByRole("img", { hidden: true }); // Canvases don't have implicit role, but we can search by tag or className
+    render(<PDFPage page={mockPage as unknown as Parameters<typeof PDFPage>[0]["page"]} scale={1} rotation={0} />);
+    // Canvases don't have implicit role, but we can search by tag or className
     // Wait, the component renders a <canvas>
     // react-testing-library doesn't easily find canvas by role "img" unless aria-label is set.
     // We can look for class name "mx-auto shadow-lg"
@@ -49,7 +49,7 @@ describe("PDFPage", () => {
       watermarkText: "CONFIDENTIAL",
     });
 
-    render(<PDFPage page={mockPage as any} scale={1} rotation={0} />);
+    render(<PDFPage page={mockPage as unknown as Parameters<typeof PDFPage>[0]["page"]} scale={1} rotation={0} />);
     expect(screen.getByTestId("pdf-watermark")).toBeInTheDocument();
   });
 

@@ -18,7 +18,7 @@ describe("PDFSelectionLayer", () => {
   it("renders when selection mode is active", () => {
     const { container } = render(
       <PDFSelectionLayer
-        page={{} as any}
+        page={{} as unknown as Parameters<typeof PDFSelectionLayer>[0]["page"]}
         scale={1}
         rotation={0}
         pageNumber={1}
@@ -36,7 +36,7 @@ describe("PDFSelectionLayer", () => {
 
     const { container } = render(
       <PDFSelectionLayer
-        page={{} as any}
+        page={{} as unknown as Parameters<typeof PDFSelectionLayer>[0]["page"]}
         scale={1}
         rotation={0}
         pageNumber={1}
@@ -49,7 +49,7 @@ describe("PDFSelectionLayer", () => {
   it("starts selection on mouse down", () => {
     const { container } = render(
       <PDFSelectionLayer
-        page={{} as any}
+        page={{} as unknown as Parameters<typeof PDFSelectionLayer>[0]["page"]}
         scale={1}
         rotation={0}
         pageNumber={1}

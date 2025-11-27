@@ -91,20 +91,20 @@ export function SplashScreen() {
               alt="Readium Logo"
               width={160}
               height={160}
-              className="h-40 w-40 object-contain drop-shadow-2xl"
+              className="h-24 w-24 sm:h-32 sm:w-32 md:h-40 md:w-40 object-contain drop-shadow-2xl"
               priority
             />
           </div>
         </div>
 
-        <div className="space-y-4 text-center relative z-10">
-          <h1 className="text-6xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70 select-none">
+        <div className="space-y-3 sm:space-y-4 text-center relative z-10">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70 select-none">
             Readium
           </h1>
-          <div className="flex items-center justify-center gap-3 text-muted-foreground text-xs tracking-[0.5em] uppercase font-medium select-none">
-            <span className="w-12 h-[1px] bg-gradient-to-r from-transparent to-primary/50" />
+          <div className="flex items-center justify-center gap-2 sm:gap-3 text-muted-foreground text-[10px] sm:text-xs tracking-[0.3em] sm:tracking-[0.5em] uppercase font-medium select-none">
+            <span className="w-8 sm:w-12 h-[1px] bg-gradient-to-r from-transparent to-primary/50" />
             <span>PDF Reader</span>
-            <span className="w-12 h-[1px] bg-gradient-to-l from-transparent to-primary/50" />
+            <span className="w-8 sm:w-12 h-[1px] bg-gradient-to-l from-transparent to-primary/50" />
           </div>
         </div>
       </div>

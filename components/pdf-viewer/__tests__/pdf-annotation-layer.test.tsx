@@ -47,7 +47,7 @@ describe("PDFAnnotationLayer", () => {
   it("renders existing annotations", async () => {
     render(
       <PDFAnnotationLayer
-        page={mockPage as any}
+        page={mockPage as unknown as Parameters<typeof PDFAnnotationLayer>[0]["page"]}
         scale={1}
         rotation={0}
         selectedAnnotationType={null}
@@ -66,7 +66,7 @@ describe("PDFAnnotationLayer", () => {
   it("handles drawing new annotation", () => {
     render(
       <PDFAnnotationLayer
-        page={mockPage as any}
+        page={mockPage as unknown as Parameters<typeof PDFAnnotationLayer>[0]["page"]}
         scale={1}
         rotation={0}
         selectedAnnotationType="highlight"
@@ -91,7 +91,7 @@ describe("PDFAnnotationLayer", () => {
   it("handles adding text annotation", () => {
     render(
       <PDFAnnotationLayer
-        page={mockPage as any}
+        page={mockPage as unknown as Parameters<typeof PDFAnnotationLayer>[0]["page"]}
         scale={1}
         rotation={0}
         selectedAnnotationType="text"

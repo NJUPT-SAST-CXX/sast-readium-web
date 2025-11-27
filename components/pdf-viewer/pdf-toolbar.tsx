@@ -32,6 +32,7 @@ import {
   Volume2,
   Square,
   FoldHorizontal,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +53,7 @@ import { Separator } from "@/components/ui/separator";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { cn } from "@/lib/utils";
 import { usePDFStore, AnnotationStamp } from "@/lib/pdf-store";
+import { useAIChatStore } from "@/lib/ai-chat-store";
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { PDFSettingsDialog } from "./pdf-settings-dialog";
@@ -83,6 +85,7 @@ interface PDFToolbarProps {
   onStampSelect?: (stamp: AnnotationStamp) => void;
   onExtractCurrentPageText?: () => void;
   onExtractAllText?: () => void;
+  onCapturePageForAI?: () => void;
   onOpenFileFromMenu?: (file: File | File[]) => void;
   onRevealInFileManager?: () => void;
   showSearch?: boolean;
@@ -104,6 +107,7 @@ export function PDFToolbar({
   onStampSelect,
   onExtractCurrentPageText,
   onExtractAllText,
+  onCapturePageForAI,
   onOpenFileFromMenu,
   onRevealInFileManager,
   showSearch,
@@ -350,6 +354,25 @@ export function PDFToolbar({
                     {isReading
                       ? t("toolbar.tooltip.toggle_tts_stop")
                       : t("toolbar.tooltip.toggle_tts_start")}
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => useAIChatStore.getState().toggleSidebar()}
+                      className={cn(
+                        useAIChatStore.getState().isSidebarOpen
+                          ? "bg-accent text-accent-foreground"
+                          : ""
+                      )}
+                    >
+                      <Sparkles className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {t("toolbar.tooltip.toggle_ai_assistant")}
                   </TooltipContent>
                 </Tooltip>
               </ButtonGroup>
@@ -694,6 +717,24 @@ export function PDFToolbar({
                     </TooltipTrigger>
                     <TooltipContent>
                       {t("toolbar.tooltip.extract_all")}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+
+                {onCapturePageForAI && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onCapturePageForAI}
+                        className="hidden sm:flex text-primary"
+                      >
+                        <Sparkles className="h-5 w-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {t("toolbar.tooltip.capture_for_ai")}
                     </TooltipContent>
                   </Tooltip>
                 )}

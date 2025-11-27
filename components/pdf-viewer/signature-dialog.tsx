@@ -13,8 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pen, Image as ImageIcon, Trash2, Plus, Eraser } from "lucide-react";
 import { usePDFStore } from "@/lib/pdf-store";
-import { cn } from "@/lib/utils";
-import { useTranslation } from "react-i18next";
 
 interface SignatureDialogProps {
   open: boolean;
@@ -27,7 +25,6 @@ export function SignatureDialog({
   onOpenChange,
   onSelect,
 }: SignatureDialogProps) {
-  const { t } = useTranslation();
   const { signatures, addSignature, removeSignature } = usePDFStore();
   const [activeTab, setActiveTab] = useState("draw");
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -141,16 +138,16 @@ export function SignatureDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="max-w-[95vw] sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Manage Signatures</DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-[200px_1fr] gap-6 h-[400px]">
+        <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-4 sm:gap-6 h-auto sm:h-[400px]">
           {/* Sidebar - Saved Signatures */}
-          <div className="border-r pr-4 flex flex-col gap-2 overflow-hidden">
+          <div className="border-b sm:border-b-0 sm:border-r pb-4 sm:pb-0 sm:pr-4 flex flex-col gap-2 overflow-hidden max-h-[150px] sm:max-h-none">
             <Label className="mb-2">Saved Signatures</Label>
-            <div className="flex-1 overflow-y-auto space-y-2">
+            <div className="flex-1 overflow-y-auto space-y-2 flex-row sm:flex-col flex sm:block gap-2">
               {signatures.length === 0 && (
                 <div className="text-xs text-muted-foreground text-center py-4">
                   No signatures yet
@@ -165,6 +162,7 @@ export function SignatureDialog({
                     onOpenChange(false);
                   }}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic data URL from user-generated signature */}
                   <img
                     src={sig}
                     alt={`Signature ${index + 1}`}
@@ -237,6 +235,7 @@ export function SignatureDialog({
               >
                 <div className="flex-1 border rounded-md bg-muted/20 flex items-center justify-center relative overflow-hidden">
                   {uploadedImage ? (
+                    /* eslint-disable-next-line @next/next/no-img-element -- Dynamic data URL from user upload */
                     <img
                       src={uploadedImage}
                       alt="Uploaded"

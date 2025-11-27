@@ -20,7 +20,7 @@ describe("ThemeManager", () => {
       isDarkMode: false,
     });
     // Mock setState on the store function itself
-    (usePDFStore as any).setState = mockSetState;
+    (usePDFStore as unknown as { setState: typeof mockSetState }).setState = mockSetState;
     
     // Setup matchMedia mock
     Object.defineProperty(window, "matchMedia", {

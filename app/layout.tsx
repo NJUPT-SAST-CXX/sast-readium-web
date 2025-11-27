@@ -34,6 +34,7 @@ export const metadata: Metadata = {
 import { I18nProvider } from "@/components/providers/i18n-provider";
 import { ThemeManager } from "@/components/theme-manager";
 import { SplashScreen } from "@/components/splash-screen";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function RootLayout({
   children,
@@ -49,6 +50,7 @@ export default function RootLayout({
           <ThemeManager />
           <SplashScreen />
           {children}
+          <Toaster />
         </I18nProvider>
       </body>
     </html>

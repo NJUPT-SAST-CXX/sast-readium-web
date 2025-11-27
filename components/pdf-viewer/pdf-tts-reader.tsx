@@ -18,7 +18,7 @@ export function PDFTTSReader({ currentPageObj }: PDFTTSReaderProps) {
     speechVolume,
   } = usePDFStore();
 
-  const { speak, cancel, isSpeaking } = useTTS();
+  const { speak, cancel } = useTTS();
   const lastReadPageRef = useRef<number>(-1);
 
   useEffect(() => {

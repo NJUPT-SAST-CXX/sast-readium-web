@@ -16,6 +16,9 @@ import {
   Maximize2,
   Moon,
   Sun,
+  Sparkles,
+  Bookmark,
+  MessageSquarePlus,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -25,16 +28,21 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
+import { useAIChatStore } from "@/lib/ai-chat-store";
 
 interface PDFMobileToolbarProps {
   onSearch: () => void;
   onOpenSettings: () => void;
+  onToggleBookmarks?: () => void;
+  onAddComment?: () => void;
   orientation?: "portrait" | "landscape";
 }
 
 export function PDFMobileToolbar({
   onSearch,
   onOpenSettings,
+  onToggleBookmarks,
+  onAddComment,
   orientation = "portrait",
 }: PDFMobileToolbarProps) {
   const { t } = useTranslation();
@@ -52,6 +60,8 @@ export function PDFMobileToolbar({
     rotateClockwise,
     setFitMode,
   } = usePDFStore();
+
+  const { setSidebarOpen } = useAIChatStore();
 
   const isLandscape = orientation === "landscape";
   const sectionGap = isLandscape ? "gap-0.5" : "gap-1";
@@ -103,8 +113,16 @@ export function PDFMobileToolbar({
         </Button>
       </div>
 
-      {/* Right: Search & More Menu */}
+      {/* Right: AI, Search & More Menu */}
       <div className={cn("flex items-center", sectionGap)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setSidebarOpen(true)}
+          className="text-primary"
+        >
+          <Sparkles className="h-5 w-5" />
+        </Button>
         <Button variant="ghost" size="icon" onClick={onSearch}>
           <Search className="h-5 w-5" />
         </Button>
@@ -133,6 +151,17 @@ export function PDFMobileToolbar({
               <Maximize2 className="mr-2 h-4 w-4 rotate-90" />
               <span>{t("toolbar.tooltip.fit_width")}</span>
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onToggleBookmarks || toggleOutline}>
+              <Bookmark className="mr-2 h-4 w-4" />
+              <span>{t("toolbar.tooltip.bookmarks")}</span>
+            </DropdownMenuItem>
+            {onAddComment && (
+              <DropdownMenuItem onClick={onAddComment}>
+                <MessageSquarePlus className="mr-2 h-4 w-4" />
+                <span>{t("toolbar.tooltip.add_comment")}</span>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={toggleDarkMode}>
               {isDarkMode ? (

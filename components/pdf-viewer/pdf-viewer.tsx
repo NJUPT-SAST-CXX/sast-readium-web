@@ -32,6 +32,9 @@ import { PDFAnnotationLayer } from "./pdf-annotation-layer";
 import { PDFDrawingLayer } from "./pdf-drawing-layer";
 import { PDFSelectionLayer } from "./pdf-selection-layer";
 import { KeyboardShortcutsDialog } from "./keyboard-shortcuts-dialog";
+import { PDFContextMenu } from "./pdf-context-menu";
+import { AISidebar } from "@/components/ai-sidebar/ai-sidebar";
+import { useAIChatStore } from "@/lib/ai-chat-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
@@ -171,11 +174,25 @@ export function PDFViewer({
   });
   const [isResizing, setIsResizing] = useState(false);
   const [showBookmarksPanel, setShowBookmarksPanel] = useState(false);
+
+  // Device orientation must be called before using isMobile
   const {
     orientation,
     isMobile,
     isMobileLandscape,
   } = useDeviceOrientation();
+
+  // AI Sidebar state
+  const { isSidebarOpen: _aiSidebarOpen } = useAIChatStore();
+  void _aiSidebarOpen; // Reserved for future use
+  const [aiSidebarWidth, setAISidebarWidth] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("aiSidebarWidth");
+      // Use window.innerWidth check instead of isMobile during initialization
+      return stored ? parseInt(stored, 10) : (window.innerWidth < 640 ? 320 : 400);
+    }
+    return 400; // Default for SSR
+  });
   const [selectedAnnotationType, setSelectedAnnotationType] = useState<
     "highlight" | "comment" | "shape" | "text" | "drawing" | null
   >(null);
@@ -1119,6 +1136,39 @@ export function PDFViewer({
     document.addEventListener("mouseup", handleMouseUp);
   };
 
+  // Handle AI sidebar resize (right-to-left)
+  const handleAIResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+
+    const startX = e.clientX;
+    const startWidth = aiSidebarWidth;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = startX - e.clientX; // Reverse direction for right sidebar
+      const newWidth = Math.min(Math.max(startWidth + deltaX, 300), 600); // Min: 300px, Max: 600px
+      setAISidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      // Save to localStorage
+      localStorage.setItem("aiSidebarWidth", aiSidebarWidth.toString());
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      // Remove user-select disable
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+    };
+
+    // Disable text selection while resizing
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "col-resize";
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
+
   // Save sidebar width to localStorage when it changes
   useEffect(() => {
     if (!isResizing) {
@@ -1155,6 +1205,13 @@ export function PDFViewer({
     previousPageRef.current = currentPage;
   }, [currentPage]);
 
+  // State for long-press context menu
+  const [longPressMenu, setLongPressMenu] = useState<{
+    x: number;
+    y: number;
+    visible: boolean;
+  }>({ x: 0, y: 0, visible: false });
+
   useTouchGestures(touchContainerRef, {
     onSwipeLeft: () => {
       if (viewMode === "single") {
@@ -1171,7 +1228,30 @@ export function PDFViewer({
       const newZoom = Math.min(Math.max(currentZoom * scale, 0.5), 3.0);
       setZoom(newZoom);
     },
+    onDoubleTap: () => {
+      // Toggle zoom between 100% and 200%
+      if (zoom < 1.5) {
+        setZoom(2.0);
+      } else {
+        setZoom(1.0);
+      }
+    },
+    onLongPress: (x, y) => {
+      // Show context menu at touch position
+      setLongPressMenu({ x, y, visible: true });
+    },
   });
+
+  // Close long-press menu when clicking elsewhere
+  useEffect(() => {
+    const handleClick = () => {
+      if (longPressMenu.visible) {
+        setLongPressMenu((prev) => ({ ...prev, visible: false }));
+      }
+    };
+    window.addEventListener("click", handleClick);
+    return () => window.removeEventListener("click", handleClick);
+  }, [longPressMenu.visible]);
 
   const getVisiblePageRange = () => {
     if (numPages <= 0) {
@@ -1238,6 +1318,8 @@ export function PDFViewer({
     printPDF(file);
   };
 
+  const { updatePDFContext } = useAIChatStore();
+
   const extractPageText = async (pageNumber: number) => {
     if (!pdfDocument) return;
     setIsExtractingText(true);
@@ -1251,6 +1333,8 @@ export function PDFViewer({
         t("viewer.extract_dialog.page_title", { page: pageNumber })
       );
       setExtractedText(text);
+      // Sync extracted text to AI context
+      updatePDFContext({ pageText: text });
       setShowExtractDialog(true);
     } catch (err) {
       console.error("Error extracting page text:", err);
@@ -1272,8 +1356,11 @@ export function PDFViewer({
           .join(" ");
         parts.push(`[Page ${i}]\n${text}`);
       }
+      const fullText = parts.join("\n\n");
       setExtractedTextTitle(t("viewer.extract_dialog.doc_title"));
-      setExtractedText(parts.join("\n\n"));
+      setExtractedText(fullText);
+      // Sync extracted text to AI context
+      updatePDFContext({ pageText: fullText });
       setShowExtractDialog(true);
     } catch (err) {
       console.error("Error extracting document text:", err);
@@ -1288,6 +1375,48 @@ export function PDFViewer({
       await navigator.clipboard.writeText(extractedText);
     } catch (err) {
       console.error("Failed to copy extracted text:", err);
+    }
+  };
+
+  /**
+   * Capture current page as image and sync to AI context for vision models
+   */
+  const capturePageForAI = async (pageNumber: number) => {
+    if (!pdfDocument) return;
+    try {
+      const page = await pdfDocument.getPage(pageNumber);
+      const scale = 1.5; // Higher scale for better quality
+      const viewport = page.getViewport({ scale, rotation });
+      
+      // Create a canvas to render the page
+      const canvas = document.createElement("canvas");
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const context = canvas.getContext("2d");
+      if (!context) return;
+
+      // Render the page to canvas
+      await page.render({
+        canvasContext: context,
+        viewport,
+      }).promise;
+
+      // Convert to data URL
+      const dataUrl = canvas.toDataURL("image/png");
+      
+      // Sync to AI context
+      updatePDFContext({
+        pageImages: [{
+          dataUrl,
+          width: viewport.width,
+          height: viewport.height,
+          pageNumber,
+        }],
+      });
+
+      return dataUrl;
+    } catch (err) {
+      console.error("Error capturing page for AI:", err);
     }
   };
 
@@ -1424,6 +1553,9 @@ export function PDFViewer({
           extractPageText(getOriginalPageNumber(currentPage))
         }
         onExtractAllText={extractAllText}
+        onCapturePageForAI={() =>
+          capturePageForAI(getOriginalPageNumber(currentPage))
+        }
         onOpenFileFromMenu={onOpenFileFromMenu}
         onRevealInFileManager={handleRevealInFileManager}
         showSearch={showSearch}
@@ -2078,6 +2210,9 @@ export function PDFViewer({
             </div>
           )}
         </div>
+
+        {/* AI Sidebar */}
+        <AISidebar width={aiSidebarWidth} onResizeStart={handleAIResizeStart} />
       </div>
 
       <PDFMobileToolbar
@@ -2086,6 +2221,15 @@ export function PDFViewer({
         orientation={orientation}
       />
       <PDFProgressBar alwaysShow={isMobileLandscape || !isMobile} />
+
+      {/* Long-press context menu for mobile */}
+      <PDFContextMenu
+        x={longPressMenu.x}
+        y={longPressMenu.y}
+        visible={longPressMenu.visible}
+        onClose={() => setLongPressMenu((prev) => ({ ...prev, visible: false }))}
+        currentPage={currentPage}
+      />
     </div>
   );
 }

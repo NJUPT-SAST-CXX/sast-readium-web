@@ -531,6 +531,7 @@ export function PDFAnnotationLayer({
           )}
           {annotation.type === "image" && annotation.content && (
             <div className="relative group w-full h-full">
+              {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic data URL from annotation */}
               <img
                 src={annotation.content}
                 alt="Annotation"

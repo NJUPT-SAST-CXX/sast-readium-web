@@ -89,9 +89,8 @@ describe("PDFToolbar", () => {
   it("handles zoom controls", () => {
     render(<PDFToolbar {...defaultProps} />);
     
-    // Zoom In
-    const zoomInBtn = screen.getAllByRole("button").find(btn => btn.querySelector(".lucide-zoom-in"));
-    // Note: finding by icon class is fragile, but button accessible names are in tooltips which might not be rendered immediately by Radix UI.
+    // Zoom In - finding by icon class is fragile, but button accessible names are in tooltips 
+    // which might not be rendered immediately by Radix UI.
     // Better to use what we can. Or use accessible text if provided. 
     // The tooltips provide text "toolbar.tooltip.zoom_in"
     

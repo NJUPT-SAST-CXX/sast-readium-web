@@ -733,7 +733,7 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
         </div>
       </footer>
       <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
-        <DialogContent className="max-h-[80vh] max-w-2xl">
+        <DialogContent className="max-h-[80vh] max-w-[95vw] sm:max-w-lg md:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{t("dialog.select_pdf")}</DialogTitle>
             <DialogDescription>{t("dialog.scan_desc")}</DialogDescription>

@@ -35,7 +35,7 @@ describe("PDFTextLayer", () => {
   it("renders text content", async () => {
     render(
       <PDFTextLayer
-        page={mockPage as any}
+        page={mockPage as unknown as Parameters<typeof PDFTextLayer>[0]["page"]}
         scale={1}
         rotation={0}
       />
@@ -49,7 +49,7 @@ describe("PDFTextLayer", () => {
   it("highlights search query", async () => {
     render(
       <PDFTextLayer
-        page={mockPage as any}
+        page={mockPage as unknown as Parameters<typeof PDFTextLayer>[0]["page"]}
         scale={1}
         rotation={0}
         searchQuery="Hello"

@@ -9,7 +9,8 @@ jest.mock("@/lib/tauri-bridge");
 jest.mock("@/lib/archive-utils");
 jest.mock("next/image", () => ({
   __esModule: true,
-  default: (props: any) => <img {...props} alt={props.alt || ""} />,
+  // eslint-disable-next-line @next/next/no-img-element
+  default: (props: Record<string, unknown>) => <img {...(props as React.ImgHTMLAttributes<HTMLImageElement>)} alt={(props.alt as string) || ""} />,
 }));
 jest.mock("@/components/language-switcher", () => ({
   LanguageSwitcher: () => <div data-testid="language-switcher">Lang</div>,

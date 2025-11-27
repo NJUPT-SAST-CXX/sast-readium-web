@@ -27,8 +27,10 @@ export function PDFDraggableThumbnail({
   isDragEnabled = true,
   onRemove,
   onRotate,
-  rotation = 0,
+  rotation: _rotation = 0,
 }: PDFDraggableThumbnailProps) {
+  // _rotation is used for prop validation but not directly in this component
+  void _rotation;
   const {
     attributes,
     listeners,
