@@ -5,20 +5,44 @@ import { useTranslation } from "react-i18next";
 import { useAIChatStore, AI_MODELS } from "@/lib/ai-chat-store";
 import { useAIChat } from "@/hooks/use-ai-chat";
 import { usePDFContext } from "@/hooks/use-pdf-context";
-import { useImageGeneration, useSpeechSynthesis, useTranscription, downloadImage, downloadAudio } from "@/hooks/use-ai-media";
-import { IMAGE_MODELS, IMAGE_SIZES, SPEECH_MODELS, SPEECH_VOICES, TRANSCRIPTION_MODELS } from "@/lib/ai-providers";
+import {
+  useImageGeneration,
+  useSpeechSynthesis,
+  useTranscription,
+  downloadImage,
+  downloadAudio,
+} from "@/hooks/use-ai-media";
+import {
+  IMAGE_MODELS,
+  IMAGE_SIZES,
+  SPEECH_MODELS,
+  SPEECH_VOICES,
+  TRANSCRIPTION_MODELS,
+} from "@/lib/ai-providers";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   FileText,
   Languages,
   Lightbulb,
   BookOpen,
   AlertCircle,
-  Loader2,
   Search,
   Eye,
   Image as ImageIcon,
@@ -33,6 +57,9 @@ import {
   Copy,
   Upload,
   X,
+  Sparkles,
+  Zap,
+  ArrowRight,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -43,39 +70,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Loader } from "@/components/ai-elements/loader";
+import { cn } from "@/lib/utils";
 import type { ImageSize, SpeechVoice } from "@/lib/ai-providers";
+import { AIChartInsight } from "./ai-chart-insight";
+import { AIReportGenerator } from "./ai-report-generator";
 
 export function AIToolsPanel() {
   const { t } = useTranslation();
   const { sendMessage, isLoading } = useAIChat();
-  const { pdfContext, settings, updateImageSettings, updateSpeechSettings, updateTranscriptionSettings } = useAIChatStore();
+  const {
+    pdfContext,
+    settings,
+    updateImageSettings,
+    updateSpeechSettings,
+    updateTranscriptionSettings,
+  } = useAIChatStore();
   const { extractCurrentPageImages } = usePDFContext();
 
   // Media generation hooks
   const imageGen = useImageGeneration();
   const speechSynth = useSpeechSynthesis();
   const transcription = useTranscription();
-  
+
   // File input ref for transcription
   const audioFileInputRef = useRef<HTMLInputElement>(null);
 
   const [targetLanguage, setTargetLanguage] = useState("Chinese");
   const [customPrompt, setCustomPrompt] = useState("");
   const [isExtractingImage, setIsExtractingImage] = useState(false);
-  
+
   // Image generation state
   const [imagePrompt, setImagePrompt] = useState("");
-  
+
   // Speech synthesis state
   const [speechText, setSpeechText] = useState("");
-  
+
   // Transcription state
   const [selectedAudioFile, setSelectedAudioFile] = useState<File | null>(null);
 
   const hasContent = !!pdfContext?.pageText || !!pdfContext?.selectedText;
 
   // Check if current model supports vision
-  const currentModel = AI_MODELS.find(m => m.id === settings.model);
+  const currentModel = AI_MODELS.find((m) => m.id === settings.model);
   const supportsVision = currentModel?.supportsVision || false;
 
   const handleSummarize = async () => {
@@ -199,7 +236,8 @@ export function AIToolsPanel() {
   };
 
   const handleUsePageContextForImage = () => {
-    const context = pdfContext?.selectedText || pdfContext?.pageText?.slice(0, 500);
+    const context =
+      pdfContext?.selectedText || pdfContext?.pageText?.slice(0, 500);
     if (context) {
       setImagePrompt(`Create an illustration for: ${context}`);
     }
@@ -239,62 +277,134 @@ export function AIToolsPanel() {
 
   const handleInsertTranscription = async () => {
     if (transcription.result?.text) {
-      await sendMessage(`I transcribed this audio: "${transcription.result.text}"\n\nPlease help me understand or summarize this content.`);
+      await sendMessage(
+        `I transcribed this audio: "${transcription.result.text}"\n\nPlease help me understand or summarize this content.`
+      );
     }
   };
 
   return (
     <div className="h-full overflow-y-auto p-4 space-y-4">
-      {/* Status Alert */}
+      {/* Status Alert - Enhanced with better styling */}
       {!hasContent && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
+        <Alert className="border-amber-500/50 bg-amber-500/10">
+          <AlertCircle className="h-4 w-4 text-amber-500" />
+          <AlertDescription className="text-sm">
             {t("ai.no_pdf_context")}
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t("ai.quick_actions")}</CardTitle>
-          <CardDescription>{t("ai.quick_actions_description")}</CardDescription>
+      {/* Quick Actions Header */}
+      <div className="flex items-center gap-2 mb-2">
+        <Sparkles className="h-4 w-4 text-primary" />
+        <span className="text-sm font-medium">
+          {t("ai.ai_tools", "AI Tools")}
+        </span>
+        <Badge variant="secondary" className="text-[10px] ml-auto">
+          {hasContent
+            ? t("ai.ready", "Ready")
+            : t("ai.no_context", "No Context")}
+        </Badge>
+      </div>
+
+      {/* Quick Actions - Enhanced with better visuals */}
+      <Card className="border-border/50 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <Zap className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-sm">{t("ai.quick_actions")}</CardTitle>
+              <CardDescription className="text-xs">
+                {t("ai.quick_actions_description")}
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-2">
-          <Button
-            variant="outline"
-            className="w-full justify-start gap-2"
-            onClick={handleSummarize}
-            disabled={isLoading || !hasContent}
-          >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <FileText className="w-4 h-4" />
-            )}
-            {t("ai.summarize_page")}
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-between gap-2 group",
+                    "hover:bg-primary/5 hover:border-primary/30"
+                  )}
+                  onClick={handleSummarize}
+                  disabled={isLoading || !hasContent}
+                >
+                  <span className="flex items-center gap-2">
+                    {isLoading ? (
+                      <Loader size={16} className="text-primary" />
+                    ) : (
+                      <FileText className="w-4 h-4" />
+                    )}
+                    {t("ai.summarize_page")}
+                  </span>
+                  <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                {t("ai.summarize_tooltip", "Generate a comprehensive summary")}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
-          <Button
-            variant="outline"
-            className="w-full justify-start gap-2"
-            onClick={handleExplain}
-            disabled={isLoading || !hasContent}
-          >
-            <Lightbulb className="w-4 h-4" />
-            {t("ai.explain_content")}
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-between gap-2 group",
+                    "hover:bg-primary/5 hover:border-primary/30"
+                  )}
+                  onClick={handleExplain}
+                  disabled={isLoading || !hasContent}
+                >
+                  <span className="flex items-center gap-2">
+                    <Lightbulb className="w-4 h-4" />
+                    {t("ai.explain_content")}
+                  </span>
+                  <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                {t("ai.explain_tooltip", "Break down complex concepts")}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
-          <Button
-            variant="outline"
-            className="w-full justify-start gap-2"
-            onClick={handleGenerateStudyGuide}
-            disabled={isLoading}
-          >
-            <BookOpen className="w-4 h-4" />
-            {t("ai.generate_study_guide")}
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-between gap-2 group",
+                    "hover:bg-primary/5 hover:border-primary/30"
+                  )}
+                  onClick={handleGenerateStudyGuide}
+                  disabled={isLoading}
+                >
+                  <span className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4" />
+                    {t("ai.generate_study_guide")}
+                  </span>
+                  <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                {t(
+                  "ai.study_guide_tooltip",
+                  "Create a study guide from content"
+                )}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </CardContent>
       </Card>
 
@@ -344,7 +454,9 @@ export function AIToolsPanel() {
               <Eye className="w-4 h-4" />
               {t("ai.vision_analysis")}
             </CardTitle>
-            <CardDescription>{t("ai.vision_analysis_description")}</CardDescription>
+            <CardDescription>
+              {t("ai.vision_analysis_description")}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             <Button
@@ -354,7 +466,7 @@ export function AIToolsPanel() {
               disabled={isLoading || isExtractingImage}
             >
               {isExtractingImage ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader className="w-4 h-4 animate-spin" />
               ) : (
                 <ScanEye className="w-4 h-4" />
               )}
@@ -368,7 +480,7 @@ export function AIToolsPanel() {
               disabled={isLoading || isExtractingImage}
             >
               {isExtractingImage ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader className="w-4 h-4 animate-spin" />
               ) : (
                 <FileText className="w-4 h-4" />
               )}
@@ -382,7 +494,7 @@ export function AIToolsPanel() {
               disabled={isLoading || isExtractingImage}
             >
               {isExtractingImage ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader className="w-4 h-4 animate-spin" />
               ) : (
                 <ImageIcon className="w-4 h-4" />
               )}
@@ -399,11 +511,19 @@ export function AIToolsPanel() {
         </Card>
       )}
 
+      {/* Chart Insight - New Feature */}
+      <AIChartInsight />
+
+      {/* Report Generator - New Feature */}
+      <AIReportGenerator />
+
       {/* Semantic Search */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">{t("ai.semantic_search")}</CardTitle>
-          <CardDescription>{t("ai.semantic_search_description")}</CardDescription>
+          <CardDescription>
+            {t("ai.semantic_search_description")}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <Textarea
@@ -432,14 +552,20 @@ export function AIToolsPanel() {
             <Wand2 className="w-4 h-4" />
             {t("ai.image_generation")}
           </CardTitle>
-          <CardDescription>{t("ai.image_generation_description")}</CardDescription>
+          <CardDescription>
+            {t("ai.image_generation_description")}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-2">
             <Label>{t("ai.image_model")}</Label>
-            <Select 
-              value={settings.imageSettings.model} 
-              onValueChange={(v) => updateImageSettings({ model: v as typeof settings.imageSettings.model })}
+            <Select
+              value={settings.imageSettings.model}
+              onValueChange={(v) =>
+                updateImageSettings({
+                  model: v as typeof settings.imageSettings.model,
+                })
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -456,9 +582,11 @@ export function AIToolsPanel() {
 
           <div className="space-y-2">
             <Label>{t("ai.image_size")}</Label>
-            <Select 
-              value={settings.imageSettings.size} 
-              onValueChange={(v) => updateImageSettings({ size: v as ImageSize })}
+            <Select
+              value={settings.imageSettings.size}
+              onValueChange={(v) =>
+                updateImageSettings({ size: v as ImageSize })
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -501,7 +629,7 @@ export function AIToolsPanel() {
             disabled={imageGen.isGenerating || !imagePrompt.trim()}
           >
             {imageGen.isGenerating ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              <Loader className="w-4 h-4 animate-spin mr-2" />
             ) : (
               <Wand2 className="w-4 h-4 mr-2" />
             )}
@@ -529,7 +657,9 @@ export function AIToolsPanel() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => downloadImage(imageGen.result!.images[0].base64)}
+                  onClick={() =>
+                    downloadImage(imageGen.result!.images[0].base64)
+                  }
                 >
                   <Download className="w-4 h-4 mr-1" />
                   {t("ai.download")}
@@ -555,14 +685,20 @@ export function AIToolsPanel() {
             <Volume2 className="w-4 h-4" />
             {t("ai.speech_synthesis")}
           </CardTitle>
-          <CardDescription>{t("ai.speech_synthesis_description")}</CardDescription>
+          <CardDescription>
+            {t("ai.speech_synthesis_description")}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-2">
             <Label>{t("ai.speech_model")}</Label>
-            <Select 
-              value={settings.speechSettings.model} 
-              onValueChange={(v) => updateSpeechSettings({ model: v as typeof settings.speechSettings.model })}
+            <Select
+              value={settings.speechSettings.model}
+              onValueChange={(v) =>
+                updateSpeechSettings({
+                  model: v as typeof settings.speechSettings.model,
+                })
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -579,9 +715,11 @@ export function AIToolsPanel() {
 
           <div className="space-y-2">
             <Label>{t("ai.voice")}</Label>
-            <Select 
-              value={settings.speechSettings.voice} 
-              onValueChange={(v) => updateSpeechSettings({ voice: v as SpeechVoice })}
+            <Select
+              value={settings.speechSettings.voice}
+              onValueChange={(v) =>
+                updateSpeechSettings({ voice: v as SpeechVoice })
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -597,7 +735,9 @@ export function AIToolsPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>{t("ai.speed")}: {settings.speechSettings.speed.toFixed(1)}x</Label>
+            <Label>
+              {t("ai.speed")}: {settings.speechSettings.speed.toFixed(1)}x
+            </Label>
             <Slider
               value={[settings.speechSettings.speed]}
               onValueChange={([v]) => updateSpeechSettings({ speed: v })}
@@ -635,7 +775,7 @@ export function AIToolsPanel() {
             disabled={speechSynth.isSynthesizing || !speechText.trim()}
           >
             {speechSynth.isSynthesizing ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              <Loader className="w-4 h-4 animate-spin mr-2" />
             ) : (
               <Volume2 className="w-4 h-4 mr-2" />
             )}
@@ -655,7 +795,9 @@ export function AIToolsPanel() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={speechSynth.isPlaying ? speechSynth.pause : speechSynth.play}
+                  onClick={
+                    speechSynth.isPlaying ? speechSynth.pause : speechSynth.play
+                  }
                 >
                   {speechSynth.isPlaying ? (
                     <Pause className="w-4 h-4" />
@@ -663,11 +805,7 @@ export function AIToolsPanel() {
                     <Play className="w-4 h-4" />
                   )}
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={speechSynth.stop}
-                >
+                <Button variant="outline" size="sm" onClick={speechSynth.stop}>
                   <Square className="w-4 h-4" />
                 </Button>
                 <Button
@@ -697,14 +835,20 @@ export function AIToolsPanel() {
             <Mic className="w-4 h-4" />
             {t("ai.audio_transcription")}
           </CardTitle>
-          <CardDescription>{t("ai.audio_transcription_description")}</CardDescription>
+          <CardDescription>
+            {t("ai.audio_transcription_description")}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-2">
             <Label>{t("ai.transcription_model")}</Label>
-            <Select 
-              value={settings.transcriptionSettings.model} 
-              onValueChange={(v) => updateTranscriptionSettings({ model: v as typeof settings.transcriptionSettings.model })}
+            <Select
+              value={settings.transcriptionSettings.model}
+              onValueChange={(v) =>
+                updateTranscriptionSettings({
+                  model: v as typeof settings.transcriptionSettings.model,
+                })
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -735,7 +879,9 @@ export function AIToolsPanel() {
                 onClick={() => audioFileInputRef.current?.click()}
               >
                 <Upload className="w-4 h-4 mr-2" />
-                {selectedAudioFile ? selectedAudioFile.name : t("ai.select_audio_file")}
+                {selectedAudioFile
+                  ? selectedAudioFile.name
+                  : t("ai.select_audio_file")}
               </Button>
               {selectedAudioFile && (
                 <Button
@@ -758,7 +904,7 @@ export function AIToolsPanel() {
             disabled={transcription.isTranscribing || !selectedAudioFile}
           >
             {transcription.isTranscribing ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              <Loader className="w-4 h-4 animate-spin mr-2" />
             ) : (
               <Mic className="w-4 h-4 mr-2" />
             )}
@@ -776,12 +922,16 @@ export function AIToolsPanel() {
             <div className="space-y-2">
               <div className="p-3 rounded-lg bg-muted">
                 <ScrollArea className="max-h-48">
-                  <p className="text-sm whitespace-pre-wrap">{transcription.result.text}</p>
+                  <p className="text-sm whitespace-pre-wrap">
+                    {transcription.result.text}
+                  </p>
                 </ScrollArea>
                 {transcription.result.durationInSeconds && (
                   <p className="text-xs text-muted-foreground mt-2">
-                    {t("ai.duration")}: {Math.round(transcription.result.durationInSeconds)}s
-                    {transcription.result.language && ` | ${t("ai.language")}: ${transcription.result.language}`}
+                    {t("ai.duration")}:{" "}
+                    {Math.round(transcription.result.durationInSeconds)}s
+                    {transcription.result.language &&
+                      ` | ${t("ai.language")}: ${transcription.result.language}`}
                   </p>
                 )}
               </div>

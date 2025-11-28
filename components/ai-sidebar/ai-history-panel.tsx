@@ -3,16 +3,34 @@
 import { useTranslation } from "react-i18next";
 import { useAIChatStore } from "@/lib/ai-chat-store";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MessageSquare, MoreVertical, Trash2, FileText, Calendar } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  MessageSquare,
+  MoreVertical,
+  Trash2,
+  FileText,
+  Pencil,
+  Clock,
+  Sparkles,
+  ChevronRight,
+} from "lucide-react";
+import { formatDistanceToNow, format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { ConversationEmptyState } from "@/components/ai-elements/conversation";
 
 export function AIHistoryPanel() {
   const { t } = useTranslation();
@@ -37,7 +55,11 @@ export function AIHistoryPanel() {
     }
   };
 
-  const handleRenameConversation = (id: string, currentTitle: string, e: React.MouseEvent) => {
+  const handleRenameConversation = (
+    id: string,
+    currentTitle: string,
+    e: React.MouseEvent
+  ) => {
     e.stopPropagation();
     const newTitle = prompt(t("ai.enter_new_title"), currentTitle);
     if (newTitle && newTitle.trim()) {
@@ -47,14 +69,12 @@ export function AIHistoryPanel() {
 
   if (conversations.length === 0) {
     return (
-      <div className="h-full flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-          <MessageSquare className="w-8 h-8 text-muted-foreground" />
-        </div>
-        <h3 className="text-lg font-semibold mb-2">{t("ai.no_history")}</h3>
-        <p className="text-sm text-muted-foreground max-w-sm">
-          {t("ai.no_history_description")}
-        </p>
+      <div className="h-full flex items-center justify-center">
+        <ConversationEmptyState
+          icon={<Clock className="h-12 w-12" />}
+          title={t("ai.no_history")}
+          description={t("ai.no_history_description")}
+        />
       </div>
     );
   }
@@ -62,76 +82,164 @@ export function AIHistoryPanel() {
   return (
     <ScrollArea className="h-full">
       <div className="p-4 space-y-2">
-        {conversations.map((conversation) => (
-          <Card
-            key={conversation.id}
-            className={`cursor-pointer transition-colors hover:bg-muted/50 ${
-              currentConversationId === conversation.id
-                ? "border-primary bg-muted/30"
-                : ""
-            }`}
-            onClick={() => handleSelectConversation(conversation.id)}
-          >
-            <CardHeader className="p-4">
+        {/* Header with count */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">
+              {t("ai.conversation_history", "Conversation History")}
+            </span>
+          </div>
+          <Badge variant="secondary" className="text-xs">
+            {conversations.length}
+          </Badge>
+        </div>
+
+        {/* Conversation list */}
+        {conversations.map((conversation) => {
+          const isActive = currentConversationId === conversation.id;
+          const lastMessage =
+            conversation.messages[conversation.messages.length - 1];
+          const preview = lastMessage?.content?.slice(0, 60) || "";
+
+          return (
+            <div
+              key={conversation.id}
+              className={cn(
+                "group relative rounded-lg border p-3 cursor-pointer transition-all duration-200",
+                "hover:bg-muted/50 hover:border-primary/30 hover:shadow-sm",
+                isActive
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "border-border/50 bg-background"
+              )}
+              onClick={() => handleSelectConversation(conversation.id)}
+            >
+              {/* Active indicator */}
+              {isActive && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full" />
+              )}
+
               <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <CardTitle className="text-sm font-medium truncate">
-                    {conversation.title}
-                  </CardTitle>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                    {conversation.pdfFileName && (
-                      <div className="flex items-center gap-1">
-                        <FileText className="w-3 h-3" />
-                        <span className="truncate max-w-[150px]">
-                          {conversation.pdfFileName}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      <span>
-                        {formatDistanceToNow(conversation.updatedAt, {
-                          addSuffix: true,
-                        })}
-                      </span>
-                    </div>
+                <div className="flex-1 min-w-0 pl-1">
+                  {/* Title */}
+                  <div className="flex items-center gap-2">
+                    <MessageSquare
+                      className={cn(
+                        "h-4 w-4 shrink-0",
+                        isActive ? "text-primary" : "text-muted-foreground"
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "text-sm font-medium truncate",
+                        isActive && "text-primary"
+                      )}
+                    >
+                      {conversation.title}
+                    </span>
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {conversation.messages.length} {t("ai.messages")}
+
+                  {/* Preview */}
+                  {preview && (
+                    <p className="text-xs text-muted-foreground truncate mt-1 ml-6">
+                      {preview}...
+                    </p>
+                  )}
+
+                  {/* Metadata */}
+                  <div className="flex items-center gap-3 mt-2 ml-6">
+                    {conversation.pdfFileName && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 py-0 h-5 gap-1"
+                            >
+                              <FileText className="w-2.5 h-2.5" />
+                              <span className="truncate max-w-[80px]">
+                                {conversation.pdfFileName}
+                              </span>
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {conversation.pdfFileName}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <Clock className="w-2.5 h-2.5" />
+                            {formatDistanceToNow(conversation.updatedAt, {
+                              addSuffix: true,
+                            })}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {format(conversation.updatedAt, "PPpp")}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <span className="text-[10px] text-muted-foreground">
+                      {conversation.messages.length} {t("ai.messages")}
+                    </span>
                   </div>
                 </div>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={(e) =>
-                        handleRenameConversation(
-                          conversation.id,
-                          conversation.title,
-                          e
-                        )
-                      }
+                {/* Actions */}
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      asChild
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      {t("ai.rename")}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={(e) => handleDeleteConversation(conversation.id, e)}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      {t("ai.delete")}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 rounded-full"
+                      >
+                        <MoreVertical className="w-3.5 h-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuItem
+                        onClick={(e) =>
+                          handleRenameConversation(
+                            conversation.id,
+                            conversation.title,
+                            e
+                          )
+                        }
+                      >
+                        <Pencil className="w-3.5 h-3.5 mr-2" />
+                        {t("ai.rename")}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={(e) =>
+                          handleDeleteConversation(conversation.id, e)
+                        }
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-2" />
+                        {t("ai.delete")}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <ChevronRight
+                    className={cn(
+                      "w-4 h-4 text-muted-foreground transition-transform",
+                      isActive && "text-primary rotate-90"
+                    )}
+                  />
+                </div>
               </div>
-            </CardHeader>
-          </Card>
-        ))}
+            </div>
+          );
+        })}
       </div>
     </ScrollArea>
   );

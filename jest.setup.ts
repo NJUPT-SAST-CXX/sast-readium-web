@@ -3,32 +3,33 @@
  * This file is executed before each test file
  */
 
-import '@testing-library/jest-dom';
-import React from 'react';
+import "@testing-library/jest-dom";
+import React from "react";
+import { TransformStream } from "stream/web";
 
 // Mock Next.js Image component
-jest.mock('next/image', () => ({
+jest.mock("next/image", () => ({
   __esModule: true,
   default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => {
-    return React.createElement('img', props);
+    return React.createElement("img", props);
   },
 }));
 
 // Mock Next.js router
-jest.mock('next/navigation', () => ({
+jest.mock("next/navigation", () => ({
   useRouter() {
     return {
       push: jest.fn(),
       replace: jest.fn(),
       prefetch: jest.fn(),
       back: jest.fn(),
-      pathname: '/',
+      pathname: "/",
       query: {},
-      asPath: '/',
+      asPath: "/",
     };
   },
   usePathname() {
-    return '/';
+    return "/";
   },
   useSearchParams() {
     return new URLSearchParams();
@@ -43,8 +44,18 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 // Mock URL.createObjectURL
-global.URL.createObjectURL = jest.fn(() => 'blob:mock-url');
+global.URL.createObjectURL = jest.fn(() => "blob:mock-url");
 global.URL.revokeObjectURL = jest.fn();
+
+// Polyfill TransformStream for libraries expecting Web Streams in Node tests
+const globalWithTransformStream = globalThis as typeof globalThis & {
+  TransformStream?: typeof TransformStream;
+};
+
+if (!globalWithTransformStream.TransformStream) {
+  globalWithTransformStream.TransformStream =
+    TransformStream as typeof globalWithTransformStream.TransformStream;
+}
 
 // Suppress console errors in tests (optional)
 // global.console = {
@@ -52,4 +63,3 @@ global.URL.revokeObjectURL = jest.fn();
 //   error: jest.fn(),
 //   warn: jest.fn(),
 // };
-

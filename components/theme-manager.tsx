@@ -3,10 +3,18 @@
 import { useEffect } from "react";
 import { usePDFStore } from "@/lib/pdf-store";
 import { isTauri, loadDesktopPreferences } from "@/lib/tauri-bridge";
+import {
+  useCustomThemeStore,
+  applyCustomTheme,
+  loadCustomThemesFromDesktop,
+  setupDesktopThemeSync,
+} from "@/lib/custom-theme-store";
 
 export function ThemeManager() {
   const { themeMode, isDarkMode } = usePDFStore();
+  const { activeCustomThemeId, customThemes } = useCustomThemeStore();
 
+  // Load desktop preferences and custom themes on mount (Tauri only)
   useEffect(() => {
     if (!isTauri()) return;
 
@@ -14,6 +22,7 @@ export function ThemeManager() {
 
     (async () => {
       try {
+        // Load general preferences
         const prefs = await loadDesktopPreferences();
         if (!prefs || cancelled) return;
 
@@ -44,6 +53,16 @@ export function ThemeManager() {
 
           return { ...state, ...next };
         });
+
+        // Load custom themes from desktop storage
+        await loadCustomThemesFromDesktop();
+
+        // Set active custom theme if stored in preferences
+        if (prefs.activeCustomThemeId) {
+          useCustomThemeStore.setState({
+            activeCustomThemeId: prefs.activeCustomThemeId,
+          });
+        }
       } catch (error) {
         console.error(
           "Failed to load desktop preferences in ThemeManager",
@@ -55,6 +74,12 @@ export function ThemeManager() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // Setup auto-sync for custom themes to desktop storage (Tauri only)
+  useEffect(() => {
+    const cleanup = setupDesktopThemeSync();
+    return cleanup;
   }, []);
 
   useEffect(() => {
@@ -107,6 +132,28 @@ export function ThemeManager() {
       root.classList.remove("dark");
     }
   }, [isDarkMode]);
+
+  // Apply sepia class for sepia theme mode
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (themeMode === "sepia") {
+      root.classList.add("sepia");
+    } else {
+      root.classList.remove("sepia");
+    }
+  }, [themeMode]);
+
+  // Apply custom theme CSS variables when active
+  useEffect(() => {
+    if (activeCustomThemeId) {
+      const theme = customThemes.find((t) => t.id === activeCustomThemeId);
+      if (theme) {
+        applyCustomTheme(theme);
+      }
+    } else {
+      applyCustomTheme(null);
+    }
+  }, [activeCustomThemeId, customThemes]);
 
   return null;
 }

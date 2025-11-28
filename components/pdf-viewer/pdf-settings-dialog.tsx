@@ -40,7 +40,9 @@ import {
   Check,
   AlertCircle,
   Loader2,
+  Paintbrush,
 } from "lucide-react";
+import { CustomThemeManager } from "@/components/ui/custom-theme-editor";
 
 interface PDFSettingsDialogProps {
   open: boolean;
@@ -469,6 +471,15 @@ export function PDFSettingsDialog({
               <Stamp className="h-4 w-4" />
               <span className="text-[10px] sm:text-xs">
                 {t("settings.section.watermark")}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="custom_theme"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm rounded-lg"
+            >
+              <Paintbrush className="h-4 w-4" />
+              <span className="text-[10px] sm:text-xs">
+                {t("settings.section.custom_theme")}
               </span>
             </TabsTrigger>
             {isTauri() && (
@@ -1042,6 +1053,11 @@ export function PDFSettingsDialog({
                   </div>
                 </div>
               </div>
+            </TabsContent>
+
+            {/* Custom Theme section */}
+            <TabsContent value="custom_theme" className="mt-0">
+              <CustomThemeManager />
             </TabsContent>
 
             {/* System section */}

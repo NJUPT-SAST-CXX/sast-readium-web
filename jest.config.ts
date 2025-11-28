@@ -45,14 +45,7 @@ const config: Config = {
   coverageProvider: "v8",
 
   // A list of reporter names that Jest uses when writing coverage reports
-  coverageReporters: [
-    "json",
-    "text",
-    "lcov",
-    "html",
-    "clover",
-    "cobertura",
-  ],
+  coverageReporters: ["json", "text", "lcov", "html", "clover", "cobertura"],
 
   // Coverage thresholds - enforce minimum coverage in CI
   // Uncomment to enable strict coverage requirements
@@ -110,7 +103,7 @@ const config: Config = {
     "cts",
     "tsx",
     "json",
-    "node"
+    "node",
   ],
 
   // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
@@ -125,17 +118,19 @@ const config: Config = {
     "^.+\\.(css|sass|scss)$": "<rootDir>/__mocks__/styleMock.js",
 
     // Handle image imports
-    "^.+\\.(png|jpg|jpeg|gif|webp|avif|ico|bmp|svg)$/i": "<rootDir>/__mocks__/fileMock.js",
+    "^.+\\.(png|jpg|jpeg|gif|webp|avif|ico|bmp|svg)$/i":
+      "<rootDir>/__mocks__/fileMock.js",
 
     // Mock pdfjs-dist to avoid ESM import.meta errors
     "^pdfjs-dist/legacy/build/pdf.mjs$": "<rootDir>/__mocks__/pdfjs-mock.js",
+
+    // Mock ESM-only modules
+    "^use-stick-to-bottom$": "<rootDir>/__mocks__/use-stick-to-bottom.js",
+    "^pkce-challenge$": "<rootDir>/__mocks__/pkce-challenge.js",
   },
 
   // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
-  modulePathIgnorePatterns: [
-    "<rootDir>/out/",
-    "<rootDir>/.next/",
-  ],
+  modulePathIgnorePatterns: ["<rootDir>/out/", "<rootDir>/.next/"],
 
   // Activates notifications for test results
   // notify: false,
@@ -212,16 +207,11 @@ const config: Config = {
   // The glob patterns Jest uses to detect test files
   testMatch: [
     "**/__tests__/**/*.?([mc])[jt]s?(x)",
-    "**/?(*.)+(spec|test).?([mc])[jt]s?(x)"
+    "**/?(*.)+(spec|test).?([mc])[jt]s?(x)",
   ],
 
   // An array of regexp pattern strings that are matched against all test paths, matched tests are skipped
-  testPathIgnorePatterns: [
-    "/node_modules/",
-    "/.next/",
-    "/out/",
-    "/src-tauri/",
-  ],
+  testPathIgnorePatterns: ["/node_modules/", "/.next/", "/out/", "/src-tauri/"],
 
   // The regexp pattern or array of patterns that Jest uses to detect test files
   // testRegex: [],
@@ -233,18 +223,6 @@ const config: Config = {
   // testRunner: "jest-circus/runner",
 
   // A map from regular expressions to paths to transformers
-  // transform: undefined,
-
-  // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
-  // transformIgnorePatterns: [
-  //   "\\\\node_modules\\\\",
-  //   "\\.pnp\\.[^\\\\]+$"
-  // ],
-
-  // An array of regexp pattern strings that are matched against all modules before the module loader will automatically return a mock for them
-  // unmockedModulePathPatterns: undefined,
-
-  // Indicates whether each individual test should be reported during the run
   // verbose: undefined,
 
   // An array of regexp patterns that are matched against all source file paths before re-running tests in watch mode

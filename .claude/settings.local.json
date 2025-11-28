@@ -1,6 +1,6 @@
 {
   "permissions": {
-    "allow": ["Bash(git commit:*)", "Bash(git add:*)", "Bash(pnpm typecheck:*)", "Bash(pnpm test:*)"],
+    "allow": ["Bash(git commit:*)", "Bash(git add:*)", "Bash(pnpm typecheck:*)", "Bash(pnpm test:*)", "Bash(find:*)"],
     "deny": [],
     "ask": []
   }

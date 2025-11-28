@@ -13,7 +13,25 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "src-tauri/target/**",
+    // Additional ignores:
+    "coverage/**",
   ]),
+  // Relax rules for test files, mocks, and scripts
+  {
+    files: [
+      "**/__tests__/**",
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "__mocks__/**",
+      "scripts/**",
+    ],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-require-imports": "off",
+      "@typescript-eslint/no-unused-vars": "warn",
+      "react/display-name": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

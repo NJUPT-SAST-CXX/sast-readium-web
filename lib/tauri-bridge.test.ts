@@ -67,5 +67,74 @@ describe("tauri-bridge", () => {
       const result = await TauriBridge.readPdfFileAtPath("/some/path.pdf");
       expect(result).toBeNull();
     });
+
+    it("loadCustomThemes should return null when not in Tauri", async () => {
+      const result = await TauriBridge.loadCustomThemes();
+      expect(result).toBeNull();
+    });
+
+    it("saveCustomThemes should return false when not in Tauri", async () => {
+      const result = await TauriBridge.saveCustomThemes({
+        version: 1,
+        themes: [],
+      });
+      expect(result).toBe(false);
+    });
+
+    it("exportCustomThemesToFile should return false when not in Tauri", async () => {
+      const result = await TauriBridge.exportCustomThemesToFile({
+        version: 1,
+        themes: [],
+      });
+      expect(result).toBe(false);
+    });
+
+    it("importCustomThemesFromFile should return null when not in Tauri", async () => {
+      const result = await TauriBridge.importCustomThemesFromFile();
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("custom themes functions", () => {
+    it("should export loadCustomThemes function", () => {
+      expect(typeof TauriBridge.loadCustomThemes).toBe("function");
+    });
+
+    it("should export saveCustomThemes function", () => {
+      expect(typeof TauriBridge.saveCustomThemes).toBe("function");
+    });
+
+    it("should export exportCustomThemesToFile function", () => {
+      expect(typeof TauriBridge.exportCustomThemesToFile).toBe("function");
+    });
+
+    it("should export importCustomThemesFromFile function", () => {
+      expect(typeof TauriBridge.importCustomThemesFromFile).toBe("function");
+    });
+  });
+
+  describe("interfaces", () => {
+    it("should have CustomThemeData interface shape", () => {
+      const themeData: TauriBridge.CustomThemeData = {
+        id: "test-id",
+        name: "Test Theme",
+        description: "A test theme",
+        colors: { primary: "#000" },
+        radius: "0.5rem",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      expect(themeData.id).toBe("test-id");
+      expect(themeData.name).toBe("Test Theme");
+    });
+
+    it("should have CustomThemesStorage interface shape", () => {
+      const storage: TauriBridge.CustomThemesStorage = {
+        version: 1,
+        themes: [],
+      };
+      expect(storage.version).toBe(1);
+      expect(storage.themes).toEqual([]);
+    });
   });
 });

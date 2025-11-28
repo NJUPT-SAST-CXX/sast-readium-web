@@ -55,7 +55,7 @@ Hooks are automatically installed via `pnpm install`.
 
 ## Standard Operating Procedures
 
-(None currently documented)
+- [Test Infrastructure and Coverage](sop/test-infrastructure-and-coverage.md): Describes Jest configuration, test organization by component module, mock patterns, coverage thresholds (70% lines/statements, 60% branches/functions), and current test results (76 suites, 936 passing tests).
 
 ## Architecture Notes
 

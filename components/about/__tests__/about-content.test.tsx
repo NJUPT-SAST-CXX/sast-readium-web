@@ -5,7 +5,7 @@ import { checkForAppUpdates } from "@/lib/update-service";
 // Mock next/image
 jest.mock("next/image", () => ({
   __esModule: true,
-  // eslint-disable-next-line jsx-a11y/alt-text, @next/next/no-img-element
+
   default: (props: Record<string, unknown>) => (
     <img {...(props as React.ImgHTMLAttributes<HTMLImageElement>)} />
   ),

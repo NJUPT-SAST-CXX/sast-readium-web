@@ -16,6 +16,7 @@ jest.mock("react-i18next", () => ({
 // Mock date-fns
 jest.mock("date-fns", () => ({
   formatDistanceToNow: () => "2 hours ago",
+  format: () => "Jan 1, 2024 12:00 PM",
 }));
 
 // Mock window.confirm and window.prompt

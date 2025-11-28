@@ -51,6 +51,8 @@ export interface DesktopPreferences {
   themeMode?: "light" | "dark" | "auto";
   enableSplashScreen?: boolean;
   pdfLoadingAnimation?: "spinner" | "pulse" | "bar";
+  // Custom theme support
+  activeCustomThemeId?: string | null;
 }
 
 export interface FileTimes {
@@ -307,7 +309,9 @@ export async function getFileTimes(path: string): Promise<FileTimes | null> {
     const stats = (await fs.stat(path as string)) as TauriFileInfo | null;
     if (!stats) return null;
 
-    const normalizeDate = (value?: Date | string | number): string | undefined => {
+    const normalizeDate = (
+      value?: Date | string | number
+    ): string | undefined => {
       if (value instanceof Date) {
         return Number.isNaN(value.valueOf()) ? undefined : value.toISOString();
       }
@@ -316,7 +320,9 @@ export async function getFileTimes(path: string): Promise<FileTimes | null> {
       }
       if (typeof value === "string") {
         const parsed = new Date(value);
-        return Number.isNaN(parsed.valueOf()) ? undefined : parsed.toISOString();
+        return Number.isNaN(parsed.valueOf())
+          ? undefined
+          : parsed.toISOString();
       }
       return undefined;
     };
@@ -374,4 +380,135 @@ export async function deleteFile(path: string): Promise<boolean> {
 
   const result = await safeInvoke<boolean>("delete_file", { path });
   return result ?? false;
+}
+
+// Custom themes storage for desktop app
+export interface CustomThemeData {
+  id: string;
+  name: string;
+  description?: string;
+  colors: Record<string, string>;
+  radius?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface CustomThemesStorage {
+  version: 1;
+  themes: CustomThemeData[];
+}
+
+const CUSTOM_THEMES_FILE = "custom-themes.json";
+
+export async function loadCustomThemes(): Promise<CustomThemesStorage | null> {
+  if (!isTauriRuntime) return null;
+
+  try {
+    const fs = await import("@tauri-apps/plugin-fs");
+    const { BaseDirectory, exists, readTextFile } = fs;
+
+    const options = { baseDir: BaseDirectory.AppConfig } as const;
+
+    const hasFile = await exists(CUSTOM_THEMES_FILE, options);
+    if (!hasFile) return null;
+
+    const raw = await readTextFile(CUSTOM_THEMES_FILE, options);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as CustomThemesStorage;
+    return parsed;
+  } catch (error) {
+    console.error("Failed to load custom themes", error);
+    return null;
+  }
+}
+
+export async function saveCustomThemes(
+  data: CustomThemesStorage
+): Promise<boolean> {
+  if (!isTauriRuntime) return false;
+
+  try {
+    const fs = await import("@tauri-apps/plugin-fs");
+    const { BaseDirectory, writeTextFile } = fs;
+
+    const options = { baseDir: BaseDirectory.AppConfig } as const;
+
+    const serialized = JSON.stringify(data, null, 2);
+    await writeTextFile(CUSTOM_THEMES_FILE, serialized, options);
+    return true;
+  } catch (error) {
+    console.error("Failed to save custom themes", error);
+    return false;
+  }
+}
+
+export async function exportCustomThemesToFile(
+  data: CustomThemesStorage,
+  suggestedName?: string
+): Promise<boolean> {
+  if (!isTauriRuntime) return false;
+
+  try {
+    const dialog = await import("@tauri-apps/plugin-dialog");
+    const fs = await import("@tauri-apps/plugin-fs");
+
+    const savePath = await dialog.save({
+      defaultPath: suggestedName || `sast-readium-themes-${Date.now()}.json`,
+      filters: [
+        {
+          name: "JSON",
+          extensions: ["json"],
+        },
+      ],
+    });
+
+    if (!savePath) return false;
+
+    const serialized = JSON.stringify(data, null, 2);
+    await fs.writeTextFile(savePath, serialized);
+    return true;
+  } catch (error) {
+    console.error("Failed to export custom themes", error);
+    return false;
+  }
+}
+
+export async function importCustomThemesFromFile(): Promise<CustomThemesStorage | null> {
+  if (!isTauriRuntime) return null;
+
+  try {
+    const dialog = await import("@tauri-apps/plugin-dialog");
+    const fs = await import("@tauri-apps/plugin-fs");
+
+    const selection = await dialog.open({
+      multiple: false,
+      filters: [
+        {
+          name: "JSON",
+          extensions: ["json"],
+        },
+      ],
+    });
+
+    if (!selection) return null;
+
+    const path = Array.isArray(selection) ? selection[0] : selection;
+    const raw = await fs.readTextFile(path as string);
+
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as CustomThemesStorage;
+
+    // Validate version
+    if (parsed.version !== 1) {
+      console.error("Unsupported custom themes version:", parsed.version);
+      return null;
+    }
+
+    return parsed;
+  } catch (error) {
+    console.error("Failed to import custom themes", error);
+    return null;
+  }
 }

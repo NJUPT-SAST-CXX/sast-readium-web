@@ -2,11 +2,23 @@ import { render, waitFor } from "@testing-library/react";
 import { ThemeManager } from "../theme-manager";
 import { usePDFStore } from "@/lib/pdf-store";
 import { isTauri, loadDesktopPreferences } from "@/lib/tauri-bridge";
+import {
+  useCustomThemeStore,
+  DEFAULT_THEME_COLORS,
+  applyCustomTheme,
+} from "@/lib/custom-theme-store";
 
 jest.mock("@/lib/pdf-store");
 jest.mock("@/lib/tauri-bridge", () => ({
   isTauri: jest.fn(),
   loadDesktopPreferences: jest.fn(),
+}));
+jest.mock("@/lib/custom-theme-store", () => ({
+  useCustomThemeStore: jest.fn(),
+  applyCustomTheme: jest.fn(),
+  DEFAULT_THEME_COLORS: {},
+  loadCustomThemesFromDesktop: jest.fn().mockResolvedValue(undefined),
+  setupDesktopThemeSync: jest.fn().mockReturnValue(() => {}),
 }));
 
 describe("ThemeManager", () => {
@@ -19,9 +31,15 @@ describe("ThemeManager", () => {
       themeMode: "light",
       isDarkMode: false,
     });
+    // Setup custom theme store mock
+    (useCustomThemeStore as unknown as jest.Mock).mockReturnValue({
+      activeCustomThemeId: null,
+      customThemes: [],
+    });
     // Mock setState on the store function itself
-    (usePDFStore as unknown as { setState: typeof mockSetState }).setState = mockSetState;
-    
+    (usePDFStore as unknown as { setState: typeof mockSetState }).setState =
+      mockSetState;
+
     // Setup matchMedia mock
     Object.defineProperty(window, "matchMedia", {
       writable: true,
@@ -82,5 +100,58 @@ describe("ThemeManager", () => {
     render(<ThemeManager />);
 
     expect(document.documentElement.classList.contains("dark")).toBe(false);
+  });
+
+  it("applies sepia class when themeMode is sepia", () => {
+    (usePDFStore as unknown as jest.Mock).mockReturnValue({
+      themeMode: "sepia",
+      isDarkMode: false,
+    });
+
+    render(<ThemeManager />);
+
+    expect(document.documentElement.classList.contains("sepia")).toBe(true);
+  });
+
+  it("removes sepia class when themeMode is not sepia", () => {
+    (usePDFStore as unknown as jest.Mock).mockReturnValue({
+      themeMode: "light",
+      isDarkMode: false,
+    });
+    document.documentElement.classList.add("sepia");
+
+    render(<ThemeManager />);
+
+    expect(document.documentElement.classList.contains("sepia")).toBe(false);
+  });
+
+  it("applies custom theme when activeCustomThemeId is set", () => {
+    const mockTheme = {
+      id: "test-theme",
+      name: "Test Theme",
+      colors: DEFAULT_THEME_COLORS,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    (useCustomThemeStore as unknown as jest.Mock).mockReturnValue({
+      activeCustomThemeId: "test-theme",
+      customThemes: [mockTheme],
+    });
+
+    render(<ThemeManager />);
+
+    expect(applyCustomTheme).toHaveBeenCalledWith(mockTheme);
+  });
+
+  it("removes custom theme when activeCustomThemeId is null", () => {
+    (useCustomThemeStore as unknown as jest.Mock).mockReturnValue({
+      activeCustomThemeId: null,
+      customThemes: [],
+    });
+
+    render(<ThemeManager />);
+
+    expect(applyCustomTheme).toHaveBeenCalledWith(null);
   });
 });

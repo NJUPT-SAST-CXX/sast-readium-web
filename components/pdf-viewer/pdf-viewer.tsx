@@ -856,10 +856,6 @@ export function PDFViewer({
         zoom: currentZoom,
         setZoom: doSetZoom,
         viewMode: currentViewMode,
-        currentPage: page,
-        numPages: totalPages,
-        nextPage: goNextPage,
-        previousPage: goPreviousPage,
       } = state;
 
       // Get settings from ref
@@ -1009,10 +1005,7 @@ export function PDFViewer({
       const {
         viewMode: currentViewMode,
         currentPage: page,
-        numPages: totalPages,
         setCurrentPage: doSetCurrentPage,
-        nextPage: goNextPage,
-        previousPage: goPreviousPage,
       } = state;
 
       const { scrollDebounce: debounce, scrollThreshold: threshold } =
