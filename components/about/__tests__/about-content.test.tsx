@@ -6,14 +6,17 @@ import { checkForAppUpdates } from "@/lib/update-service";
 jest.mock("next/image", () => ({
   __esModule: true,
   // eslint-disable-next-line jsx-a11y/alt-text, @next/next/no-img-element
-  default: (props: Record<string, unknown>) => <img {...(props as React.ImgHTMLAttributes<HTMLImageElement>)} />,
+  default: (props: Record<string, unknown>) => (
+    <img {...(props as React.ImgHTMLAttributes<HTMLImageElement>)} />
+  ),
 }));
 
 // Mock translations
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string, options?: Record<string, unknown>) => {
-      if (key === "about.update.available") return `Update available: ${options?.version}`;
+      if (key === "about.update.available")
+        return `Update available: ${options?.version}`;
       if (key === "about.update.error") return `Error: ${options?.error}`;
       if (key === "about.copyright") return `Copyright ${options?.year}`;
       return key;
@@ -31,11 +34,11 @@ jest.mock("../about-runtime-info", () => ({
   AboutRuntimeInfo: () => <div data-testid="runtime-info">Runtime Info</div>,
 }));
 
-// Mock package.json
-jest.mock("../../package.json", () => ({
+// Mock package.json - use correct relative path from about-content.tsx
+jest.mock("../../../package.json", () => ({
   version: "1.0.0",
   dependencies: {
-    "react": "18.0.0",
+    react: "18.0.0",
   },
 }));
 
@@ -46,7 +49,7 @@ describe("AboutContent", () => {
 
   it("renders project info correctly", () => {
     render(<AboutContent />);
-    
+
     expect(screen.getByText("about.title")).toBeInTheDocument();
     expect(screen.getByText("about.description")).toBeInTheDocument();
     expect(screen.getByText("v1.0.0")).toBeInTheDocument(); // Version from mock
@@ -67,8 +70,8 @@ describe("AboutContent", () => {
     });
 
     render(<AboutContent />);
-    
-    const checkButton = screen.getByText("check_update");
+
+    const checkButton = screen.getByText("about.check_update");
     fireEvent.click(checkButton);
 
     expect(screen.getByText("about.update.checking")).toBeInTheDocument();
@@ -84,8 +87,8 @@ describe("AboutContent", () => {
     });
 
     render(<AboutContent />);
-    
-    const checkButton = screen.getByText("check_update");
+
+    const checkButton = screen.getByText("about.check_update");
     fireEvent.click(checkButton);
 
     await waitFor(() => {
@@ -100,21 +103,21 @@ describe("AboutContent", () => {
     });
 
     render(<AboutContent />);
-    
-    const checkButton = screen.getByText("check_update");
+
+    const checkButton = screen.getByText("about.check_update");
     fireEvent.click(checkButton);
 
     await waitFor(() => {
       expect(screen.getByText("Error: Network error")).toBeInTheDocument();
     });
   });
-  
-    it("handles update check - exception", async () => {
+
+  it("handles update check - exception", async () => {
     (checkForAppUpdates as jest.Mock).mockRejectedValue(new Error("Failed"));
 
     render(<AboutContent />);
-    
-    const checkButton = screen.getByText("check_update");
+
+    const checkButton = screen.getByText("about.check_update");
     fireEvent.click(checkButton);
 
     await waitFor(() => {
