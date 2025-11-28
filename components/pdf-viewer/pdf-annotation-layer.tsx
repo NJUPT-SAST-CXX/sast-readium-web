@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import { usePDFStore, Annotation } from "@/lib/pdf-store";
 import { PDFPageProxy, PDFAnnotationData } from "@/lib/pdf-utils";
 import { X, MessageSquare, GripHorizontal } from "lucide-react";
@@ -274,34 +274,63 @@ export function PDFAnnotationLayer({
     };
   }, [page]);
 
-  // Filter annotations for current page
-  const currentPageAnnotations = annotations.filter(
-    (a) => a.pageNumber === currentPage
+  // Memoize filtered annotations for current page
+  const currentPageAnnotations = useMemo(
+    () => annotations.filter((a) => a.pageNumber === currentPage),
+    [annotations, currentPage]
   );
 
   // Get viewport dimensions
   const viewport = page?.getViewport({ scale, rotation });
 
-  const getNativeAnnotationStyle = (rect: number[]) => {
-    if (!viewport) return {};
-    const [x1, y1, x2, y2] = rect;
-    // viewport.convertToViewportPoint handles the coordinate transform including rotation
-    // Note: PDF coordinates are usually bottom-left origin, but convertToViewportPoint expects PDF coordinates
-    const p1 = viewport.convertToViewportPoint(x1, y1);
-    const p2 = viewport.convertToViewportPoint(x2, y2);
+  // Memoize native annotation style calculator
+  const getNativeAnnotationStyle = useCallback(
+    (rect: number[]) => {
+      if (!viewport) return {};
+      const [x1, y1, x2, y2] = rect;
+      // viewport.convertToViewportPoint handles the coordinate transform including rotation
+      // Note: PDF coordinates are usually bottom-left origin, but convertToViewportPoint expects PDF coordinates
+      const p1 = viewport.convertToViewportPoint(x1, y1);
+      const p2 = viewport.convertToViewportPoint(x2, y2);
 
-    const minX = Math.min(p1[0], p2[0]);
-    const minY = Math.min(p1[1], p2[1]);
-    const maxX = Math.max(p1[0], p2[0]);
-    const maxY = Math.max(p1[1], p2[1]);
+      const minX = Math.min(p1[0], p2[0]);
+      const minY = Math.min(p1[1], p2[1]);
+      const maxX = Math.max(p1[0], p2[0]);
+      const maxY = Math.max(p1[1], p2[1]);
 
-    return {
-      left: `${minX}px`,
-      top: `${minY}px`,
-      width: `${maxX - minX}px`,
-      height: `${maxY - minY}px`,
-    };
-  };
+      return {
+        left: `${minX}px`,
+        top: `${minY}px`,
+        width: `${maxX - minX}px`,
+        height: `${maxY - minY}px`,
+      };
+    },
+    [viewport]
+  );
+
+  // Memoize annotation style calculator
+  const getAnnotationStyle = useCallback(
+    (annotation: Annotation) => {
+      if (!viewport) return {};
+
+      const x = annotation.position.x * viewport.width;
+      const y = annotation.position.y * viewport.height;
+      const width = annotation.position.width
+        ? annotation.position.width * viewport.width
+        : undefined;
+      const height = annotation.position.height
+        ? annotation.position.height * viewport.height
+        : undefined;
+
+      return {
+        left: `${x}px`,
+        top: `${y}px`,
+        width: width ? `${width}px` : undefined,
+        height: height ? `${height}px` : undefined,
+      };
+    },
+    [viewport]
+  );
 
   // Handle mouse down for starting annotation
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -398,27 +427,6 @@ export function PDFAnnotationLayer({
     setInputValue("");
   };
 
-  // Calculate annotation style based on position and viewport
-  const getAnnotationStyle = (annotation: Annotation) => {
-    if (!viewport) return {};
-
-    const x = annotation.position.x * viewport.width;
-    const y = annotation.position.y * viewport.height;
-    const width = annotation.position.width
-      ? annotation.position.width * viewport.width
-      : undefined;
-    const height = annotation.position.height
-      ? annotation.position.height * viewport.height
-      : undefined;
-
-    return {
-      left: `${x}px`,
-      top: `${y}px`,
-      width: width ? `${width}px` : undefined,
-      height: height ? `${height}px` : undefined,
-    };
-  };
-
   return (
     <div
       ref={layerRef}
@@ -458,8 +466,8 @@ export function PDFAnnotationLayer({
               annotation.type === "highlight"
                 ? `${annotation.color}80`
                 : annotation.type === "shape"
-                ? "transparent"
-                : undefined,
+                  ? "transparent"
+                  : undefined,
             borderColor:
               annotation.type === "shape" ? annotation.color : undefined,
             color: annotation.type === "text" ? annotation.color : undefined,
@@ -480,7 +488,7 @@ export function PDFAnnotationLayer({
           {annotation.type === "comment" && (
             <div className="flex items-center gap-1 bg-white rounded px-2 py-1 shadow-md border border-border pointer-events-auto">
               <MessageSquare
-                className="h-3 w-3 flex-shrink-0"
+                className="h-3 w-3 shrink-0"
                 style={{ color: annotation.color }}
               />
               <span className="text-xs max-w-[200px] truncate">
@@ -503,7 +511,7 @@ export function PDFAnnotationLayer({
               style={{ color: annotation.color }}
             >
               <div className="flex items-center gap-1">
-                <span className="max-w-[200px] break-words">
+                <span className="max-w-[200px] wrap-break-word">
                   {annotation.content}
                 </span>
                 <button
@@ -511,7 +519,7 @@ export function PDFAnnotationLayer({
                     e.stopPropagation();
                     removeAnnotation(annotation.id);
                   }}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                 >
                   <X className="h-3 w-3" />
                 </button>

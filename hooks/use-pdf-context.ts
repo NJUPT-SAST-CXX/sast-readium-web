@@ -1,21 +1,41 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import { usePDFStore } from "@/lib/pdf-store";
-import { useAIChatStore, type PDFContext, type PDFPageImage } from "@/lib/ai-chat-store";
+import {
+  useAIChatStore,
+  type PDFContext,
+  type PDFPageImage,
+} from "@/lib/ai-chat-store";
 
 /**
  * Hook to sync PDF state with AI chat context
  * This automatically updates the PDF context in the AI store when PDF state changes
  */
 export function usePDFContext() {
-  const {
-    currentPage,
-    numPages,
-    annotations,
-    bookmarks,
-    currentPDF,
-  } = usePDFStore();
+  const { currentPage, numPages, annotations, bookmarks, currentPDF } =
+    usePDFStore();
 
   const { setPDFContext, updatePDFContext, pdfContext } = useAIChatStore();
+
+  // Memoize filtered annotations for current page to avoid re-filtering on every render
+  const currentPageAnnotations = useMemo(() => {
+    if (!annotations) return undefined;
+    return annotations
+      .filter((ann) => ann.pageNumber === currentPage)
+      .map((ann) => ({
+        type: ann.type,
+        text: ann.content || "",
+        pageNumber: ann.pageNumber,
+      }));
+  }, [annotations, currentPage]);
+
+  // Memoize bookmarks mapping
+  const mappedBookmarks = useMemo(() => {
+    if (!bookmarks) return undefined;
+    return bookmarks.map((bm) => ({
+      title: bm.title,
+      pageNumber: bm.pageNumber,
+    }));
+  }, [bookmarks]);
 
   // Update PDF context when PDF state changes
   useEffect(() => {
@@ -36,17 +56,8 @@ export function usePDFContext() {
       pageText: pdfContext?.pageText,
       selectedText: pdfContext?.selectedText,
       pageImages: pdfContext?.pageImages,
-      annotations: annotations
-        ?.filter((ann) => ann.pageNumber === currentPage)
-        .map((ann) => ({
-          type: ann.type,
-          text: ann.content || "",
-          pageNumber: ann.pageNumber,
-        })),
-      bookmarks: bookmarks?.map((bm) => ({
-        title: bm.title,
-        pageNumber: bm.pageNumber,
-      })),
+      annotations: currentPageAnnotations,
+      bookmarks: mappedBookmarks,
     };
 
     setPDFContext(context);
@@ -54,8 +65,8 @@ export function usePDFContext() {
   }, [
     currentPage,
     numPages,
-    annotations,
-    bookmarks,
+    currentPageAnnotations,
+    mappedBookmarks,
     currentPDF,
     setPDFContext,
     // Note: We intentionally don't include pdfContext here to avoid infinite loops
@@ -65,9 +76,12 @@ export function usePDFContext() {
   /**
    * Set page text content for AI context
    */
-  const setPageText = useCallback((text: string) => {
-    updatePDFContext({ pageText: text });
-  }, [updatePDFContext]);
+  const setPageText = useCallback(
+    (text: string) => {
+      updatePDFContext({ pageText: text });
+    },
+    [updatePDFContext]
+  );
 
   /**
    * Clear page text
@@ -79,9 +93,12 @@ export function usePDFContext() {
   /**
    * Set selected text from user selection
    */
-  const setSelectedText = useCallback((text: string) => {
-    updatePDFContext({ selectedText: text });
-  }, [updatePDFContext]);
+  const setSelectedText = useCallback(
+    (text: string) => {
+      updatePDFContext({ selectedText: text });
+    },
+    [updatePDFContext]
+  );
 
   /**
    * Clear selected text
@@ -93,9 +110,12 @@ export function usePDFContext() {
   /**
    * Set page images for AI vision context
    */
-  const setPageImages = useCallback((images: PDFPageImage[]) => {
-    updatePDFContext({ pageImages: images });
-  }, [updatePDFContext]);
+  const setPageImages = useCallback(
+    (images: PDFPageImage[]) => {
+      updatePDFContext({ pageImages: images });
+    },
+    [updatePDFContext]
+  );
 
   /**
    * Clear page images
@@ -104,6 +124,25 @@ export function usePDFContext() {
     updatePDFContext({ pageImages: undefined });
   }, [updatePDFContext]);
 
+  /**
+   * Extract images from the current PDF page
+   * Returns an array of PDFPageImage objects with base64 data
+   */
+  const extractCurrentPageImages = useCallback(async (): Promise<
+    PDFPageImage[]
+  > => {
+    // This is a placeholder implementation
+    // The actual image extraction should be done in the PDF viewer component
+    // and passed to this context via setPageImages
+    if (pdfContext?.pageImages && pdfContext.pageImages.length > 0) {
+      return pdfContext.pageImages;
+    }
+
+    // Return empty array if no images are available
+    // The PDF viewer should call setPageImages when rendering pages
+    return [];
+  }, [pdfContext?.pageImages]);
+
   return {
     setPageText,
     clearPageText,
@@ -111,5 +150,6 @@ export function usePDFContext() {
     clearSelectedText,
     setPageImages,
     clearPageImages,
+    extractCurrentPageImages,
   };
 }
