@@ -1,16 +1,6 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(pnpm add:*)",
-      "Bash(npx ai-elements@latest add:*)",
-      "Bash(pnpm dlx:*)",
-      "Bash(pnpm run lint)",
-      "Bash(pnpm build:*)",
-      "Bash(pnpm lint:*)",
-      "Bash(pnpm test:*)",
-      "Bash(cat:*)",
-      "Bash(ls -la \"D:\\Project\\sast-readium-web\\components\\ui\"\" 2>&1 || echo \"Directory may not exist \")"
-    ],
+    "allow": ["Bash(git commit:*)", "Bash(git add:*)", "Bash(pnpm typecheck:*)", "Bash(pnpm test:*)"],
     "deny": [],
     "ask": []
   }

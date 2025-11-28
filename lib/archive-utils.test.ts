@@ -102,7 +102,11 @@ describe("archive-utils", () => {
 
     describe("RAR processing", () => {
       it("should extract PDFs from RAR", async () => {
-        const mockFile = new File([""], "test.rar");
+        // Create a mock file with arrayBuffer method
+        const mockArrayBuffer = new ArrayBuffer(10);
+        const mockFile = new File(["test"], "test.rar");
+        mockFile.arrayBuffer = jest.fn().mockResolvedValue(mockArrayBuffer);
+
         const mockExtractor = {
           extract: jest.fn().mockReturnValue({
             files: [
@@ -121,7 +125,11 @@ describe("archive-utils", () => {
       });
 
       it("should convert images to PDF from RAR", async () => {
-        const mockFile = new File([""], "comic.cbr");
+        // Create a mock file with arrayBuffer method
+        const mockArrayBuffer = new ArrayBuffer(10);
+        const mockFile = new File(["test"], "comic.cbr");
+        mockFile.arrayBuffer = jest.fn().mockResolvedValue(mockArrayBuffer);
+
         const mockExtractor = {
           extract: jest.fn().mockReturnValue({
             files: [

@@ -95,7 +95,7 @@ export function PDFBookmarks({ onNavigate, currentPage }: PDFBookmarksProps) {
                     className="flex-1 text-left"
                   >
                     <div className="flex items-center gap-2">
-                      <Star className="h-4 w-4 flex-shrink-0 fill-primary text-primary" />
+                      <Star className="h-4 w-4 shrink-0 fill-primary text-primary" />
                       <div className="flex-1 truncate">
                         <p className="text-sm font-medium">{bookmark.title}</p>
                         <p className="text-xs text-muted-foreground">

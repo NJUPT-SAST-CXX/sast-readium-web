@@ -6,8 +6,6 @@ import {
   Edit3,
   View,
   Settings,
-  ChevronDown,
-  ChevronUp,
   FileText,
   Save,
   Share2,
@@ -21,25 +19,23 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCw,
-  RotateCcw, // eslint-disable-line @typescript-eslint/no-unused-vars
   Maximize2,
   Grid3x3,
   List,
   Search,
   Bookmark,
   MessageSquare,
-  Sun, // eslint-disable-line @typescript-eslint/no-unused-vars
-  Moon, // eslint-disable-line @typescript-eslint/no-unused-vars
   FolderOpen,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Separator } from "@/components/ui/separator";
+  Menubar,
+  MenubarContent,
+  MenubarItem,
+  MenubarMenu,
+  MenubarSeparator,
+  MenubarShortcut,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
 import { cn } from "@/lib/utils";
 import { usePDFStore } from "@/lib/pdf-store";
 import { useTranslation } from "react-i18next";
@@ -108,7 +104,6 @@ export function PDFMenuBar({
     isDarkMode, // eslint-disable-line @typescript-eslint/no-unused-vars
   } = usePDFStore();
 
-  const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
   const [showProperties, setShowProperties] = useState(false);
   const [showRecentFiles, setShowRecentFiles] = useState(false);
 
@@ -398,115 +393,63 @@ export function PDFMenuBar({
     },
   ];
 
-  const handleMenuClick = (menuId: string) => {
-    setExpandedMenu(expandedMenu === menuId ? null : menuId);
-  };
-
   return (
-    <TooltipProvider>
-      <div
-        className={cn(
-          "transition-[max-height,opacity] duration-200 ease-out",
-          showMenuBar
-            ? "max-h-16 opacity-100"
-            : "max-h-0 opacity-0 pointer-events-none"
-        )}
-      >
-        <div className="flex items-center gap-1 border-b border-border bg-background px-2 py-1 text-sm animate-in slide-in-from-top duration-300">
-          {menuSections.map((section) => {
-            const isOpen = expandedMenu === section.id;
-
-            return (
-              <div key={section.id} className="relative">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={cn("h-7 gap-1.5 px-2", isOpen && "bg-accent")}
-                      onClick={() => handleMenuClick(section.id)}
+    <div
+      className={cn(
+        "transition-[max-height,opacity] duration-200 ease-out",
+        showMenuBar
+          ? "max-h-16 opacity-100"
+          : "max-h-0 opacity-0 pointer-events-none"
+      )}
+    >
+      <div className="flex items-center border-b border-border bg-background px-2 py-1 animate-in slide-in-from-top duration-300">
+        <Menubar className="border-none shadow-none bg-transparent h-auto p-0">
+          {menuSections.map((section) => (
+            <MenubarMenu key={section.id}>
+              <MenubarTrigger className="gap-1.5 px-2 py-1 text-sm font-normal">
+                {section.icon}
+                <span>{section.label}</span>
+              </MenubarTrigger>
+              <MenubarContent className="min-w-[200px]">
+                {section.items.map((item, index) => {
+                  if (item.divider) {
+                    return <MenubarSeparator key={`divider-${index}`} />;
+                  }
+                  return (
+                    <MenubarItem
+                      key={index}
+                      onClick={item.action}
+                      className="gap-2"
                     >
-                      {section.icon}
-                      <span>{section.label}</span>
-                      {isOpen ? (
-                        <ChevronUp className="h-3 w-3" />
-                      ) : (
-                        <ChevronDown className="h-3 w-3" />
+                      {item.icon}
+                      <span className="flex-1">{item.label}</span>
+                      {item.shortcut && (
+                        <MenubarShortcut>{item.shortcut}</MenubarShortcut>
                       )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <span>{section.label} Menu</span>
-                  </TooltipContent>
-                </Tooltip>
+                    </MenubarItem>
+                  );
+                })}
+              </MenubarContent>
+            </MenubarMenu>
+          ))}
+        </Menubar>
 
-                {/* Dropdown Menu */}
-                {isOpen && (
-                  <>
-                    {/* Backdrop to close menu on outside click */}
-                    <div
-                      className="fixed inset-0 z-[60]"
-                      onClick={() => setExpandedMenu(null)}
-                    />
-                  </>
-                )}
-
-                {/* Menu Items */}
-                <div
-                  className={cn(
-                    "absolute left-0 top-full z-[70] mt-1 min-w-[200px] rounded-md border border-border bg-popover p-1 shadow-lg origin-top transform transition-[opacity,transform] duration-180 ease-out will-change-transform opacity-0 -translate-y-1 pointer-events-none",
-                    isOpen && "opacity-100 translate-y-0 pointer-events-auto"
-                  )}
-                >
-                  {section.items.map((item, index) => {
-                    if (item.divider) {
-                      return (
-                        <Separator key={`divider-${index}`} className="my-1" />
-                      );
-                    }
-                    return (
-                      <Button
-                        key={index}
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-full justify-start gap-2 px-2 font-normal"
-                        onClick={() => {
-                          item.action?.();
-                          setExpandedMenu(null);
-                        }}
-                      >
-                        {item.icon && <span className="w-4">{item.icon}</span>}
-                        <span className="flex-1 text-left">{item.label}</span>
-                        {item.shortcut && (
-                          <span className="text-xs text-muted-foreground">
-                            {item.shortcut}
-                          </span>
-                        )}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-
-          <div className="ml-auto">
-            <LanguageSwitcher />
-          </div>
+        <div className="ml-auto">
+          <LanguageSwitcher />
         </div>
-
-        <PDFPropertiesDialog
-          open={showProperties}
-          onOpenChange={setShowProperties}
-          onFileUpdate={onFileUpdate}
-        />
-
-        <PDFRecentFilesDialog
-          open={showRecentFiles}
-          onOpenChange={setShowRecentFiles}
-          onOpenRecentFile={onOpenRecentFile}
-        />
       </div>
-    </TooltipProvider>
+
+      <PDFPropertiesDialog
+        open={showProperties}
+        onOpenChange={setShowProperties}
+        onFileUpdate={onFileUpdate}
+      />
+
+      <PDFRecentFilesDialog
+        open={showRecentFiles}
+        onOpenChange={setShowRecentFiles}
+        onOpenRecentFile={onOpenRecentFile}
+      />
+    </div>
   );
 }

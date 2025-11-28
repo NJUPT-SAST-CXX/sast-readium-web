@@ -2,6 +2,25 @@
 
 ## Feature Documentation
 
+### Performance Optimizations (P0 Critical Fixes - Commit 55ef6af)
+
+- [Drawing Layer Performance Optimization](feature/drawing-layer-performance-optimization.md): Optimizes real-time drawing interactions by using refs, requestAnimationFrame throttling, and incremental canvas rendering to eliminate page freezing.
+- [PDF Viewer Event Listener Optimization](feature/pdf-viewer-event-listener-optimization.md): Refactors event handlers to use getState() pattern, eliminating listener rebinding on state changes and reducing memory leaks.
+- [AI Chat Streaming Update Optimization](feature/ai-chat-streaming-optimization.md): Implements 50ms debounce mechanism for AI chat streaming updates to batch chunks and reduce component re-renders by 80-90%.
+- [Annotation History Memory Management](feature/annotation-history-memory-management.md): Enforces 50-step maximum undo/redo history limit to prevent unbounded memory growth during extended editing sessions.
+
+### Performance Optimizations (P1 High Priority Fixes)
+
+- [Touch Gestures Throttling Optimization](feature/touch-gestures-throttling-optimization.md): Uses requestAnimationFrame throttling and refs to handle high-frequency pinch-zoom and swipe events without blocking the main thread on mobile devices.
+- [TTS Memory Leak Prevention](feature/tts-memory-leak-prevention.md): Properly cleans up Web Speech API utterance event handlers to prevent memory leaks from repeated text-to-speech operations.
+
+### Performance Optimizations (P2 Medium Priority Fixes)
+
+- [Annotation Layer Memoization Optimization](feature/annotation-layer-memoization-optimization.md): Memoizes filtered annotations and style callbacks to prevent unnecessary re-renders when parent components update but annotation data remains unchanged.
+- [PDF Context Memoization Optimization](feature/pdf-context-memoization-optimization.md): Caches filtered annotations and mapped bookmarks for AI context to reduce computation overhead during rapid state changes.
+
+### Core Features
+
 - [AI Integration with SDK Tool Calling](feature/ai-integration.md): Core AI service architecture, tool calling support, and multimodal message handling for PDF analysis and document interaction.
 - [AI Chat Panel Component](feature/ai-chat-panel.md): User-facing chat interface with message rendering, tool invocation display, and suggestion management.
 - [AI State Management](feature/ai-state-management.md): Zustand-based store for conversations, settings, PDF context, and chat state persistence.

@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { 
-  useAIChatStore, 
-  AI_MODELS, 
-  PRESET_PROVIDERS, 
+import {
+  useAIChatStore,
+  AI_MODELS,
+  PRESET_PROVIDERS,
   SYSTEM_PROMPT_PRESETS,
   TEMPLATE_VARIABLES,
-  type AIProvider, 
-  type CustomProvider, 
+  type AIProvider,
+  type CustomProvider,
   type BuiltInProvider,
   type QuickCommand,
   type PromptTemplate,
@@ -29,7 +29,12 @@ import {
 } from "@/lib/mcp-client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   saveAPIKeySecurely,
   getAPIKeySecurely,
@@ -40,7 +45,13 @@ import { validateAPIKey, testConnection } from "@/lib/ai-service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -140,20 +151,32 @@ export function AISettingsPanel() {
     success: boolean;
     message: string;
   } | null>(null);
-  const [customProviderKeys, setCustomProviderKeys] = useState<Record<string, string>>({});
-  const [showCustomKeys, setShowCustomKeys] = useState<Record<string, boolean>>({});
+  const [customProviderKeys, setCustomProviderKeys] = useState<
+    Record<string, string>
+  >({});
+  const [showCustomKeys, setShowCustomKeys] = useState<Record<string, boolean>>(
+    {}
+  );
   const [addProviderOpen, setAddProviderOpen] = useState(false);
   const [newProvider, setNewProvider] = useState<Partial<CustomProvider>>({
     name: "",
     baseURL: "",
     models: [],
   });
-  const [newModelInput, setNewModelInput] = useState({ id: "", name: "", contextWindow: 128000 });
+  const [newModelInput, setNewModelInput] = useState({
+    id: "",
+    name: "",
+    contextWindow: 128000,
+  });
 
   // MCP Server management state
   const [addMCPServerOpen, setAddMCPServerOpen] = useState(false);
-  const [mcpConnectionStates, setMcpConnectionStates] = useState<Record<string, MCPConnectionStatus>>({});
-  const [mcpToolsCounts, setMcpToolsCounts] = useState<Record<string, number>>({});
+  const [mcpConnectionStates, setMcpConnectionStates] = useState<
+    Record<string, MCPConnectionStatus>
+  >({});
+  const [mcpToolsCounts, setMcpToolsCounts] = useState<Record<string, number>>(
+    {}
+  );
   const [testingMCPServer, setTestingMCPServer] = useState<string | null>(null);
   const [newMCPServer, setNewMCPServer] = useState<{
     name: string;
@@ -201,7 +224,10 @@ export function AISettingsPanel() {
   }, [setAPIKey]);
 
   // Safe access to custom providers (for backwards compatibility with persisted state)
-  const customProviders = useMemo(() => settings.customProviders || [], [settings.customProviders]);
+  const customProviders = useMemo(
+    () => settings.customProviders || [],
+    [settings.customProviders]
+  );
 
   // Load custom provider keys
   useEffect(() => {
@@ -316,19 +342,22 @@ export function AISettingsPanel() {
   // MCP Server management functions
   const handleTestMCPServer = async (server: MCPServerConfig) => {
     setTestingMCPServer(server.id);
-    setMcpConnectionStates(prev => ({ ...prev, [server.id]: "connecting" }));
-    
+    setMcpConnectionStates((prev) => ({ ...prev, [server.id]: "connecting" }));
+
     try {
       const result = await testMCPConnection(server);
-      setMcpConnectionStates(prev => ({ 
-        ...prev, 
-        [server.id]: result.success ? "connected" : "error" 
+      setMcpConnectionStates((prev) => ({
+        ...prev,
+        [server.id]: result.success ? "connected" : "error",
       }));
       if (result.success) {
-        setMcpToolsCounts(prev => ({ ...prev, [server.id]: result.tools.length }));
+        setMcpToolsCounts((prev) => ({
+          ...prev,
+          [server.id]: result.tools.length,
+        }));
       }
     } catch {
-      setMcpConnectionStates(prev => ({ ...prev, [server.id]: "error" }));
+      setMcpConnectionStates((prev) => ({ ...prev, [server.id]: "error" }));
     } finally {
       setTestingMCPServer(null);
     }
@@ -344,14 +373,14 @@ export function AISettingsPanel() {
 
   const handleAddCustomMCPServer = () => {
     if (!newMCPServer.name) return;
-    
+
     const headers: Record<string, string> = {};
-    newMCPServer.headers.forEach(h => {
+    newMCPServer.headers.forEach((h) => {
       if (h.key && h.value) headers[h.key] = h.value;
     });
-    
+
     const env: Record<string, string> = {};
-    newMCPServer.env.forEach(e => {
+    newMCPServer.env.forEach((e) => {
       if (e.key) env[e.key] = e.value;
     });
 
@@ -361,14 +390,15 @@ export function AISettingsPanel() {
       enabled: true,
       url: newMCPServer.type !== "stdio" ? newMCPServer.url : undefined,
       command: newMCPServer.type === "stdio" ? newMCPServer.command : undefined,
-      args: newMCPServer.type === "stdio" && newMCPServer.args 
-        ? newMCPServer.args.split(" ").filter(Boolean) 
-        : undefined,
+      args:
+        newMCPServer.type === "stdio" && newMCPServer.args
+          ? newMCPServer.args.split(" ").filter(Boolean)
+          : undefined,
       headers: Object.keys(headers).length > 0 ? headers : undefined,
       env: Object.keys(env).length > 0 ? env : undefined,
       description: newMCPServer.description || undefined,
     });
-    
+
     addMCPServer(server);
     setNewMCPServer({
       name: "",
@@ -385,24 +415,28 @@ export function AISettingsPanel() {
 
   const handleDeleteMCPServer = async (serverId: string) => {
     if (!confirm(t("ai.confirm_delete_server"))) return;
-    
+
     await closeMCPClient(serverId);
     clearMCPConnectionStatus(serverId);
     deleteMCPServer(serverId);
-    setMcpConnectionStates(prev => {
+    setMcpConnectionStates((prev) => {
       const next = { ...prev };
       delete next[serverId];
       return next;
     });
-    setMcpToolsCounts(prev => {
+    setMcpToolsCounts((prev) => {
       const next = { ...prev };
       delete next[serverId];
       return next;
     });
   };
 
-  const getConnectionStatusIcon = (status: MCPConnectionStatus, isLoading: boolean) => {
-    if (isLoading) return <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />;
+  const getConnectionStatusIcon = (
+    status: MCPConnectionStatus,
+    isLoading: boolean
+  ) => {
+    if (isLoading)
+      return <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />;
     switch (status) {
       case "connected":
         return <CheckCircle className="h-3 w-3 text-green-500" />;
@@ -415,7 +449,10 @@ export function AISettingsPanel() {
     }
   };
 
-  const mcpServers = useMemo(() => settings.mcpServers || [], [settings.mcpServers]);
+  const mcpServers = useMemo(
+    () => settings.mcpServers || [],
+    [settings.mcpServers]
+  );
 
   return (
     <div className="h-full overflow-y-auto p-4 space-y-4">
@@ -470,7 +507,11 @@ export function AISettingsPanel() {
                 onClick={() => handleSaveAPIKey("openai")}
                 disabled={isSaving || !openaiKey}
               >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : t("ai.save")}
+                {isSaving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  t("ai.save")
+                )}
               </Button>
               {settings.apiKeys?.openai && (
                 <Button
@@ -511,7 +552,11 @@ export function AISettingsPanel() {
                 onClick={() => handleSaveAPIKey("anthropic")}
                 disabled={isSaving || !anthropicKey}
               >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : t("ai.save")}
+                {isSaving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  t("ai.save")
+                )}
               </Button>
               {settings.apiKeys?.anthropic && (
                 <Button
@@ -566,7 +611,9 @@ export function AISettingsPanel() {
                 <Server className="w-4 h-4" />
                 {t("ai.custom_providers")}
               </CardTitle>
-              <CardDescription>{t("ai.custom_providers_description")}</CardDescription>
+              <CardDescription>
+                {t("ai.custom_providers_description")}
+              </CardDescription>
             </div>
             <Dialog open={addProviderOpen} onOpenChange={setAddProviderOpen}>
               <DialogTrigger asChild>
@@ -578,7 +625,9 @@ export function AISettingsPanel() {
               <DialogContent className="max-w-lg">
                 <DialogHeader>
                   <DialogTitle>{t("ai.add_custom_provider")}</DialogTitle>
-                  <DialogDescription>{t("ai.add_custom_provider_description")}</DialogDescription>
+                  <DialogDescription>
+                    {t("ai.add_custom_provider_description")}
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   {/* Preset Providers */}
@@ -599,7 +648,7 @@ export function AISettingsPanel() {
                             setAddProviderOpen(false);
                           }}
                         >
-                          <Globe className="h-3 w-3 mr-2 flex-shrink-0" />
+                          <Globe className="h-3 w-3 mr-2 shrink-0" />
                           <span className="truncate">{preset.name}</span>
                         </Button>
                       ))}
@@ -612,12 +661,19 @@ export function AISettingsPanel() {
                     <Input
                       placeholder={t("ai.provider_name")}
                       value={newProvider.name || ""}
-                      onChange={(e) => setNewProvider({ ...newProvider, name: e.target.value })}
+                      onChange={(e) =>
+                        setNewProvider({ ...newProvider, name: e.target.value })
+                      }
                     />
                     <Input
                       placeholder={t("ai.base_url")}
                       value={newProvider.baseURL || ""}
-                      onChange={(e) => setNewProvider({ ...newProvider, baseURL: e.target.value })}
+                      onChange={(e) =>
+                        setNewProvider({
+                          ...newProvider,
+                          baseURL: e.target.value,
+                        })
+                      }
                     />
                     <div className="space-y-2">
                       <Label className="text-xs">{t("ai.add_model")}</Label>
@@ -625,13 +681,23 @@ export function AISettingsPanel() {
                         <Input
                           placeholder="Model ID"
                           value={newModelInput.id}
-                          onChange={(e) => setNewModelInput({ ...newModelInput, id: e.target.value })}
+                          onChange={(e) =>
+                            setNewModelInput({
+                              ...newModelInput,
+                              id: e.target.value,
+                            })
+                          }
                           className="flex-1"
                         />
                         <Input
                           placeholder="Name"
                           value={newModelInput.name}
-                          onChange={(e) => setNewModelInput({ ...newModelInput, name: e.target.value })}
+                          onChange={(e) =>
+                            setNewModelInput({
+                              ...newModelInput,
+                              name: e.target.value,
+                            })
+                          }
                           className="flex-1"
                         />
                         <Button
@@ -646,7 +712,11 @@ export function AISettingsPanel() {
                                   { ...newModelInput, supportsVision: false },
                                 ],
                               });
-                              setNewModelInput({ id: "", name: "", contextWindow: 128000 });
+                              setNewModelInput({
+                                id: "",
+                                name: "",
+                                contextWindow: 128000,
+                              });
                             }
                           }}
                         >
@@ -657,16 +727,25 @@ export function AISettingsPanel() {
                     {newProvider.models && newProvider.models.length > 0 && (
                       <div className="text-xs space-y-1">
                         {newProvider.models.map((m, i) => (
-                          <div key={i} className="flex items-center justify-between p-1 bg-muted rounded">
-                            <span>{m.name} ({m.id})</span>
+                          <div
+                            key={i}
+                            className="flex items-center justify-between p-1 bg-muted rounded"
+                          >
+                            <span>
+                              {m.name} ({m.id})
+                            </span>
                             <Button
                               size="icon"
                               variant="ghost"
                               className="h-5 w-5"
-                              onClick={() => setNewProvider({
-                                ...newProvider,
-                                models: newProvider.models?.filter((_, idx) => idx !== i),
-                              })}
+                              onClick={() =>
+                                setNewProvider({
+                                  ...newProvider,
+                                  models: newProvider.models?.filter(
+                                    (_, idx) => idx !== i
+                                  ),
+                                })
+                              }
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
@@ -679,7 +758,11 @@ export function AISettingsPanel() {
                 <DialogFooter>
                   <Button
                     onClick={() => {
-                      if (newProvider.name && newProvider.baseURL && newProvider.models?.length) {
+                      if (
+                        newProvider.name &&
+                        newProvider.baseURL &&
+                        newProvider.models?.length
+                      ) {
                         addCustomProvider({
                           name: newProvider.name,
                           baseURL: newProvider.baseURL,
@@ -690,7 +773,11 @@ export function AISettingsPanel() {
                         setAddProviderOpen(false);
                       }
                     }}
-                    disabled={!newProvider.name || !newProvider.baseURL || !newProvider.models?.length}
+                    disabled={
+                      !newProvider.name ||
+                      !newProvider.baseURL ||
+                      !newProvider.models?.length
+                    }
                   >
                     {t("ai.add_provider")}
                   </Button>
@@ -728,12 +815,16 @@ export function AISettingsPanel() {
                       <div className="flex gap-2">
                         <div className="relative flex-1">
                           <Input
-                            type={showCustomKeys[provider.id] ? "text" : "password"}
+                            type={
+                              showCustomKeys[provider.id] ? "text" : "password"
+                            }
                             value={customProviderKeys[provider.id] || ""}
-                            onChange={(e) => setCustomProviderKeys({
-                              ...customProviderKeys,
-                              [provider.id]: e.target.value,
-                            })}
+                            onChange={(e) =>
+                              setCustomProviderKeys({
+                                ...customProviderKeys,
+                                [provider.id]: e.target.value,
+                              })
+                            }
                             placeholder="API Key"
                             className="text-xs"
                           />
@@ -741,12 +832,18 @@ export function AISettingsPanel() {
                             variant="ghost"
                             size="icon"
                             className="absolute right-0 top-0 h-full w-8"
-                            onClick={() => setShowCustomKeys({
-                              ...showCustomKeys,
-                              [provider.id]: !showCustomKeys[provider.id],
-                            })}
+                            onClick={() =>
+                              setShowCustomKeys({
+                                ...showCustomKeys,
+                                [provider.id]: !showCustomKeys[provider.id],
+                              })
+                            }
                           >
-                            {showCustomKeys[provider.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                            {showCustomKeys[provider.id] ? (
+                              <EyeOff className="w-3 h-3" />
+                            ) : (
+                              <Eye className="w-3 h-3" />
+                            )}
                           </Button>
                         </div>
                         <Button
@@ -770,9 +867,14 @@ export function AISettingsPanel() {
                     <div className="text-xs space-y-1">
                       <Label className="text-xs">{t("ai.models")}</Label>
                       {provider.models.map((model) => (
-                        <div key={model.id} className="p-1.5 bg-muted rounded flex justify-between">
+                        <div
+                          key={model.id}
+                          className="p-1.5 bg-muted rounded flex justify-between"
+                        >
                           <span>{model.name}</span>
-                          <span className="text-muted-foreground">{model.contextWindow.toLocaleString()} tokens</span>
+                          <span className="text-muted-foreground">
+                            {model.contextWindow.toLocaleString()} tokens
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -820,7 +922,9 @@ export function AISettingsPanel() {
                 <PlugZap className="w-4 h-4" />
                 {t("ai.mcp_servers")}
               </CardTitle>
-              <CardDescription>{t("ai.mcp_servers_description")}</CardDescription>
+              <CardDescription>
+                {t("ai.mcp_servers_description")}
+              </CardDescription>
             </div>
             <Dialog open={addMCPServerOpen} onOpenChange={setAddMCPServerOpen}>
               <DialogTrigger asChild>
@@ -832,12 +936,18 @@ export function AISettingsPanel() {
               <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{t("ai.add_mcp_server")}</DialogTitle>
-                  <DialogDescription>{t("ai.mcp_servers_description")}</DialogDescription>
+                  <DialogDescription>
+                    {t("ai.mcp_servers_description")}
+                  </DialogDescription>
                 </DialogHeader>
                 <Tabs defaultValue="presets" className="w-full">
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="presets">{t("ai.mcp_presets")}</TabsTrigger>
-                    <TabsTrigger value="custom">{t("ai.mcp_custom")}</TabsTrigger>
+                    <TabsTrigger value="presets">
+                      {t("ai.mcp_presets")}
+                    </TabsTrigger>
+                    <TabsTrigger value="custom">
+                      {t("ai.mcp_custom")}
+                    </TabsTrigger>
                   </TabsList>
                   <TabsContent value="presets" className="space-y-3 mt-4">
                     <p className="text-xs text-muted-foreground">
@@ -852,18 +962,31 @@ export function AISettingsPanel() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <Terminal className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium text-sm">{preset.name}</span>
-                              <Badge variant={preset.type === "stdio" ? "secondary" : "default"} className="text-xs">
+                              <span className="font-medium text-sm">
+                                {preset.name}
+                              </span>
+                              <Badge
+                                variant={
+                                  preset.type === "stdio"
+                                    ? "secondary"
+                                    : "default"
+                                }
+                                className="text-xs"
+                              >
                                 {preset.type.toUpperCase()}
                               </Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">{preset.description}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {preset.description}
+                            </p>
                           </div>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleAddMCPPreset(index)}
-                            disabled={preset.type === "stdio" && !isStdioMCPAvailable()}
+                            disabled={
+                              preset.type === "stdio" && !isStdioMCPAvailable()
+                            }
                           >
                             <Plus className="h-3 w-3 mr-1" />
                             {t("ai.add_provider")}
@@ -878,7 +1001,12 @@ export function AISettingsPanel() {
                         <Label>{t("ai.server_name")}</Label>
                         <Input
                           value={newMCPServer.name}
-                          onChange={(e) => setNewMCPServer({ ...newMCPServer, name: e.target.value })}
+                          onChange={(e) =>
+                            setNewMCPServer({
+                              ...newMCPServer,
+                              name: e.target.value,
+                            })
+                          }
                           placeholder="My MCP Server"
                         />
                       </div>
@@ -886,7 +1014,7 @@ export function AISettingsPanel() {
                         <Label>{t("ai.server_type")}</Label>
                         <Select
                           value={newMCPServer.type}
-                          onValueChange={(value: "http" | "sse" | "stdio") => 
+                          onValueChange={(value: "http" | "sse" | "stdio") =>
                             setNewMCPServer({ ...newMCPServer, type: value })
                           }
                         >
@@ -894,9 +1022,16 @@ export function AISettingsPanel() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="http">{t("ai.mcp_type_http")}</SelectItem>
-                            <SelectItem value="sse">{t("ai.mcp_type_sse")}</SelectItem>
-                            <SelectItem value="stdio" disabled={!isStdioMCPAvailable()}>
+                            <SelectItem value="http">
+                              {t("ai.mcp_type_http")}
+                            </SelectItem>
+                            <SelectItem value="sse">
+                              {t("ai.mcp_type_sse")}
+                            </SelectItem>
+                            <SelectItem
+                              value="stdio"
+                              disabled={!isStdioMCPAvailable()}
+                            >
                               {t("ai.mcp_type_stdio")}
                             </SelectItem>
                           </SelectContent>
@@ -907,7 +1042,12 @@ export function AISettingsPanel() {
                           <Label>{t("ai.server_url")}</Label>
                           <Input
                             value={newMCPServer.url}
-                            onChange={(e) => setNewMCPServer({ ...newMCPServer, url: e.target.value })}
+                            onChange={(e) =>
+                              setNewMCPServer({
+                                ...newMCPServer,
+                                url: e.target.value,
+                              })
+                            }
                             placeholder="https://mcp-server.example.com"
                           />
                         </div>
@@ -917,7 +1057,12 @@ export function AISettingsPanel() {
                             <Label>{t("ai.server_command")}</Label>
                             <Input
                               value={newMCPServer.command}
-                              onChange={(e) => setNewMCPServer({ ...newMCPServer, command: e.target.value })}
+                              onChange={(e) =>
+                                setNewMCPServer({
+                                  ...newMCPServer,
+                                  command: e.target.value,
+                                })
+                              }
                               placeholder="npx"
                             />
                           </div>
@@ -925,7 +1070,12 @@ export function AISettingsPanel() {
                             <Label>{t("ai.server_args")}</Label>
                             <Input
                               value={newMCPServer.args}
-                              onChange={(e) => setNewMCPServer({ ...newMCPServer, args: e.target.value })}
+                              onChange={(e) =>
+                                setNewMCPServer({
+                                  ...newMCPServer,
+                                  args: e.target.value,
+                                })
+                              }
                               placeholder="-y @modelcontextprotocol/server-fetch"
                             />
                           </div>
@@ -935,7 +1085,12 @@ export function AISettingsPanel() {
                         <Label>{t("ai.server_description")}</Label>
                         <Input
                           value={newMCPServer.description}
-                          onChange={(e) => setNewMCPServer({ ...newMCPServer, description: e.target.value })}
+                          onChange={(e) =>
+                            setNewMCPServer({
+                              ...newMCPServer,
+                              description: e.target.value,
+                            })
+                          }
                           placeholder="Optional description"
                         />
                       </div>
@@ -947,10 +1102,15 @@ export function AISettingsPanel() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => setNewMCPServer({
-                                ...newMCPServer,
-                                headers: [...newMCPServer.headers, { key: "", value: "" }]
-                              })}
+                              onClick={() =>
+                                setNewMCPServer({
+                                  ...newMCPServer,
+                                  headers: [
+                                    ...newMCPServer.headers,
+                                    { key: "", value: "" },
+                                  ],
+                                })
+                              }
                             >
                               <Plus className="h-3 w-3 mr-1" />
                               {t("ai.add_header")}
@@ -982,7 +1142,9 @@ export function AISettingsPanel() {
                                 size="icon"
                                 variant="ghost"
                                 onClick={() => {
-                                  const headers = newMCPServer.headers.filter((_, idx) => idx !== i);
+                                  const headers = newMCPServer.headers.filter(
+                                    (_, idx) => idx !== i
+                                  );
                                   setNewMCPServer({ ...newMCPServer, headers });
                                 }}
                               >
@@ -999,10 +1161,15 @@ export function AISettingsPanel() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => setNewMCPServer({
-                              ...newMCPServer,
-                              env: [...newMCPServer.env, { key: "", value: "" }]
-                            })}
+                            onClick={() =>
+                              setNewMCPServer({
+                                ...newMCPServer,
+                                env: [
+                                  ...newMCPServer.env,
+                                  { key: "", value: "" },
+                                ],
+                              })
+                            }
                           >
                             <Plus className="h-3 w-3 mr-1" />
                             {t("ai.add_env_var")}
@@ -1035,7 +1202,9 @@ export function AISettingsPanel() {
                               size="icon"
                               variant="ghost"
                               onClick={() => {
-                                const env = newMCPServer.env.filter((_, idx) => idx !== i);
+                                const env = newMCPServer.env.filter(
+                                  (_, idx) => idx !== i
+                                );
                                 setNewMCPServer({ ...newMCPServer, env });
                               }}
                             >
@@ -1048,7 +1217,13 @@ export function AISettingsPanel() {
                     <DialogFooter>
                       <Button
                         onClick={handleAddCustomMCPServer}
-                        disabled={!newMCPServer.name || (newMCPServer.type !== "stdio" && !newMCPServer.url) || (newMCPServer.type === "stdio" && !newMCPServer.command)}
+                        disabled={
+                          !newMCPServer.name ||
+                          (newMCPServer.type !== "stdio" &&
+                            !newMCPServer.url) ||
+                          (newMCPServer.type === "stdio" &&
+                            !newMCPServer.command)
+                        }
                       >
                         {t("ai.add_mcp_server")}
                       </Button>
@@ -1071,7 +1246,9 @@ export function AISettingsPanel() {
               </div>
               <Switch
                 checked={settings.enableMCPTools}
-                onCheckedChange={(checked) => updateSettings({ enableMCPTools: checked })}
+                onCheckedChange={(checked) =>
+                  updateSettings({ enableMCPTools: checked })
+                }
               />
             </div>
             <div className="flex items-center justify-between">
@@ -1083,18 +1260,24 @@ export function AISettingsPanel() {
               </div>
               <Switch
                 checked={settings.enableMultiStepTools}
-                onCheckedChange={(checked) => updateSettings({ enableMultiStepTools: checked })}
+                onCheckedChange={(checked) =>
+                  updateSettings({ enableMultiStepTools: checked })
+                }
               />
             </div>
             {settings.enableMultiStepTools && (
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <Label>{t("ai.max_tool_steps")}</Label>
-                  <span className="text-sm text-muted-foreground">{settings.maxToolSteps}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {settings.maxToolSteps}
+                  </span>
                 </div>
                 <Slider
                   value={[settings.maxToolSteps]}
-                  onValueChange={([value]) => updateSettings({ maxToolSteps: value })}
+                  onValueChange={([value]) =>
+                    updateSettings({ maxToolSteps: value })
+                  }
                   min={1}
                   max={10}
                   step={1}
@@ -1109,16 +1292,24 @@ export function AISettingsPanel() {
           {mcpServers.length === 0 ? (
             <div className="text-center py-6">
               <Plug className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">{t("ai.no_mcp_servers")}</p>
-              <p className="text-xs text-muted-foreground mt-1">{t("ai.no_mcp_servers_hint")}</p>
+              <p className="text-sm text-muted-foreground">
+                {t("ai.no_mcp_servers")}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t("ai.no_mcp_servers_hint")}
+              </p>
             </div>
           ) : (
             <div className="space-y-2">
               {mcpServers.map((server) => {
-                const status = mcpConnectionStates[server.id] || getMCPConnectionStatus(server.id);
-                const toolsCount = mcpToolsCounts[server.id] ?? getCachedMCPTools(server.id).length;
+                const status =
+                  mcpConnectionStates[server.id] ||
+                  getMCPConnectionStatus(server.id);
+                const toolsCount =
+                  mcpToolsCounts[server.id] ??
+                  getCachedMCPTools(server.id).length;
                 const isTestingThis = testingMCPServer === server.id;
-                
+
                 return (
                   <div
                     key={server.id}
@@ -1127,7 +1318,9 @@ export function AISettingsPanel() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         {getConnectionStatusIcon(status, isTestingThis)}
-                        <span className="font-medium text-sm">{server.name}</span>
+                        <span className="font-medium text-sm">
+                          {server.name}
+                        </span>
                         <Badge variant="outline" className="text-xs">
                           {server.type.toUpperCase()}
                         </Badge>
@@ -1138,7 +1331,9 @@ export function AISettingsPanel() {
                       />
                     </div>
                     {server.description && (
-                      <p className="text-xs text-muted-foreground">{server.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {server.description}
+                      </p>
                     )}
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       {server.url && (
@@ -1180,7 +1375,9 @@ export function AISettingsPanel() {
                                 )}
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>{t("ai.test_mcp_connection")}</TooltipContent>
+                            <TooltipContent>
+                              {t("ai.test_mcp_connection")}
+                            </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                         <Button
@@ -1223,7 +1420,9 @@ export function AISettingsPanel() {
               onValueChange={(value) => {
                 if (value.startsWith("custom:")) {
                   const customId = value.replace("custom:", "");
-                  const customProvider = customProviders.find((p) => p.id === customId);
+                  const customProvider = customProviders.find(
+                    (p) => p.id === customId
+                  );
                   updateSettings({
                     provider: "custom",
                     customProviderId: customId,
@@ -1244,14 +1443,16 @@ export function AISettingsPanel() {
               <SelectContent>
                 <SelectItem value="openai">OpenAI</SelectItem>
                 <SelectItem value="anthropic">Anthropic</SelectItem>
-                {customProviders.filter((p) => p.isEnabled).map((p) => (
-                  <SelectItem key={p.id} value={`custom:${p.id}`}>
-                    <span className="flex items-center gap-2">
-                      <Server className="h-3 w-3" />
-                      {p.name}
-                    </span>
-                  </SelectItem>
-                ))}
+                {customProviders
+                  .filter((p) => p.isEnabled)
+                  .map((p) => (
+                    <SelectItem key={p.id} value={`custom:${p.id}`}>
+                      <span className="flex items-center gap-2">
+                        <Server className="h-3 w-3" />
+                        {p.name}
+                      </span>
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -1284,8 +1485,11 @@ export function AISettingsPanel() {
                 <ModelSelectorTrigger asChild>
                   <Button variant="outline" className="w-full justify-between">
                     <span className="flex items-center gap-2">
-                      <ModelSelectorLogo provider={settings.provider as BuiltInProvider} />
-                      {AI_MODELS.find((m) => m.id === settings.model)?.name || settings.model}
+                      <ModelSelectorLogo
+                        provider={settings.provider as BuiltInProvider}
+                      />
+                      {AI_MODELS.find((m) => m.id === settings.model)?.name ||
+                        settings.model}
                     </span>
                     <Sparkles className="h-4 w-4 opacity-50" />
                   </Button>
@@ -1293,42 +1497,60 @@ export function AISettingsPanel() {
                 <ModelSelectorContent>
                   <ModelSelectorInput placeholder={t("ai.search_models")} />
                   <ModelSelectorList>
-                    <ModelSelectorEmpty>{t("ai.no_models_found")}</ModelSelectorEmpty>
-                    <ModelSelectorGroup heading={settings.provider.toUpperCase()}>
-                      {AI_MODELS.filter((m) => m.provider === settings.provider).map(
-                        (model) => (
-                          <ModelSelectorItem
-                            key={model.id}
-                            value={model.id}
-                            onSelect={() => updateSettings({ model: model.id })}
-                          >
-                            <ModelSelectorLogo provider={model.provider} />
-                            <ModelSelectorName>
-                              {model.name}
-                              {model.supportsVision && (
-                                <span className="ml-1 text-xs text-muted-foreground">(Vision)</span>
-                              )}
-                            </ModelSelectorName>
-                            {model.id === settings.model && (
-                              <Check className="h-4 w-4 text-primary" />
+                    <ModelSelectorEmpty>
+                      {t("ai.no_models_found")}
+                    </ModelSelectorEmpty>
+                    <ModelSelectorGroup
+                      heading={settings.provider.toUpperCase()}
+                    >
+                      {AI_MODELS.filter(
+                        (m) => m.provider === settings.provider
+                      ).map((model) => (
+                        <ModelSelectorItem
+                          key={model.id}
+                          value={model.id}
+                          onSelect={() => updateSettings({ model: model.id })}
+                        >
+                          <ModelSelectorLogo provider={model.provider} />
+                          <ModelSelectorName>
+                            {model.name}
+                            {model.supportsVision && (
+                              <span className="ml-1 text-xs text-muted-foreground">
+                                (Vision)
+                              </span>
                             )}
-                          </ModelSelectorItem>
-                        )
-                      )}
+                          </ModelSelectorName>
+                          {model.id === settings.model && (
+                            <Check className="h-4 w-4 text-primary" />
+                          )}
+                        </ModelSelectorItem>
+                      ))}
                     </ModelSelectorGroup>
                   </ModelSelectorList>
                 </ModelSelectorContent>
               </ModelSelector>
             )}
             <p className="text-xs text-muted-foreground">
-              {t("ai.context_window")}: {(() => {
-                if (settings.provider === "custom" && settings.customProviderId) {
-                  const customProvider = customProviders.find(p => p.id === settings.customProviderId);
-                  const model = customProvider?.models.find(m => m.id === settings.model);
+              {t("ai.context_window")}:{" "}
+              {(() => {
+                if (
+                  settings.provider === "custom" &&
+                  settings.customProviderId
+                ) {
+                  const customProvider = customProviders.find(
+                    (p) => p.id === settings.customProviderId
+                  );
+                  const model = customProvider?.models.find(
+                    (m) => m.id === settings.model
+                  );
                   return model?.contextWindow || 0;
                 }
-                return AI_MODELS.find((m) => m.id === settings.model)?.contextWindow || 0;
-              })().toLocaleString()} tokens
+                return (
+                  AI_MODELS.find((m) => m.id === settings.model)
+                    ?.contextWindow || 0
+                );
+              })().toLocaleString()}{" "}
+              tokens
             </p>
           </div>
 
@@ -1342,7 +1564,9 @@ export function AISettingsPanel() {
             </div>
             <Slider
               value={[settings.temperature]}
-              onValueChange={([value]) => updateSettings({ temperature: value })}
+              onValueChange={([value]) =>
+                updateSettings({ temperature: value })
+              }
               min={0}
               max={2}
               step={0.1}
@@ -1401,28 +1625,34 @@ export function AISettingsPanel() {
             <Label>{t("ai.system_prompt_preset", "Preset")}</Label>
             <Select
               onValueChange={(presetId) => {
-                const preset = SYSTEM_PROMPT_PRESETS.find(p => p.id === presetId);
+                const preset = SYSTEM_PROMPT_PRESETS.find(
+                  (p) => p.id === presetId
+                );
                 if (preset) {
                   updateSettings({ systemPrompt: preset.prompt });
                 }
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder={t("ai.select_preset", "Select a preset...")} />
+                <SelectValue
+                  placeholder={t("ai.select_preset", "Select a preset...")}
+                />
               </SelectTrigger>
               <SelectContent>
                 {SYSTEM_PROMPT_PRESETS.map((preset) => (
                   <SelectItem key={preset.id} value={preset.id}>
                     <div className="flex flex-col">
                       <span>{preset.name}</span>
-                      <span className="text-xs text-muted-foreground">{preset.description}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {preset.description}
+                      </span>
                     </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          
+
           {/* System Prompt Editor */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -1431,7 +1661,11 @@ export function AISettingsPanel() {
                 variant="ghost"
                 size="sm"
                 className="h-7 text-xs"
-                onClick={() => updateSettings({ systemPrompt: SYSTEM_PROMPT_PRESETS[0].prompt })}
+                onClick={() =>
+                  updateSettings({
+                    systemPrompt: SYSTEM_PROMPT_PRESETS[0].prompt,
+                  })
+                }
               >
                 <RotateCcw className="h-3 w-3 mr-1" />
                 {t("ai.reset_to_default", "Reset")}
@@ -1444,13 +1678,19 @@ export function AISettingsPanel() {
               className="font-mono text-sm"
             />
           </div>
-          
+
           {/* Variable Hints */}
           <div className="text-xs text-muted-foreground">
-            <p className="mb-1">{t("ai.available_variables", "Available variables:")} </p>
+            <p className="mb-1">
+              {t("ai.available_variables", "Available variables:")}{" "}
+            </p>
             <div className="flex flex-wrap gap-1">
               {TEMPLATE_VARIABLES.map((v) => (
-                <Badge key={v.key} variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">
+                <Badge
+                  key={v.key}
+                  variant="secondary"
+                  className="text-[10px] px-1.5 py-0 font-mono"
+                >
                   {v.key}
                 </Badge>
               ))}
@@ -1458,10 +1698,10 @@ export function AISettingsPanel() {
           </div>
         </CardContent>
       </Card>
-      
+
       {/* Quick Commands Management */}
       <QuickCommandsSettings />
-      
+
       {/* Prompt Templates Management */}
       <PromptTemplatesSettings />
     </div>
@@ -1472,7 +1712,10 @@ export function AISettingsPanel() {
 // Quick Commands Settings Component
 // ============================================================================
 
-const COMMAND_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+const COMMAND_ICONS: Record<
+  string,
+  React.ComponentType<{ className?: string }>
+> = {
   FileText,
   Languages,
   Lightbulb,
@@ -1486,8 +1729,17 @@ const COMMAND_ICONS: Record<string, React.ComponentType<{ className?: string }>>
 
 function QuickCommandsSettings() {
   const { t } = useTranslation();
-  const { settings, addQuickCommand, updateQuickCommand, deleteQuickCommand, toggleQuickCommand, resetQuickCommands } = useAIChatStore();
-  const [editingCommand, setEditingCommand] = useState<QuickCommand | null>(null);
+  const {
+    settings,
+    addQuickCommand,
+    updateQuickCommand,
+    deleteQuickCommand,
+    toggleQuickCommand,
+    resetQuickCommands,
+  } = useAIChatStore();
+  const [editingCommand, setEditingCommand] = useState<QuickCommand | null>(
+    null
+  );
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newCommand, setNewCommand] = useState<Partial<QuickCommand>>({
     name: "",
@@ -1501,7 +1753,7 @@ function QuickCommandsSettings() {
 
   const handleAddCommand = () => {
     if (newCommand.name && newCommand.prompt) {
-      addQuickCommand(newCommand as Omit<QuickCommand, 'id'>);
+      addQuickCommand(newCommand as Omit<QuickCommand, "id">);
       setNewCommand({
         name: "",
         description: "",
@@ -1531,7 +1783,12 @@ function QuickCommandsSettings() {
               <Zap className="h-4 w-4" />
               {t("ai.quick_commands.title", "Quick Commands")}
             </CardTitle>
-            <CardDescription>{t("ai.quick_commands.description", "Manage slash commands for quick AI actions")}</CardDescription>
+            <CardDescription>
+              {t(
+                "ai.quick_commands.description",
+                "Manage slash commands for quick AI actions"
+              )}
+            </CardDescription>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={resetQuickCommands}>
@@ -1547,9 +1804,14 @@ function QuickCommandsSettings() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>{t("ai.quick_commands.add_new", "Add Quick Command")}</DialogTitle>
+                  <DialogTitle>
+                    {t("ai.quick_commands.add_new", "Add Quick Command")}
+                  </DialogTitle>
                   <DialogDescription>
-                    {t("ai.quick_commands.add_description", "Create a custom quick command with a slash shortcut")}
+                    {t(
+                      "ai.quick_commands.add_description",
+                      "Create a custom quick command with a slash shortcut"
+                    )}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -1558,7 +1820,9 @@ function QuickCommandsSettings() {
                       <Label>{t("ai.name", "Name")}</Label>
                       <Input
                         value={newCommand.name || ""}
-                        onChange={(e) => setNewCommand({ ...newCommand, name: e.target.value })}
+                        onChange={(e) =>
+                          setNewCommand({ ...newCommand, name: e.target.value })
+                        }
                         placeholder="Summarize"
                       />
                     </div>
@@ -1566,7 +1830,12 @@ function QuickCommandsSettings() {
                       <Label>{t("ai.shortcut", "Shortcut")}</Label>
                       <Input
                         value={newCommand.shortcut || ""}
-                        onChange={(e) => setNewCommand({ ...newCommand, shortcut: e.target.value })}
+                        onChange={(e) =>
+                          setNewCommand({
+                            ...newCommand,
+                            shortcut: e.target.value,
+                          })
+                        }
                         placeholder="/sum"
                       />
                     </div>
@@ -1575,7 +1844,12 @@ function QuickCommandsSettings() {
                     <Label>{t("ai.description", "Description")}</Label>
                     <Input
                       value={newCommand.description || ""}
-                      onChange={(e) => setNewCommand({ ...newCommand, description: e.target.value })}
+                      onChange={(e) =>
+                        setNewCommand({
+                          ...newCommand,
+                          description: e.target.value,
+                        })
+                      }
                       placeholder="Summarize the current page"
                     />
                   </div>
@@ -1583,7 +1857,9 @@ function QuickCommandsSettings() {
                     <Label>{t("ai.prompt_template", "Prompt Template")}</Label>
                     <Textarea
                       value={newCommand.prompt || ""}
-                      onChange={(e) => setNewCommand({ ...newCommand, prompt: e.target.value })}
+                      onChange={(e) =>
+                        setNewCommand({ ...newCommand, prompt: e.target.value })
+                      }
                       rows={4}
                       className="font-mono text-sm"
                       placeholder="Please summarize the following content from page {{page}}:\n\n{{selection}}"
@@ -1594,7 +1870,12 @@ function QuickCommandsSettings() {
                           key={v.key}
                           variant="secondary"
                           className="text-[10px] px-1 py-0 cursor-pointer hover:bg-primary hover:text-primary-foreground"
-                          onClick={() => setNewCommand({ ...newCommand, prompt: (newCommand.prompt || "") + v.key })}
+                          onClick={() =>
+                            setNewCommand({
+                              ...newCommand,
+                              prompt: (newCommand.prompt || "") + v.key,
+                            })
+                          }
                         >
                           {v.key}
                         </Badge>
@@ -1603,10 +1884,16 @@ function QuickCommandsSettings() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsAddDialogOpen(false)}
+                  >
                     {t("ai.cancel", "Cancel")}
                   </Button>
-                  <Button onClick={handleAddCommand} disabled={!newCommand.name || !newCommand.prompt}>
+                  <Button
+                    onClick={handleAddCommand}
+                    disabled={!newCommand.name || !newCommand.prompt}
+                  >
                     {t("ai.add", "Add")}
                   </Button>
                 </DialogFooter>
@@ -1630,17 +1917,25 @@ function QuickCommandsSettings() {
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm">{cmd.name}</span>
                       {cmd.shortcut && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] px-1 py-0"
+                        >
                           {cmd.shortcut}
                         </Badge>
                       )}
                       {cmd.category === "builtin" && (
-                        <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] px-1 py-0"
+                        >
                           {t("ai.builtin", "Built-in")}
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">{cmd.description}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {cmd.description}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1673,12 +1968,17 @@ function QuickCommandsSettings() {
             );
           })}
         </div>
-        
+
         {/* Edit Dialog */}
-        <Dialog open={!!editingCommand} onOpenChange={(open) => !open && setEditingCommand(null)}>
+        <Dialog
+          open={!!editingCommand}
+          onOpenChange={(open) => !open && setEditingCommand(null)}
+        >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{t("ai.quick_commands.edit", "Edit Quick Command")}</DialogTitle>
+              <DialogTitle>
+                {t("ai.quick_commands.edit", "Edit Quick Command")}
+              </DialogTitle>
             </DialogHeader>
             {editingCommand && (
               <div className="space-y-4 py-4">
@@ -1687,14 +1987,24 @@ function QuickCommandsSettings() {
                     <Label>{t("ai.name", "Name")}</Label>
                     <Input
                       value={editingCommand.name}
-                      onChange={(e) => setEditingCommand({ ...editingCommand, name: e.target.value })}
+                      onChange={(e) =>
+                        setEditingCommand({
+                          ...editingCommand,
+                          name: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>{t("ai.shortcut", "Shortcut")}</Label>
                     <Input
                       value={editingCommand.shortcut || ""}
-                      onChange={(e) => setEditingCommand({ ...editingCommand, shortcut: e.target.value })}
+                      onChange={(e) =>
+                        setEditingCommand({
+                          ...editingCommand,
+                          shortcut: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -1702,14 +2012,24 @@ function QuickCommandsSettings() {
                   <Label>{t("ai.description", "Description")}</Label>
                   <Input
                     value={editingCommand.description}
-                    onChange={(e) => setEditingCommand({ ...editingCommand, description: e.target.value })}
+                    onChange={(e) =>
+                      setEditingCommand({
+                        ...editingCommand,
+                        description: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>{t("ai.prompt_template", "Prompt Template")}</Label>
                   <Textarea
                     value={editingCommand.prompt}
-                    onChange={(e) => setEditingCommand({ ...editingCommand, prompt: e.target.value })}
+                    onChange={(e) =>
+                      setEditingCommand({
+                        ...editingCommand,
+                        prompt: e.target.value,
+                      })
+                    }
                     rows={4}
                     className="font-mono text-sm"
                   />
@@ -1737,8 +2057,16 @@ function QuickCommandsSettings() {
 
 function PromptTemplatesSettings() {
   const { t } = useTranslation();
-  const { settings, addPromptTemplate, updatePromptTemplate, deletePromptTemplate, resetPromptTemplates } = useAIChatStore();
-  const [editingTemplate, setEditingTemplate] = useState<PromptTemplate | null>(null);
+  const {
+    settings,
+    addPromptTemplate,
+    updatePromptTemplate,
+    deletePromptTemplate,
+    resetPromptTemplates,
+  } = useAIChatStore();
+  const [editingTemplate, setEditingTemplate] = useState<PromptTemplate | null>(
+    null
+  );
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newTemplate, setNewTemplate] = useState<Partial<PromptTemplate>>({
     name: "",
@@ -1762,7 +2090,9 @@ function PromptTemplatesSettings() {
 
   const handleAddTemplate = () => {
     if (newTemplate.name && newTemplate.content) {
-      addPromptTemplate(newTemplate as Omit<PromptTemplate, 'id' | 'createdAt' | 'updatedAt'>);
+      addPromptTemplate(
+        newTemplate as Omit<PromptTemplate, "id" | "createdAt" | "updatedAt">
+      );
       setNewTemplate({
         name: "",
         description: "",
@@ -1794,7 +2124,12 @@ function PromptTemplatesSettings() {
               <Hash className="h-4 w-4" />
               {t("ai.prompt_templates.title", "Prompt Templates")}
             </CardTitle>
-            <CardDescription>{t("ai.prompt_templates.description", "Reusable prompt templates for common tasks")}</CardDescription>
+            <CardDescription>
+              {t(
+                "ai.prompt_templates.description",
+                "Reusable prompt templates for common tasks"
+              )}
+            </CardDescription>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={resetPromptTemplates}>
@@ -1810,9 +2145,14 @@ function PromptTemplatesSettings() {
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>{t("ai.prompt_templates.add_new", "Add Prompt Template")}</DialogTitle>
+                  <DialogTitle>
+                    {t("ai.prompt_templates.add_new", "Add Prompt Template")}
+                  </DialogTitle>
                   <DialogDescription>
-                    {t("ai.prompt_templates.add_description", "Create a reusable prompt template")}
+                    {t(
+                      "ai.prompt_templates.add_description",
+                      "Create a reusable prompt template"
+                    )}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -1821,7 +2161,12 @@ function PromptTemplatesSettings() {
                       <Label>{t("ai.name", "Name")}</Label>
                       <Input
                         value={newTemplate.name || ""}
-                        onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
+                        onChange={(e) =>
+                          setNewTemplate({
+                            ...newTemplate,
+                            name: e.target.value,
+                          })
+                        }
                         placeholder="My Template"
                       />
                     </div>
@@ -1829,7 +2174,9 @@ function PromptTemplatesSettings() {
                       <Label>{t("ai.category", "Category")}</Label>
                       <Select
                         value={newTemplate.category}
-                        onValueChange={(value) => setNewTemplate({ ...newTemplate, category: value })}
+                        onValueChange={(value) =>
+                          setNewTemplate({ ...newTemplate, category: value })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -1848,7 +2195,12 @@ function PromptTemplatesSettings() {
                     <Label>{t("ai.description", "Description")}</Label>
                     <Input
                       value={newTemplate.description || ""}
-                      onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
+                      onChange={(e) =>
+                        setNewTemplate({
+                          ...newTemplate,
+                          description: e.target.value,
+                        })
+                      }
                       placeholder="A brief description of what this template does"
                     />
                   </div>
@@ -1856,7 +2208,12 @@ function PromptTemplatesSettings() {
                     <Label>{t("ai.content", "Template Content")}</Label>
                     <Textarea
                       value={newTemplate.content || ""}
-                      onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
+                      onChange={(e) =>
+                        setNewTemplate({
+                          ...newTemplate,
+                          content: e.target.value,
+                        })
+                      }
                       rows={8}
                       className="font-mono text-sm"
                       placeholder="Enter your prompt template here...\n\nUse variables like {{selection}}, {{page}}, {{fileName}}"
@@ -1867,7 +2224,12 @@ function PromptTemplatesSettings() {
                           key={v.key}
                           variant="secondary"
                           className="text-[10px] px-1 py-0 cursor-pointer hover:bg-primary hover:text-primary-foreground"
-                          onClick={() => setNewTemplate({ ...newTemplate, content: (newTemplate.content || "") + v.key })}
+                          onClick={() =>
+                            setNewTemplate({
+                              ...newTemplate,
+                              content: (newTemplate.content || "") + v.key,
+                            })
+                          }
                         >
                           {v.key}
                         </Badge>
@@ -1876,10 +2238,16 @@ function PromptTemplatesSettings() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsAddDialogOpen(false)}
+                  >
                     {t("ai.cancel", "Cancel")}
                   </Button>
-                  <Button onClick={handleAddTemplate} disabled={!newTemplate.name || !newTemplate.content}>
+                  <Button
+                    onClick={handleAddTemplate}
+                    disabled={!newTemplate.name || !newTemplate.content}
+                  >
                     {t("ai.add", "Add")}
                   </Button>
                 </DialogFooter>
@@ -1909,14 +2277,21 @@ function PromptTemplatesSettings() {
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{tpl.name}</span>
+                          <span className="font-medium text-sm">
+                            {tpl.name}
+                          </span>
                           {tpl.isBuiltin && (
-                            <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px] px-1 py-0"
+                            >
                               {t("ai.builtin", "Built-in")}
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground truncate">{tpl.description}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {tpl.description}
+                        </p>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button
@@ -1956,12 +2331,17 @@ function PromptTemplatesSettings() {
             </AccordionItem>
           ))}
         </Accordion>
-        
+
         {/* Edit Dialog */}
-        <Dialog open={!!editingTemplate} onOpenChange={(open) => !open && setEditingTemplate(null)}>
+        <Dialog
+          open={!!editingTemplate}
+          onOpenChange={(open) => !open && setEditingTemplate(null)}
+        >
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{t("ai.prompt_templates.edit", "Edit Prompt Template")}</DialogTitle>
+              <DialogTitle>
+                {t("ai.prompt_templates.edit", "Edit Prompt Template")}
+              </DialogTitle>
             </DialogHeader>
             {editingTemplate && (
               <div className="space-y-4 py-4">
@@ -1970,14 +2350,24 @@ function PromptTemplatesSettings() {
                     <Label>{t("ai.name", "Name")}</Label>
                     <Input
                       value={editingTemplate.name}
-                      onChange={(e) => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
+                      onChange={(e) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          name: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>{t("ai.category", "Category")}</Label>
                     <Select
                       value={editingTemplate.category}
-                      onValueChange={(value) => setEditingTemplate({ ...editingTemplate, category: value })}
+                      onValueChange={(value) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          category: value,
+                        })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -1996,14 +2386,24 @@ function PromptTemplatesSettings() {
                   <Label>{t("ai.description", "Description")}</Label>
                   <Input
                     value={editingTemplate.description}
-                    onChange={(e) => setEditingTemplate({ ...editingTemplate, description: e.target.value })}
+                    onChange={(e) =>
+                      setEditingTemplate({
+                        ...editingTemplate,
+                        description: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>{t("ai.content", "Template Content")}</Label>
                   <Textarea
                     value={editingTemplate.content}
-                    onChange={(e) => setEditingTemplate({ ...editingTemplate, content: e.target.value })}
+                    onChange={(e) =>
+                      setEditingTemplate({
+                        ...editingTemplate,
+                        content: e.target.value,
+                      })
+                    }
                     rows={8}
                     className="font-mono text-sm"
                   />
@@ -2011,7 +2411,10 @@ function PromptTemplatesSettings() {
               </div>
             )}
             <DialogFooter>
-              <Button variant="outline" onClick={() => setEditingTemplate(null)}>
+              <Button
+                variant="outline"
+                onClick={() => setEditingTemplate(null)}
+              >
                 {t("ai.cancel", "Cancel")}
               </Button>
               <Button onClick={handleUpdateTemplate}>

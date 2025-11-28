@@ -85,7 +85,7 @@ function AnnotationItem({
       )}
     >
       {/* Icon with color indicator */}
-      <div className="flex-shrink-0 mt-0.5">{renderIcon()}</div>
+      <div className="shrink-0 mt-0.5">{renderIcon()}</div>
 
       {/* Annotation content */}
       <div className="flex-1 min-w-0">

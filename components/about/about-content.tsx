@@ -106,7 +106,7 @@ export function AboutContent() {
                   ) : (
                     <RefreshCw className="mr-2 h-3 w-3" />
                   )}
-                  {t("check_update")}
+                  {t("about.check_update")}
                 </Button>
                 {updateStatus && (
                   <p className="text-xs text-center text-muted-foreground animate-in fade-in slide-in-from-top-1">

@@ -23,6 +23,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { usePDFStore, type RecentFile } from "@/lib/pdf-store";
 import {
   isTauri,
@@ -742,30 +743,30 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
             <div className="flex flex-col gap-1 text-xs text-muted-foreground">
               <div className="flex items-center justify-between gap-2">
                 <span>{t("dialog.default_import")}</span>
-                <div className="inline-flex items-center gap-px rounded-md border bg-background px-1 py-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setFolderDetailMode("simple")}
-                    className={`rounded-sm px-2 py-0.5 text-[11px] transition-colors ${
-                      folderDetailMode === "simple"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted/60"
-                    }`}
+                <ToggleGroup
+                  type="single"
+                  value={folderDetailMode}
+                  onValueChange={(value) => {
+                    if (value)
+                      setFolderDetailMode(value as "simple" | "detailed");
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="h-7"
+                >
+                  <ToggleGroupItem
+                    value="simple"
+                    className="text-[11px] px-2 h-6"
                   >
                     {t("dialog.simple")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFolderDetailMode("detailed")}
-                    className={`rounded-sm px-2 py-0.5 text-[11px] transition-colors ${
-                      folderDetailMode === "detailed"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted/60"
-                    }`}
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    value="detailed"
+                    className="text-[11px] px-2 h-6"
                   >
                     {t("dialog.detailed")}
-                  </button>
-                </div>
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
               <div className="flex items-center gap-2">
                 <Input

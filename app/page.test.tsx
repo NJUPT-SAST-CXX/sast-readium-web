@@ -13,7 +13,13 @@ jest.mock("react-i18next", () => ({
 jest.mock("@/components/welcome-page/welcome-page", () => ({
   WelcomePage: ({ onFileSelect }: { onFileSelect: (f: File[]) => void }) => (
     <div data-testid="welcome-page">
-      <button onClick={() => onFileSelect([new File([""], "test.pdf", { type: "application/pdf" })])}>
+      <button
+        onClick={() =>
+          onFileSelect([
+            new File([""], "test.pdf", { type: "application/pdf" }),
+          ])
+        }
+      >
         Open PDF
       </button>
     </div>
@@ -31,6 +37,9 @@ jest.mock("@/components/pdf-viewer/pdf-tab-bar", () => ({
 }));
 jest.mock("@/lib/pdf-utils", () => ({
   unloadPDFDocument: jest.fn(),
+}));
+jest.mock("@/hooks/use-pdf-context", () => ({
+  usePDFContext: jest.fn(),
 }));
 
 describe("Home Page", () => {
@@ -53,31 +62,38 @@ describe("Home Page", () => {
 
   it("opens PDF viewer when file is selected", async () => {
     render(<Home />);
-    
+
     const openBtn = screen.getByText("Open PDF");
     fireEvent.click(openBtn);
 
     await waitFor(() => {
       expect(screen.getByTestId("pdf-viewer")).toBeInTheDocument();
     });
+    // openDocumentSession is called with the document ID
     expect(mockStore.openDocumentSession).toHaveBeenCalled();
   });
 
   it("closes PDF viewer and returns to welcome page", async () => {
     render(<Home />);
-    
+
     // Open first
     fireEvent.click(screen.getByText("Open PDF"));
     await waitFor(() => {
       expect(screen.getByTestId("pdf-viewer")).toBeInTheDocument();
     });
 
-    // Close
+    // Close - the mock PDFViewer calls onClose which triggers handleClose
     fireEvent.click(screen.getByText("Close PDF"));
+
+    // After closing, closeDocumentSession should be called
+    await waitFor(() => {
+      expect(mockStore.closeDocumentSession).toHaveBeenCalled();
+    });
+
+    // Welcome page should be visible again when no documents are open
     await waitFor(() => {
       expect(screen.getByTestId("welcome-page")).toBeInTheDocument();
     });
-    expect(mockStore.closeDocumentSession).toHaveBeenCalled();
   });
 
   it("applies dark mode class", () => {

@@ -54,7 +54,7 @@ function OutlineItem({
         }}
       >
         {hasChildren && (
-          <span className="flex-shrink-0">
+          <span className="shrink-0">
             {isExpanded ? (
               <ChevronDown className="h-4 w-4" />
             ) : (
@@ -67,7 +67,7 @@ function OutlineItem({
           {item.title}
         </span>
         {item.pageNumber && (
-          <span className="flex-shrink-0 text-xs text-muted-foreground">
+          <span className="shrink-0 text-xs text-muted-foreground">
             {item.pageNumber}
           </span>
         )}

@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Monitor,
   Layout,
@@ -420,8 +421,11 @@ export function PDFSettingsDialog({
           <DialogDescription>{t("settings.description")}</DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="display" className="flex-1 flex flex-col overflow-hidden mt-4">
-          <TabsList className="flex flex-wrap gap-2 w-full mb-4 h-auto flex-shrink-0 bg-muted/40 p-1 rounded-xl">
+        <Tabs
+          defaultValue="display"
+          className="flex-1 flex flex-col overflow-hidden mt-4"
+        >
+          <TabsList className="flex flex-wrap gap-2 w-full mb-4 h-auto shrink-0 bg-muted/40 p-1 rounded-xl">
             <TabsTrigger
               value="display"
               className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm rounded-lg"
@@ -484,284 +488,260 @@ export function PDFSettingsDialog({
             {/* Display section */}
             <TabsContent value="display" className="space-y-4 mt-0">
               <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-3">
-                <div className="text-xs font-medium text-muted-foreground">
-                  {t("settings.option.view_mode")}
+                <div className="space-y-3">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    {t("settings.option.view_mode")}
+                  </div>
+                  <ToggleGroup
+                    type="single"
+                    value={localViewMode}
+                    onValueChange={(value) => {
+                      if (value) setLocalViewMode(value as ViewMode);
+                    }}
+                    variant="outline"
+                    className="flex flex-wrap justify-start"
+                  >
+                    <ToggleGroupItem value="single" className="flex-1">
+                      {t("settings.option.single_page")}
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="continuous" className="flex-1">
+                      {t("settings.option.continuous")}
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="twoPage" className="flex-1">
+                      {t("settings.option.two_page")}
+                    </ToggleGroupItem>
+                  </ToggleGroup>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant={localViewMode === "single" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setLocalViewMode("single")}
-                    className="flex-1"
+
+                <div className="space-y-3">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    {t("settings.option.fit_mode")}
+                  </div>
+                  <ToggleGroup
+                    type="single"
+                    value={localFitMode}
+                    onValueChange={(value) => {
+                      if (value) setLocalFitMode(value as FitMode);
+                    }}
+                    variant="outline"
+                    className="flex flex-wrap justify-start"
                   >
-                    {t("settings.option.single_page")}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={
-                      localViewMode === "continuous" ? "default" : "outline"
-                    }
-                    size="sm"
-                    onClick={() => setLocalViewMode("continuous")}
-                    className="flex-1"
-                  >
-                    {t("settings.option.continuous")}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={
-                      localViewMode === "twoPage" ? "default" : "outline"
-                    }
-                    size="sm"
-                    onClick={() => setLocalViewMode("twoPage")}
-                    className="flex-1"
-                  >
-                    {t("settings.option.two_page")}
-                  </Button>
+                    <ToggleGroupItem value="fitWidth" className="flex-1">
+                      {t("settings.option.fit_width")}
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="fitPage" className="flex-1">
+                      {t("settings.option.fit_page")}
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="custom" className="flex-1">
+                      {t("settings.option.custom")}
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                  <p className="text-[11px] text-muted-foreground text-right">
+                    {t("settings.option.current", {
+                      mode: fitModeLabel(localFitMode),
+                    })}
+                  </p>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="text-xs font-medium text-muted-foreground">
-                  {t("settings.option.fit_mode")}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+                  <span>{t("settings.option.default_zoom")}</span>
+                  <span className="text-[11px] font-normal px-2 py-0.5 rounded bg-muted">
+                    {Math.round(localZoom * 100)}%
+                  </span>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant={
-                      localFitMode === "fitWidth" ? "default" : "outline"
-                    }
-                    size="sm"
-                    onClick={() => setLocalFitMode("fitWidth")}
-                    className="flex-1"
-                  >
-                    {t("settings.option.fit_width")}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={localFitMode === "fitPage" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setLocalFitMode("fitPage")}
-                    className="flex-1"
-                  >
-                    {t("settings.option.fit_page")}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={localFitMode === "custom" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setLocalFitMode("custom")}
-                    className="flex-1"
-                  >
-                    {t("settings.option.custom")}
-                  </Button>
+                <Slider
+                  min={0.5}
+                  max={3.0}
+                  step={0.05}
+                  value={[localZoom]}
+                  onValueChange={handleZoomSliderChange}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-[10px] text-muted-foreground px-1">
+                  <span>50%</span>
+                  <span>100%</span>
+                  <span>200%</span>
+                  <span>300%</span>
                 </div>
-                <p className="text-[11px] text-muted-foreground text-right">
-                  {t("settings.option.current", {
-                    mode: fitModeLabel(localFitMode),
-                  })}
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
-                <span>{t("settings.option.default_zoom")}</span>
-                <span className="text-[11px] font-normal px-2 py-0.5 rounded bg-muted">
-                  {Math.round(localZoom * 100)}%
-                </span>
-              </div>
-              <Slider
-                min={0.5}
-                max={3.0}
-                step={0.05}
-                value={[localZoom]}
-                onValueChange={handleZoomSliderChange}
-                className="w-full"
-              />
-              <div className="flex justify-between text-[10px] text-muted-foreground px-1">
-                <span>50%</span>
-                <span>100%</span>
-                <span>200%</span>
-                <span>300%</span>
-              </div>
               </div>
             </TabsContent>
 
             {/* Interface section */}
             <TabsContent value="interface" className="space-y-4 mt-0">
               <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-3">
-                <div className="text-xs font-medium text-muted-foreground">
-                  {t("settings.option.side_panels")}
+                <div className="space-y-3">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    {t("settings.option.side_panels")}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
+                      <span>{t("settings.option.show_thumbnails")}</span>
+                      <Checkbox
+                        checked={localShowThumbnails}
+                        onCheckedChange={(checked) =>
+                          setLocalShowThumbnails(!!checked)
+                        }
+                      />
+                    </Label>
+                    <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
+                      <span>{t("settings.option.show_outline")}</span>
+                      <Checkbox
+                        checked={localShowOutline}
+                        onCheckedChange={(checked) =>
+                          setLocalShowOutline(!!checked)
+                        }
+                      />
+                    </Label>
+                    <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
+                      <span>{t("settings.option.show_annotations")}</span>
+                      <Checkbox
+                        checked={localShowAnnotations}
+                        onCheckedChange={(checked) =>
+                          setLocalShowAnnotations(!!checked)
+                        }
+                      />
+                    </Label>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
-                    <span>{t("settings.option.show_thumbnails")}</span>
-                    <Checkbox
-                      checked={localShowThumbnails}
-                      onCheckedChange={(checked) =>
-                        setLocalShowThumbnails(!!checked)
-                      }
-                    />
-                  </Label>
-                  <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
-                    <span>{t("settings.option.show_outline")}</span>
-                    <Checkbox
-                      checked={localShowOutline}
-                      onCheckedChange={(checked) =>
-                        setLocalShowOutline(!!checked)
-                      }
-                    />
-                  </Label>
-                  <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
-                    <span>{t("settings.option.show_annotations")}</span>
-                    <Checkbox
-                      checked={localShowAnnotations}
-                      onCheckedChange={(checked) =>
-                        setLocalShowAnnotations(!!checked)
-                      }
-                    />
-                  </Label>
-                </div>
-              </div>
 
-              <div className="space-y-3">
-                <div className="text-xs font-medium text-muted-foreground">
-                  {t("settings.option.behavior")}
+                <div className="space-y-3">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    {t("settings.option.behavior")}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
+                      <span>{t("settings.option.case_sensitive")}</span>
+                      <Checkbox
+                        checked={localCaseSensitiveSearch}
+                        onCheckedChange={(checked) =>
+                          setLocalCaseSensitiveSearch(!!checked)
+                        }
+                      />
+                    </Label>
+                    <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
+                      <span>{t("settings.option.bottom_bar")}</span>
+                      <Checkbox
+                        checked={localShowPageNavigationInBottomBar}
+                        onCheckedChange={(checked) =>
+                          setLocalShowPageNavigationInBottomBar(!!checked)
+                        }
+                      />
+                    </Label>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
-                    <span>{t("settings.option.case_sensitive")}</span>
-                    <Checkbox
-                      checked={localCaseSensitiveSearch}
-                      onCheckedChange={(checked) =>
-                        setLocalCaseSensitiveSearch(!!checked)
-                      }
-                    />
-                  </Label>
-                  <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
-                    <span>{t("settings.option.bottom_bar")}</span>
-                    <Checkbox
-                      checked={localShowPageNavigationInBottomBar}
-                      onCheckedChange={(checked) =>
-                        setLocalShowPageNavigationInBottomBar(!!checked)
-                      }
-                    />
-                  </Label>
-                </div>
-              </div>
               </div>
             </TabsContent>
 
             {/* Scrolling section */}
             <TabsContent value="scrolling" className="space-y-4 mt-0">
               <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-3">
-                <div className="text-xs font-medium text-muted-foreground">
-                  {t("settings.option.scroll_behavior")}
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
-                    <span>{t("settings.option.enable_smooth_scrolling")}</span>
-                    <Checkbox
-                      checked={localEnableSmoothScrolling}
-                      onCheckedChange={(checked) =>
-                        setLocalEnableSmoothScrolling(!!checked)
+                <div className="space-y-3">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    {t("settings.option.scroll_behavior")}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
+                      <span>
+                        {t("settings.option.enable_smooth_scrolling")}
+                      </span>
+                      <Checkbox
+                        checked={localEnableSmoothScrolling}
+                        onCheckedChange={(checked) =>
+                          setLocalEnableSmoothScrolling(!!checked)
+                        }
+                      />
+                    </Label>
+                    <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
+                      <span>{t("settings.option.invert_wheel")}</span>
+                      <Checkbox
+                        checked={localInvertWheel}
+                        onCheckedChange={(checked) =>
+                          setLocalInvertWheel(!!checked)
+                        }
+                      />
+                    </Label>
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span>{t("settings.option.scroll_sensitivity")}</span>
+                      <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                        {localScrollSensitivity}
+                      </span>
+                    </div>
+                    <Slider
+                      min={50}
+                      max={500}
+                      step={10}
+                      value={[localScrollSensitivity]}
+                      onValueChange={(values) =>
+                        setLocalScrollSensitivity(values[0])
                       }
                     />
-                  </Label>
-                  <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
-                    <span>{t("settings.option.invert_wheel")}</span>
-                    <Checkbox
-                      checked={localInvertWheel}
-                      onCheckedChange={(checked) =>
-                        setLocalInvertWheel(!!checked)
+                    <p className="text-[10px] text-muted-foreground">
+                      {t("settings.hint.scroll_sensitivity")}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    {t("settings.option.interaction_tweaks")}
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span>{t("settings.option.scroll_debounce")}</span>
+                      <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                        {localScrollDebounce}ms
+                      </span>
+                    </div>
+                    <Slider
+                      min={50}
+                      max={500}
+                      step={10}
+                      value={[localScrollDebounce]}
+                      onValueChange={(values) =>
+                        setLocalScrollDebounce(values[0])
                       }
                     />
-                  </Label>
-                </div>
-
-                <div className="space-y-2 pt-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span>{t("settings.option.scroll_sensitivity")}</span>
-                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                      {localScrollSensitivity}
-                    </span>
                   </div>
-                  <Slider
-                    min={50}
-                    max={500}
-                    step={10}
-                    value={[localScrollSensitivity]}
-                    onValueChange={(values) =>
-                      setLocalScrollSensitivity(values[0])
-                    }
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    {t("settings.hint.scroll_sensitivity")}
-                  </p>
-                </div>
-              </div>
 
-              <div className="space-y-3">
-                <div className="text-xs font-medium text-muted-foreground">
-                  {t("settings.option.interaction_tweaks")}
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span>{t("settings.option.scroll_debounce")}</span>
-                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                      {localScrollDebounce}ms
-                    </span>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span>{t("settings.option.scroll_threshold")}</span>
+                      <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                        {localScrollThreshold}px
+                      </span>
+                    </div>
+                    <Slider
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={[localScrollThreshold]}
+                      onValueChange={(values) =>
+                        setLocalScrollThreshold(values[0])
+                      }
+                    />
                   </div>
-                  <Slider
-                    min={50}
-                    max={500}
-                    step={10}
-                    value={[localScrollDebounce]}
-                    onValueChange={(values) =>
-                      setLocalScrollDebounce(values[0])
-                    }
-                  />
-                </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span>{t("settings.option.scroll_threshold")}</span>
-                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                      {localScrollThreshold}px
-                    </span>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span>{t("settings.option.zoom_step")}</span>
+                      <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                        {Math.round(localZoomStep * 100)}%
+                      </span>
+                    </div>
+                    <Slider
+                      min={0.05}
+                      max={0.5}
+                      step={0.05}
+                      value={[localZoomStep]}
+                      onValueChange={(values) => setLocalZoomStep(values[0])}
+                    />
                   </div>
-                  <Slider
-                    min={0}
-                    max={100}
-                    step={5}
-                    value={[localScrollThreshold]}
-                    onValueChange={(values) =>
-                      setLocalScrollThreshold(values[0])
-                    }
-                  />
                 </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span>{t("settings.option.zoom_step")}</span>
-                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                      {Math.round(localZoomStep * 100)}%
-                    </span>
-                  </div>
-                  <Slider
-                    min={0.05}
-                    max={0.5}
-                    step={0.05}
-                    value={[localZoomStep]}
-                    onValueChange={(values) => setLocalZoomStep(values[0])}
-                  />
-                </div>
-              </div>
               </div>
             </TabsContent>
 
@@ -777,56 +757,47 @@ export function PDFSettingsDialog({
                       <span className="text-sm font-medium">
                         {t("settings.option.color_theme")}
                       </span>
-                      <div className="flex flex-wrap gap-2 rounded-lg border bg-muted/70 p-1">
-                        <Button
-                          type="button"
-                          variant={
-                            localThemeMode === "light" ? "default" : "ghost"
-                          }
-                          size="sm"
-                          className="h-8 px-3 text-xs"
-                          onClick={() => handleThemeChange("light")}
+                      <ToggleGroup
+                        type="single"
+                        value={localThemeMode}
+                        onValueChange={(value) => {
+                          if (value)
+                            handleThemeChange(
+                              value as "light" | "dark" | "sepia" | "auto"
+                            );
+                        }}
+                        variant="outline"
+                        className="flex flex-wrap justify-start rounded-lg border bg-muted/70 p-1"
+                      >
+                        <ToggleGroupItem
+                          value="light"
+                          className="h-8 px-3 text-xs gap-1"
                         >
-                          <Sun className="mr-1 h-3.5 w-3.5" />
+                          <Sun className="h-3.5 w-3.5" />
                           {t("settings.option.light")}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={
-                            localThemeMode === "dark" ? "default" : "ghost"
-                          }
-                          size="sm"
-                          className="h-8 px-3 text-xs"
-                          onClick={() => handleThemeChange("dark")}
+                        </ToggleGroupItem>
+                        <ToggleGroupItem
+                          value="dark"
+                          className="h-8 px-3 text-xs gap-1"
                         >
-                          <Moon className="mr-1 h-3.5 w-3.5" />
+                          <Moon className="h-3.5 w-3.5" />
                           {t("settings.option.dark")}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={
-                            localThemeMode === "sepia" ? "default" : "ghost"
-                          }
-                          size="sm"
-                          className="h-8 px-3 text-xs"
-                          onClick={() => handleThemeChange("sepia")}
+                        </ToggleGroupItem>
+                        <ToggleGroupItem
+                          value="sepia"
+                          className="h-8 px-3 text-xs gap-1"
                         >
-                          <div className="mr-1 h-3.5 w-3.5 rounded-full border border-amber-900/20 bg-[#f4ecd8]" />
+                          <div className="h-3.5 w-3.5 rounded-full border border-amber-900/20 bg-[#f4ecd8]" />
                           {t("settings.option.sepia")}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={
-                            localThemeMode === "auto" ? "default" : "ghost"
-                          }
-                          size="sm"
-                          className="h-8 px-3 text-xs"
-                          onClick={() => handleThemeChange("auto")}
+                        </ToggleGroupItem>
+                        <ToggleGroupItem
+                          value="auto"
+                          className="h-8 px-3 text-xs gap-1"
                         >
-                          <Monitor className="mr-1 h-3.5 w-3.5" />
+                          <Monitor className="h-3.5 w-3.5" />
                           {t("settings.option.auto")}
-                        </Button>
-                      </div>
+                        </ToggleGroupItem>
+                      </ToggleGroup>
                     </div>
 
                     <div className="space-y-2">
@@ -884,7 +855,9 @@ export function PDFSettingsDialog({
                         <Button
                           type="button"
                           variant={
-                            localPdfLoadingAnimation === "bar" ? "default" : "outline"
+                            localPdfLoadingAnimation === "bar"
+                              ? "default"
+                              : "outline"
                           }
                           size="sm"
                           className="w-full"
@@ -907,7 +880,9 @@ export function PDFSettingsDialog({
                       <div className="flex items-center gap-2">
                         <div
                           className="h-5 w-5 rounded-full border shadow-sm"
-                          style={{ backgroundColor: localSelectedAnnotationColor }}
+                          style={{
+                            backgroundColor: localSelectedAnnotationColor,
+                          }}
                         />
                         <Input
                           type="color"
@@ -939,7 +914,9 @@ export function PDFSettingsDialog({
                       <div className="mt-2 h-2 overflow-hidden rounded bg-muted">
                         <div
                           className="h-full bg-primary transition-all"
-                          style={{ width: `${(localSelectedStrokeWidth / 10) * 100}%` }}
+                          style={{
+                            width: `${(localSelectedStrokeWidth / 10) * 100}%`,
+                          }}
                         />
                       </div>
                     </div>
@@ -951,117 +928,119 @@ export function PDFSettingsDialog({
             {/* Watermark section */}
             <TabsContent value="watermark" className="space-y-4 mt-0">
               <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-3">
-                <div className="text-xs font-medium text-muted-foreground">
-                  {t("settings.option.watermark_text")}
+                <div className="space-y-3">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    {t("settings.option.watermark_text")}
+                  </div>
+                  <Input
+                    value={localWatermarkText}
+                    onChange={(e) => setLocalWatermarkText(e.target.value)}
+                    placeholder={t("settings.placeholder.watermark_text")}
+                    className="h-8"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    {t("settings.hint.watermark_text")}
+                  </p>
                 </div>
-                <Input
-                  value={localWatermarkText}
-                  onChange={(e) => setLocalWatermarkText(e.target.value)}
-                  placeholder={t("settings.placeholder.watermark_text")}
-                  className="h-8"
-                />
-                <p className="text-[10px] text-muted-foreground">
-                  {t("settings.hint.watermark_text")}
-                </p>
-              </div>
 
-              <div className="space-y-3">
-                <div className="text-xs font-medium text-muted-foreground">
-                  {t("settings.option.watermark_style")}
-                </div>
-                <div className="p-3 rounded-lg border bg-card space-y-4">
-                  <label className="flex items-center justify-between gap-2 cursor-pointer">
-                    <span className="text-xs">
-                      {t("settings.option.watermark_color")}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-4 h-4 rounded-full border shadow-sm"
-                        style={{ backgroundColor: localWatermarkColor }}
+                <div className="space-y-3">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    {t("settings.option.watermark_style")}
+                  </div>
+                  <div className="p-3 rounded-lg border bg-card space-y-4">
+                    <label className="flex items-center justify-between gap-2 cursor-pointer">
+                      <span className="text-xs">
+                        {t("settings.option.watermark_color")}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-4 h-4 rounded-full border shadow-sm"
+                          style={{ backgroundColor: localWatermarkColor }}
+                        />
+                        <Input
+                          type="color"
+                          className="h-8 w-16 p-1 cursor-pointer"
+                          value={localWatermarkColor}
+                          onChange={(e) =>
+                            setLocalWatermarkColor(e.target.value)
+                          }
+                        />
+                      </div>
+                    </label>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span>{t("settings.option.opacity")}</span>
+                        <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                          {Math.round(localWatermarkOpacity * 100)}%
+                        </span>
+                      </div>
+                      <Slider
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        value={[localWatermarkOpacity]}
+                        onValueChange={(values) =>
+                          setLocalWatermarkOpacity(values[0])
+                        }
                       />
-                      <Input
-                        type="color"
-                        className="h-8 w-16 p-1 cursor-pointer"
-                        value={localWatermarkColor}
-                        onChange={(e) => setLocalWatermarkColor(e.target.value)}
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span>{t("settings.option.size")}</span>
+                        <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                          {localWatermarkSize}px
+                        </span>
+                      </div>
+                      <Slider
+                        min={12}
+                        max={128}
+                        step={4}
+                        value={[localWatermarkSize]}
+                        onValueChange={(values) =>
+                          setLocalWatermarkSize(values[0])
+                        }
                       />
                     </div>
-                  </label>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span>{t("settings.option.opacity")}</span>
-                      <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                        {Math.round(localWatermarkOpacity * 100)}%
-                      </span>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span>{t("settings.option.watermark_gap_x")}</span>
+                        <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                          x{localWatermarkGapX}
+                        </span>
+                      </div>
+                      <Slider
+                        min={0.5}
+                        max={5.0}
+                        step={0.1}
+                        value={[localWatermarkGapX]}
+                        onValueChange={(values) =>
+                          setLocalWatermarkGapX(values[0])
+                        }
+                      />
                     </div>
-                    <Slider
-                      min={0}
-                      max={1}
-                      step={0.05}
-                      value={[localWatermarkOpacity]}
-                      onValueChange={(values) =>
-                        setLocalWatermarkOpacity(values[0])
-                      }
-                    />
-                  </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span>{t("settings.option.size")}</span>
-                      <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                        {localWatermarkSize}px
-                      </span>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span>{t("settings.option.watermark_gap_y")}</span>
+                        <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                          x{localWatermarkGapY}
+                        </span>
+                      </div>
+                      <Slider
+                        min={1.0}
+                        max={10.0}
+                        step={0.5}
+                        value={[localWatermarkGapY]}
+                        onValueChange={(values) =>
+                          setLocalWatermarkGapY(values[0])
+                        }
+                      />
                     </div>
-                    <Slider
-                      min={12}
-                      max={128}
-                      step={4}
-                      value={[localWatermarkSize]}
-                      onValueChange={(values) =>
-                        setLocalWatermarkSize(values[0])
-                      }
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span>{t("settings.option.watermark_gap_x")}</span>
-                      <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                        x{localWatermarkGapX}
-                      </span>
-                    </div>
-                    <Slider
-                      min={0.5}
-                      max={5.0}
-                      step={0.1}
-                      value={[localWatermarkGapX]}
-                      onValueChange={(values) =>
-                        setLocalWatermarkGapX(values[0])
-                      }
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span>{t("settings.option.watermark_gap_y")}</span>
-                      <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                        x{localWatermarkGapY}
-                      </span>
-                    </div>
-                    <Slider
-                      min={1.0}
-                      max={10.0}
-                      step={0.5}
-                      value={[localWatermarkGapY]}
-                      onValueChange={(values) =>
-                        setLocalWatermarkGapY(values[0])
-                      }
-                    />
                   </div>
                 </div>
-              </div>
               </div>
             </TabsContent>
 
@@ -1069,98 +1048,100 @@ export function PDFSettingsDialog({
             {isTauri() && (
               <TabsContent value="system" className="space-y-4 mt-0">
                 <div className="grid gap-6 sm:grid-cols-2">
-                <div className="space-y-3">
-                  <div className="text-xs font-medium text-muted-foreground">
-                    {t("settings.option.behavior")}
+                  <div className="space-y-3">
+                    <div className="text-xs font-medium text-muted-foreground">
+                      {t("settings.option.behavior")}
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
+                        <span>{t("settings.option.auto_check_update")}</span>
+                        <Checkbox
+                          checked={localAutoCheckUpdate}
+                          onCheckedChange={(checked) =>
+                            setLocalAutoCheckUpdate(!!checked)
+                          }
+                        />
+                      </Label>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center justify-between gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border/50 transition-colors">
-                      <span>{t("settings.option.auto_check_update")}</span>
-                      <Checkbox
-                        checked={localAutoCheckUpdate}
-                        onCheckedChange={(checked) =>
-                          setLocalAutoCheckUpdate(!!checked)
-                        }
-                      />
-                    </Label>
-                  </div>
-                </div>
 
-                <div className="space-y-3">
-                  <div className="text-xs font-medium text-muted-foreground">
-                    {t("settings.section.system")}
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCheckUpdate}
-                      disabled={isCheckingUpdate}
-                      className="justify-between"
-                    >
-                      {isCheckingUpdate ? (
-                        <>
-                          {t("update.checking")}
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        </>
-                      ) : (
-                        <>
-                          {t("settings.option.check_update")}
-                          <RefreshCcw className="h-3.5 w-3.5" />
-                        </>
-                      )}
-                    </Button>
-
-                    {updateStatus && (
-                      <div
-                        className={`text-xs p-2 rounded border ${
-                          updateStatus.available
-                            ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
-                            : "bg-muted"
-                        }`}
+                  <div className="space-y-3">
+                    <div className="text-xs font-medium text-muted-foreground">
+                      {t("settings.section.system")}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCheckUpdate}
+                        disabled={isCheckingUpdate}
+                        className="justify-between"
                       >
-                        {updateStatus.available ? (
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-1 font-medium">
-                              <AlertCircle className="h-3 w-3" />
-                              {t("message.update_available", {
-                                version: updateStatus.version,
-                              })}
-                            </div>
-                            {updateStatus.body && (
-                              <p className="opacity-90">{updateStatus.body}</p>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="default"
-                              className="h-6 text-xs w-full mt-1"
-                              onClick={() => installAppUpdate()}
-                            >
-                              Install & Relaunch
-                            </Button>
-                          </div>
+                        {isCheckingUpdate ? (
+                          <>
+                            {t("update.checking")}
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          </>
                         ) : (
-                          <div className="flex items-center gap-1">
-                            <Check className="h-3 w-3" />
-                            {updateStatus.error || t("message.no_update")}
-                          </div>
+                          <>
+                            {t("settings.option.check_update")}
+                            <RefreshCcw className="h-3.5 w-3.5" />
+                          </>
                         )}
-                      </div>
-                    )}
+                      </Button>
 
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleTestNotification}
-                      className="justify-between"
-                    >
-                      {t("settings.option.test_notification")}
-                      <Bell className="h-3.5 w-3.5" />
-                    </Button>
+                      {updateStatus && (
+                        <div
+                          className={`text-xs p-2 rounded border ${
+                            updateStatus.available
+                              ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
+                              : "bg-muted"
+                          }`}
+                        >
+                          {updateStatus.available ? (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1 font-medium">
+                                <AlertCircle className="h-3 w-3" />
+                                {t("message.update_available", {
+                                  version: updateStatus.version,
+                                })}
+                              </div>
+                              {updateStatus.body && (
+                                <p className="opacity-90">
+                                  {updateStatus.body}
+                                </p>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="default"
+                                className="h-6 text-xs w-full mt-1"
+                                onClick={() => installAppUpdate()}
+                              >
+                                Install & Relaunch
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <Check className="h-3 w-3" />
+                              {updateStatus.error || t("message.no_update")}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleTestNotification}
+                        className="justify-between"
+                      >
+                        {t("settings.option.test_notification")}
+                        <Bell className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
                 </div>
               </TabsContent>
             )}

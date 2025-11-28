@@ -60,6 +60,13 @@ jest.mock("@/lib/pdf-store", () => {
     reorderPages: jest.fn(),
     rotatePage: jest.fn(),
     removePage: jest.fn(),
+    sidebarInitialWidth: 300,
+    scrollSensitivity: 1,
+    scrollDebounce: 100,
+    scrollThreshold: 0.5,
+    enableSmoothScrolling: true,
+    invertWheel: false,
+    zoomStep: 0.1,
   };
 
   return {
@@ -81,7 +88,7 @@ jest.mock("@/lib/tauri-bridge", () => ({
 }));
 
 // Mock URL.createObjectURL
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   global.URL.createObjectURL = jest.fn(() => "blob:test");
   global.URL.revokeObjectURL = jest.fn();
 }
@@ -91,6 +98,15 @@ jest.mock("@/hooks/use-touch-gestures", () => ({
     onTouchStart: jest.fn(),
     onTouchMove: jest.fn(),
     onTouchEnd: jest.fn(),
+  }),
+}));
+
+jest.mock("@/hooks/use-device-orientation", () => ({
+  useDeviceOrientation: () => ({
+    orientation: "portrait",
+    isMobile: false,
+    viewportWidth: 1024,
+    viewportHeight: 768,
   }),
 }));
 
@@ -104,11 +120,19 @@ jest.mock("../pdf-page", () => ({
 jest.mock("../pdf-annotation-layer", () => ({
   PDFAnnotationLayer: () => <div>PDFAnnotationLayer</div>,
 }));
+jest.mock("../pdf-text-layer", () => ({
+  PDFTextLayer: () => <div>PDFTextLayer</div>,
+}));
+jest.mock("../pdf-selection-layer", () => ({
+  PDFSelectionLayer: () => <div>PDFSelectionLayer</div>,
+}));
 jest.mock("../loading-animations", () => ({
   PDFLoadingAnimation: () => <div>Loading...</div>,
 }));
 jest.mock("../signature-dialog", () => ({
-  SignatureDialog: () => <div data-testid="signature-dialog">SignatureDialog</div>,
+  SignatureDialog: () => (
+    <div data-testid="signature-dialog">SignatureDialog</div>
+  ),
 }));
 jest.mock("../pdf-outline", () => ({
   PDFOutline: () => <div data-testid="pdf-outline">PDFOutline</div>,
@@ -117,26 +141,37 @@ jest.mock("../pdf-bookmarks", () => ({
   PDFBookmarks: () => <div data-testid="pdf-bookmarks">PDFBookmarks</div>,
 }));
 jest.mock("../pdf-annotations-list", () => ({
-  PDFAnnotationsList: () => <div data-testid="pdf-annotations-list">PDFAnnotationsList</div>,
+  PDFAnnotationsList: () => (
+    <div data-testid="pdf-annotations-list">PDFAnnotationsList</div>
+  ),
 }));
 jest.mock("../pdf-draggable-thumbnail", () => ({
   PDFDraggableThumbnail: () => <div data-testid="pdf-thumbnail">Thumbnail</div>,
 }));
 
+// Mock AI sidebar to avoid TransformStream issues
+jest.mock("@/components/ai-sidebar/ai-sidebar", () => ({
+  AISidebar: () => <div data-testid="ai-sidebar">AISidebar</div>,
+}));
+
 // Mock dnd-kit
 jest.mock("@dnd-kit/core", () => ({
   ...jest.requireActual("@dnd-kit/core"),
-  DndContext: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DndContext: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
   useSensor: jest.fn(),
   useSensors: jest.fn(),
 }));
 
 describe("PDFViewer", () => {
-  const mockFile = new File(["dummy content"], "test.pdf", { type: "application/pdf" });
+  const mockFile = new File(["dummy content"], "test.pdf", {
+    type: "application/pdf",
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     (loadPDFDocument as jest.Mock).mockResolvedValue({
       numPages: 10,
       getMetadata: jest.fn().mockResolvedValue({}),
@@ -156,11 +191,15 @@ describe("PDFViewer", () => {
 
   it("loads PDF and renders toolbar", async () => {
     render(<PDFViewer file={mockFile} onClose={jest.fn()} />);
-    
+
     await waitFor(() => {
-      expect(loadPDFDocument).toHaveBeenCalledWith(mockFile, expect.any(Function), undefined);
+      expect(loadPDFDocument).toHaveBeenCalledWith(
+        mockFile,
+        expect.any(Function),
+        undefined
+      );
     });
-    
+
     await waitFor(() => {
       expect(screen.getByTestId("pdf-toolbar")).toBeInTheDocument();
     });
