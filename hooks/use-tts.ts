@@ -19,6 +19,19 @@ export function useTTS() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
+  // Helper to clean up utterance event handlers
+  const cleanupUtterance = useCallback(() => {
+    if (utteranceRef.current) {
+      // Remove all event handlers to prevent memory leaks
+      utteranceRef.current.onstart = null;
+      utteranceRef.current.onend = null;
+      utteranceRef.current.onerror = null;
+      utteranceRef.current.onpause = null;
+      utteranceRef.current.onresume = null;
+      utteranceRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       // Small timeout to ensure we are not blocking main thread and let React handle render cycle
@@ -30,15 +43,31 @@ export function useTTS() {
       };
 
       loadVoices();
-      if (window.speechSynthesis.onvoiceschanged !== undefined) {
-        window.speechSynthesis.onvoiceschanged = loadVoices;
+
+      // Store reference to cleanup on unmount
+      const synth = window.speechSynthesis;
+      if (synth.onvoiceschanged !== undefined) {
+        synth.onvoiceschanged = loadVoices;
       }
+
+      // Cleanup on unmount
+      return () => {
+        // Cancel any ongoing speech
+        synth.cancel();
+        // Remove voices changed handler
+        if (synth.onvoiceschanged !== undefined) {
+          synth.onvoiceschanged = null;
+        }
+      };
     }
   }, []);
 
   const speak = useCallback(
     (text: string, options: TTSOptions = {}) => {
       if (!isSupported) return;
+
+      // Clean up previous utterance handlers before canceling
+      cleanupUtterance();
 
       // Cancel any current speaking
       window.speechSynthesis.cancel();
@@ -59,6 +88,7 @@ export function useTTS() {
       utterance.onend = () => {
         setIsSpeaking(false);
         setIsPaused(false);
+        cleanupUtterance();
         options.onEnd?.();
       };
 
@@ -66,6 +96,7 @@ export function useTTS() {
         console.error("TTS Error:", e);
         setIsSpeaking(false);
         setIsPaused(false);
+        cleanupUtterance();
         options.onError?.(e);
       };
 
@@ -82,7 +113,7 @@ export function useTTS() {
       utteranceRef.current = utterance;
       window.speechSynthesis.speak(utterance);
     },
-    [isSupported]
+    [isSupported, cleanupUtterance]
   );
 
   const pause = useCallback(() => {
@@ -99,10 +130,11 @@ export function useTTS() {
 
   const cancel = useCallback(() => {
     if (!isSupported) return;
+    cleanupUtterance();
     window.speechSynthesis.cancel();
     setIsSpeaking(false);
     setIsPaused(false);
-  }, [isSupported]);
+  }, [isSupported, cleanupUtterance]);
 
   return {
     isSupported,

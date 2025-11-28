@@ -24,9 +24,23 @@ export function useTouchGestures(
     time: number;
   } | null>(null);
   const initialPinchDistance = useRef<number>(0);
-  const lastTapRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const lastTapRef = useRef<{ x: number; y: number; time: number } | null>(
+    null
+  );
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLongPressRef = useRef<boolean>(false);
+
+  // Store options in ref to avoid re-binding event listeners
+  const optionsRef = useRef(options);
+
+  // Update options ref when options change (in effect, not during render)
+  useEffect(() => {
+    optionsRef.current = options;
+  });
+
+  // Throttling refs for pinch zoom
+  const rafIdRef = useRef<number | null>(null);
+  const pendingScaleRef = useRef<number | null>(null);
 
   const clearLongPressTimer = useCallback(() => {
     if (longPressTimerRef.current) {
@@ -39,9 +53,10 @@ export function useTouchGestures(
     const element = elementRef.current;
     if (!element) return;
 
-    const minSwipeDistance = options.minSwipeDistance || 50;
-    const doubleTapDelay = options.doubleTapDelay || 300;
-    const longPressDelay = options.longPressDelay || 500;
+    // Use default values - options accessed via ref
+    const minSwipeDistance = optionsRef.current.minSwipeDistance || 50;
+    const doubleTapDelay = optionsRef.current.doubleTapDelay || 300;
+    const longPressDelay = optionsRef.current.longPressDelay || 500;
 
     const getTouchDistance = (touches: TouchList): number => {
       if (touches.length < 2) return 0;
@@ -66,12 +81,12 @@ export function useTouchGestures(
         isLongPressRef.current = false;
 
         // Start long-press timer
-        if (options.onLongPress) {
+        if (optionsRef.current.onLongPress) {
           clearLongPressTimer();
           longPressTimerRef.current = setTimeout(() => {
             if (touchStartRef.current) {
               isLongPressRef.current = true;
-              options.onLongPress?.(touch.clientX, touch.clientY);
+              optionsRef.current.onLongPress?.(touch.clientX, touch.clientY);
             }
           }, longPressDelay);
         }
@@ -95,19 +110,37 @@ export function useTouchGestures(
       }
 
       if (e.touches.length === 2 && initialPinchDistance.current > 0) {
-        // Pinch zoom
+        // Pinch zoom with requestAnimationFrame throttling
         e.preventDefault();
         const currentDistance = getTouchDistance(e.touches);
         const scale = currentDistance / initialPinchDistance.current;
 
-        if (options.onPinchZoom) {
-          options.onPinchZoom(scale);
+        // Store pending scale and schedule RAF if not already scheduled
+        pendingScaleRef.current = scale;
+
+        if (rafIdRef.current === null) {
+          rafIdRef.current = requestAnimationFrame(() => {
+            rafIdRef.current = null;
+            if (
+              pendingScaleRef.current !== null &&
+              optionsRef.current.onPinchZoom
+            ) {
+              optionsRef.current.onPinchZoom(pendingScaleRef.current);
+            }
+          });
         }
       }
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
       clearLongPressTimer();
+
+      // Cancel any pending pinch zoom animation frame
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+      pendingScaleRef.current = null;
 
       if (e.touches.length === 0 && touchStartRef.current) {
         const touchEnd = e.changedTouches[0];
@@ -128,7 +161,7 @@ export function useTouchGestures(
         // Check for tap (minimal movement and short duration)
         const isTap = absX < 10 && absY < 10 && touchDuration < 300;
 
-        if (isTap && options.onDoubleTap) {
+        if (isTap && optionsRef.current.onDoubleTap) {
           // Check for double-tap
           if (
             lastTapRef.current &&
@@ -143,7 +176,10 @@ export function useTouchGestures(
             if (tapDistance < 50) {
               // Double-tap detected
               e.preventDefault();
-              options.onDoubleTap(touchEnd.clientX, touchEnd.clientY);
+              optionsRef.current.onDoubleTap(
+                touchEnd.clientX,
+                touchEnd.clientY
+              );
               lastTapRef.current = null;
             } else {
               lastTapRef.current = {
@@ -164,17 +200,17 @@ export function useTouchGestures(
           // Swipe gesture
           if (absX > absY) {
             // Horizontal swipe
-            if (deltaX > 0 && options.onSwipeRight) {
-              options.onSwipeRight();
-            } else if (deltaX < 0 && options.onSwipeLeft) {
-              options.onSwipeLeft();
+            if (deltaX > 0 && optionsRef.current.onSwipeRight) {
+              optionsRef.current.onSwipeRight();
+            } else if (deltaX < 0 && optionsRef.current.onSwipeLeft) {
+              optionsRef.current.onSwipeLeft();
             }
           } else {
             // Vertical swipe
-            if (deltaY > 0 && options.onSwipeDown) {
-              options.onSwipeDown();
-            } else if (deltaY < 0 && options.onSwipeUp) {
-              options.onSwipeUp();
+            if (deltaY > 0 && optionsRef.current.onSwipeDown) {
+              optionsRef.current.onSwipeDown();
+            } else if (deltaY < 0 && optionsRef.current.onSwipeUp) {
+              optionsRef.current.onSwipeUp();
             }
           }
         }
@@ -188,6 +224,12 @@ export function useTouchGestures(
 
     const handleTouchCancel = () => {
       clearLongPressTimer();
+      // Cancel any pending pinch zoom animation frame
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+      pendingScaleRef.current = null;
       touchStartRef.current = null;
       isLongPressRef.current = false;
     };
@@ -199,10 +241,15 @@ export function useTouchGestures(
 
     return () => {
       clearLongPressTimer();
+      // Cancel any pending animation frame
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
       element.removeEventListener("touchstart", handleTouchStart);
       element.removeEventListener("touchmove", handleTouchMove);
       element.removeEventListener("touchend", handleTouchEnd);
       element.removeEventListener("touchcancel", handleTouchCancel);
     };
-  }, [elementRef, options, clearLongPressTimer]);
+  }, [elementRef, clearLongPressTimer]); // Removed options - using optionsRef instead
 }
