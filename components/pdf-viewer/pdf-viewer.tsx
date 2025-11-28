@@ -176,11 +176,7 @@ export function PDFViewer({
   const [showBookmarksPanel, setShowBookmarksPanel] = useState(false);
 
   // Device orientation must be called before using isMobile
-  const {
-    orientation,
-    isMobile,
-    isMobileLandscape,
-  } = useDeviceOrientation();
+  const { orientation, isMobile, isMobileLandscape } = useDeviceOrientation();
 
   // AI Sidebar state
   const { isSidebarOpen: _aiSidebarOpen } = useAIChatStore();
@@ -189,7 +185,11 @@ export function PDFViewer({
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("aiSidebarWidth");
       // Use window.innerWidth check instead of isMobile during initialization
-      return stored ? parseInt(stored, 10) : (window.innerWidth < 640 ? 320 : 400);
+      return stored
+        ? parseInt(stored, 10)
+        : window.innerWidth < 640
+          ? 320
+          : 400;
     }
     return 400; // Default for SSR
   });
@@ -293,10 +293,11 @@ export function PDFViewer({
               (file as File & { __nativePath?: string | null }).__nativePath ??
               null;
             let fileCreatedAt: string | undefined;
-            let fileModifiedAt: string | undefined =
-              Number.isFinite(file.lastModified)
-                ? new Date(file.lastModified).toISOString()
-                : undefined;
+            let fileModifiedAt: string | undefined = Number.isFinite(
+              file.lastModified
+            )
+              ? new Date(file.lastModified).toISOString()
+              : undefined;
 
             if (isTauri() && nativePath) {
               const times = await getFileTimes(nativePath);
@@ -624,7 +625,14 @@ export function PDFViewer({
     }, scrollDebounce); // Reuse scroll debounce setting
 
     return () => clearTimeout(timeoutId);
-  }, [currentPageObj, containerWidth, fitMode, rotation, setZoom, scrollDebounce]);
+  }, [
+    currentPageObj,
+    containerWidth,
+    fitMode,
+    rotation,
+    setZoom,
+    scrollDebounce,
+  ]);
 
   // Load thumbnail pages in chunks (lazy loading)
   useEffect(() => {
@@ -811,13 +819,30 @@ export function PDFViewer({
   }, [isFullscreen]);
 
   // Mouse wheel zoom and page turning functionality
+  // Use refs to store current values for the event handler to avoid dependency array issues
+  const wheelSettingsRef = useRef({
+    scrollSensitivity,
+    scrollDebounce,
+    invertWheel,
+    zoomStep,
+  });
+
+  // Update refs when settings change (no event listener re-binding)
+  useEffect(() => {
+    wheelSettingsRef.current = {
+      scrollSensitivity,
+      scrollDebounce,
+      invertWheel,
+      zoomStep,
+    };
+  }, [scrollSensitivity, scrollDebounce, invertWheel, zoomStep]);
+
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
     if (!scrollContainer) return;
 
     let wheelTimeout: NodeJS.Timeout | null = null;
     let accumulatedDelta = 0;
-    const WHEEL_THRESHOLD = scrollSensitivity; // Use user setting
 
     const handleWheel = (e: WheelEvent) => {
       // Skip if scrolling programmatically (during page change)
@@ -825,26 +850,41 @@ export function PDFViewer({
         return;
       }
 
+      // Get current state from store to avoid stale closures
+      const state = usePDFStore.getState();
+      const {
+        zoom: currentZoom,
+        setZoom: doSetZoom,
+        viewMode: currentViewMode,
+        currentPage: page,
+        numPages: totalPages,
+        nextPage: goNextPage,
+        previousPage: goPreviousPage,
+      } = state;
+
+      // Get settings from ref
+      const {
+        scrollSensitivity: sensitivity,
+        scrollDebounce: debounce,
+        invertWheel: invert,
+        zoomStep: step,
+      } = wheelSettingsRef.current;
+
       // Check if Ctrl/Cmd key is pressed for zoom
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
 
-        // Get the current zoom level
-        const currentZoom = zoom;
-
         // Determine zoom direction (negative deltaY = scroll up = zoom in)
-        // Apply invertWheel if set, but usually zoom direction is standard
-        // Let's apply invertWheel only to scrolling, not zooming for now unless requested
-        const zoomDelta = e.deltaY > 0 ? -zoomStep : zoomStep;
+        const zoomDelta = e.deltaY > 0 ? -step : step;
 
         // Calculate new zoom level with limits (50% to 300%)
         const newZoom = Math.min(Math.max(currentZoom + zoomDelta, 0.5), 3.0);
 
         // Apply the new zoom
-        setZoom(newZoom);
+        doSetZoom(newZoom);
       }
       // In single page mode, use wheel for direct page turning
-      else if (viewMode === "single") {
+      else if (currentViewMode === "single") {
         const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
         const isAtTop = scrollTop <= 0;
         const isAtBottom =
@@ -852,34 +892,32 @@ export function PDFViewer({
         const contentOverflows = scrollHeight > clientHeight;
 
         // Apply inversion if enabled
-        const effectiveDeltaY = invertWheel ? -e.deltaY : e.deltaY;
+        const effectiveDeltaY = invert ? -e.deltaY : e.deltaY;
 
         // If content overflows and we're not at the edges, let native scroll happen
-        // Note: We might need to manually handle scroll if invertWheel is true and we are NOT turning pages
         if (contentOverflows && !isAtTop && !isAtBottom) {
-           // If invertWheel is on, we must prevent default and scroll manually
-           if (invertWheel) {
-             e.preventDefault();
-             scrollContainer.scrollTop += effectiveDeltaY;
-           }
-           return;
+          if (invert) {
+            e.preventDefault();
+            scrollContainer.scrollTop += effectiveDeltaY;
+          }
+          return;
         }
 
         // If we are at top but scrolling down (positive delta), let native scroll happen
         if (isAtTop && effectiveDeltaY > 0 && contentOverflows) {
-           if (invertWheel) {
-             e.preventDefault();
-             scrollContainer.scrollTop += effectiveDeltaY;
-           }
+          if (invert) {
+            e.preventDefault();
+            scrollContainer.scrollTop += effectiveDeltaY;
+          }
           return;
         }
 
         // If we are at bottom but scrolling up (negative delta), let native scroll happen
         if (isAtBottom && effectiveDeltaY < 0 && contentOverflows) {
-           if (invertWheel) {
-             e.preventDefault();
-             scrollContainer.scrollTop += effectiveDeltaY;
-           }
+          if (invert) {
+            e.preventDefault();
+            scrollContainer.scrollTop += effectiveDeltaY;
+          }
           return;
         }
 
@@ -897,11 +935,16 @@ export function PDFViewer({
         wheelTimeout = setTimeout(() => {
           if (isScrollingProgrammatically.current) return;
 
-          if (Math.abs(accumulatedDelta) >= WHEEL_THRESHOLD) {
-            if (accumulatedDelta > 0 && currentPage < numPages) {
+          // Re-fetch current state inside timeout to get latest values
+          const latestState = usePDFStore.getState();
+          const latestPage = latestState.currentPage;
+          const latestTotalPages = latestState.numPages;
+
+          if (Math.abs(accumulatedDelta) >= sensitivity) {
+            if (accumulatedDelta > 0 && latestPage < latestTotalPages) {
               // Scrolling down - next page
               isScrollingProgrammatically.current = true;
-              nextPage();
+              latestState.nextPage();
               // Reset scroll to top
               if (scrollContainer) scrollContainer.scrollTop = 0;
 
@@ -909,11 +952,11 @@ export function PDFViewer({
               setTimeout(() => {
                 isScrollingProgrammatically.current = false;
               }, 500);
-            } else if (accumulatedDelta < 0 && currentPage > 1) {
+            } else if (accumulatedDelta < 0 && latestPage > 1) {
               // Scrolling up - previous page
               isScrollingProgrammatically.current = true;
               shouldScrollToBottomRef.current = true;
-              previousPage();
+              latestState.previousPage();
 
               // Reset flag after delay
               setTimeout(() => {
@@ -922,7 +965,7 @@ export function PDFViewer({
             }
           }
           accumulatedDelta = 0;
-        }, scrollDebounce); // Use user setting
+        }, debounce);
       }
     };
 
@@ -935,21 +978,22 @@ export function PDFViewer({
         clearTimeout(wheelTimeout);
       }
     };
-  }, [
-    zoom,
-    setZoom,
-    viewMode,
-    currentPage,
-    numPages,
-    nextPage,
-    previousPage,
-    scrollSensitivity,
-    scrollDebounce,
-    invertWheel,
-    zoomStep,
-  ]);
+  }, []); // Empty dependency array - handler uses getState() for current values
 
   // Auto page turn on vertical scroll
+  // Store scroll settings in ref to avoid re-binding listener
+  const scrollSettingsRef = useRef({
+    scrollThreshold,
+    scrollDebounce,
+  });
+
+  useEffect(() => {
+    scrollSettingsRef.current = {
+      scrollThreshold,
+      scrollDebounce,
+    };
+  }, [scrollThreshold, scrollDebounce]);
+
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
     if (!scrollContainer) return;
@@ -960,17 +1004,31 @@ export function PDFViewer({
         return;
       }
 
+      // Get current state from store
+      const state = usePDFStore.getState();
+      const {
+        viewMode: currentViewMode,
+        currentPage: page,
+        numPages: totalPages,
+        setCurrentPage: doSetCurrentPage,
+        nextPage: goNextPage,
+        previousPage: goPreviousPage,
+      } = state;
+
+      const { scrollDebounce: debounce, scrollThreshold: threshold } =
+        scrollSettingsRef.current;
+
       // Continuous mode: Update current page based on scroll position
-      if (viewMode === "continuous" || viewMode === "twoPage") {
+      if (currentViewMode === "continuous" || currentViewMode === "twoPage") {
         const now = Date.now();
-        if (now - lastThrottleTimeRef.current >= scrollDebounce) {
+        if (now - lastThrottleTimeRef.current >= debounce) {
           lastThrottleTimeRef.current = now;
 
           requestAnimationFrame(() => {
             const containerRect = scrollContainer.getBoundingClientRect();
             // Find the page that is most visible in the container
             let maxVisibleHeight = 0;
-            let bestPage = currentPage;
+            let bestPage = page;
 
             pageRefsMap.current.forEach((element, pageNum) => {
               const rect = element.getBoundingClientRect();
@@ -992,8 +1050,10 @@ export function PDFViewer({
               }
             });
 
-            if (bestPage !== currentPage) {
-              setCurrentPage(bestPage);
+            // Get latest current page to compare
+            const latestPage = usePDFStore.getState().currentPage;
+            if (bestPage !== latestPage) {
+              doSetCurrentPage(bestPage);
             }
           });
         }
@@ -1017,24 +1077,26 @@ export function PDFViewer({
           return;
         }
 
+        // Re-fetch state inside timeout for latest values
+        const latestState = usePDFStore.getState();
+        const latestPage = latestState.currentPage;
+        const latestTotalPages = latestState.numPages;
+
         const scrollTop = scrollContainer.scrollTop;
         const scrollHeight = scrollContainer.scrollHeight;
         const clientHeight = scrollContainer.clientHeight;
-
-        // Threshold for triggering page turn (in pixels)
-        const threshold = scrollThreshold;
 
         // Check if scrolled to the bottom
         if (scrollTop + clientHeight >= scrollHeight - threshold) {
           const scrollDirection = scrollTop - lastScrollTop.current;
 
           // Only trigger if scrolling down
-          if (scrollDirection > 0 && currentPage < numPages) {
+          if (scrollDirection > 0 && latestPage < latestTotalPages) {
             // Set flag BEFORE any async operations
             isScrollingProgrammatically.current = true;
 
             // Advance to next page
-            nextPage();
+            latestState.nextPage();
 
             // Reset scroll to top after a short delay
             setTimeout(() => {
@@ -1054,13 +1116,13 @@ export function PDFViewer({
           const scrollDirection = scrollTop - lastScrollTop.current;
 
           // Only trigger if scrolling up
-          if (scrollDirection < 0 && currentPage > 1) {
+          if (scrollDirection < 0 && latestPage > 1) {
             // Set flag BEFORE any async operations
             isScrollingProgrammatically.current = true;
             shouldScrollToBottomRef.current = true;
 
             // Go to previous page
-            previousPage();
+            latestState.previousPage();
 
             // Reset scroll to bottom after a short delay
             setTimeout(() => {
@@ -1079,7 +1141,7 @@ export function PDFViewer({
 
         // Update last scroll position
         lastScrollTop.current = scrollTop;
-      }, scrollDebounce); // Use user setting
+      }, debounce);
     };
 
     scrollContainer.addEventListener("scroll", handleScroll);
@@ -1091,17 +1153,7 @@ export function PDFViewer({
         clearTimeout(scrollTimeoutRef.current);
       }
     };
-  }, [
-    currentPage,
-    numPages,
-    nextPage,
-    previousPage,
-    viewMode,
-    setCurrentPage,
-    isLoading,
-    scrollThreshold,
-    scrollDebounce,
-  ]);
+  }, []); // Empty dependency array - handler uses getState() for current values
 
   // Handle sidebar resize
   const handleResizeStart = (e: React.MouseEvent) => {
@@ -1387,7 +1439,7 @@ export function PDFViewer({
       const page = await pdfDocument.getPage(pageNumber);
       const scale = 1.5; // Higher scale for better quality
       const viewport = page.getViewport({ scale, rotation });
-      
+
       // Create a canvas to render the page
       const canvas = document.createElement("canvas");
       canvas.width = viewport.width;
@@ -1403,15 +1455,17 @@ export function PDFViewer({
 
       // Convert to data URL
       const dataUrl = canvas.toDataURL("image/png");
-      
+
       // Sync to AI context
       updatePDFContext({
-        pageImages: [{
-          dataUrl,
-          width: viewport.width,
-          height: viewport.height,
-          pageNumber,
-        }],
+        pageImages: [
+          {
+            dataUrl,
+            width: viewport.width,
+            height: viewport.height,
+            pageNumber,
+          },
+        ],
       });
 
       return dataUrl;
@@ -2227,7 +2281,9 @@ export function PDFViewer({
         x={longPressMenu.x}
         y={longPressMenu.y}
         visible={longPressMenu.visible}
-        onClose={() => setLongPressMenu((prev) => ({ ...prev, visible: false }))}
+        onClose={() =>
+          setLongPressMenu((prev) => ({ ...prev, visible: false }))
+        }
         currentPage={currentPage}
       />
     </div>

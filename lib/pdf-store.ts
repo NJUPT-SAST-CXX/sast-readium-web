@@ -1,6 +1,15 @@
 import { create, StateCreator } from "zustand";
 import { persist } from "zustand/middleware";
 
+// Maximum number of undo/redo steps to keep in history
+const MAX_ANNOTATION_HISTORY_SIZE = 50;
+
+// Helper function to limit history array size
+function limitHistorySize<T>(history: T[], maxSize: number): T[] {
+  if (history.length <= maxSize) return history;
+  return history.slice(history.length - maxSize);
+}
+
 export interface PDFMetadata {
   info?: {
     Title?: string;
@@ -730,29 +739,33 @@ export const usePDFStore = create<PDFState>()(
           id: `annotation-${Date.now()}-${Math.random()}`,
           timestamp: Date.now(),
         };
-        set((state) => ({
-          annotations: [...state.annotations, newAnnotation],
-          annotationHistory: {
-            past: [
-              ...state.annotationHistory.past,
-              state.annotationHistory.present,
-            ],
-            present: [...state.annotations, newAnnotation],
-            future: [], // Clear redo stack
-          },
-        }));
+        set((state) => {
+          const newPast = limitHistorySize(
+            [...state.annotationHistory.past, state.annotationHistory.present],
+            MAX_ANNOTATION_HISTORY_SIZE
+          );
+          return {
+            annotations: [...state.annotations, newAnnotation],
+            annotationHistory: {
+              past: newPast,
+              present: [...state.annotations, newAnnotation],
+              future: [], // Clear redo stack
+            },
+          };
+        });
       },
 
       removeAnnotation: (id) => {
         set((state) => {
           const newAnnotations = state.annotations.filter((a) => a.id !== id);
+          const newPast = limitHistorySize(
+            [...state.annotationHistory.past, state.annotationHistory.present],
+            MAX_ANNOTATION_HISTORY_SIZE
+          );
           return {
             annotations: newAnnotations,
             annotationHistory: {
-              past: [
-                ...state.annotationHistory.past,
-                state.annotationHistory.present,
-              ],
+              past: newPast,
               present: newAnnotations,
               future: [], // Clear redo stack
             },
@@ -765,13 +778,14 @@ export const usePDFStore = create<PDFState>()(
           const newAnnotations = state.annotations.map((a) =>
             a.id === id ? { ...a, ...updates } : a
           );
+          const newPast = limitHistorySize(
+            [...state.annotationHistory.past, state.annotationHistory.present],
+            MAX_ANNOTATION_HISTORY_SIZE
+          );
           return {
             annotations: newAnnotations,
             annotationHistory: {
-              past: [
-                ...state.annotationHistory.past,
-                state.annotationHistory.present,
-              ],
+              past: newPast,
               present: newAnnotations,
               future: [], // Clear redo stack
             },
@@ -809,14 +823,15 @@ export const usePDFStore = create<PDFState>()(
 
           const next = state.annotationHistory.future[0];
           const newFuture = state.annotationHistory.future.slice(1);
+          const newPast = limitHistorySize(
+            [...state.annotationHistory.past, state.annotationHistory.present],
+            MAX_ANNOTATION_HISTORY_SIZE
+          );
 
           return {
             annotations: next,
             annotationHistory: {
-              past: [
-                ...state.annotationHistory.past,
-                state.annotationHistory.present,
-              ],
+              past: newPast,
               present: next,
               future: newFuture,
             },
@@ -868,17 +883,20 @@ export const usePDFStore = create<PDFState>()(
           timestamp: Date.now(),
         };
 
-        set((state) => ({
-          annotations: [...state.annotations, newAnnotation],
-          annotationHistory: {
-            past: [
-              ...state.annotationHistory.past,
-              state.annotationHistory.present,
-            ],
-            present: [...state.annotations, newAnnotation],
-            future: [],
-          },
-        }));
+        set((state) => {
+          const newPast = limitHistorySize(
+            [...state.annotationHistory.past, state.annotationHistory.present],
+            MAX_ANNOTATION_HISTORY_SIZE
+          );
+          return {
+            annotations: [...state.annotations, newAnnotation],
+            annotationHistory: {
+              past: newPast,
+              present: [...state.annotations, newAnnotation],
+              future: [],
+            },
+          };
+        });
       },
 
       addImageAnnotation: (
@@ -896,17 +914,20 @@ export const usePDFStore = create<PDFState>()(
           timestamp: Date.now(),
         };
 
-        set((state) => ({
-          annotations: [...state.annotations, newAnnotation],
-          annotationHistory: {
-            past: [
-              ...state.annotationHistory.past,
-              state.annotationHistory.present,
-            ],
-            present: [...state.annotations, newAnnotation],
-            future: [],
-          },
-        }));
+        set((state) => {
+          const newPast = limitHistorySize(
+            [...state.annotationHistory.past, state.annotationHistory.present],
+            MAX_ANNOTATION_HISTORY_SIZE
+          );
+          return {
+            annotations: [...state.annotations, newAnnotation],
+            annotationHistory: {
+              past: newPast,
+              present: [...state.annotations, newAnnotation],
+              future: [],
+            },
+          };
+        });
       },
 
       addSignature: (signature: string) =>
@@ -932,20 +953,26 @@ export const usePDFStore = create<PDFState>()(
         try {
           const importData = JSON.parse(data);
           if (importData.annotations && Array.isArray(importData.annotations)) {
-            set((state) => ({
-              annotations: [...state.annotations, ...importData.annotations],
-              bookmarks: importData.bookmarks
-                ? [...state.bookmarks, ...importData.bookmarks]
-                : state.bookmarks,
-              annotationHistory: {
-                past: [
+            set((state) => {
+              const newPast = limitHistorySize(
+                [
                   ...state.annotationHistory.past,
                   state.annotationHistory.present,
                 ],
-                present: [...state.annotations, ...importData.annotations],
-                future: [],
-              },
-            }));
+                MAX_ANNOTATION_HISTORY_SIZE
+              );
+              return {
+                annotations: [...state.annotations, ...importData.annotations],
+                bookmarks: importData.bookmarks
+                  ? [...state.bookmarks, ...importData.bookmarks]
+                  : state.bookmarks,
+                annotationHistory: {
+                  past: newPast,
+                  present: [...state.annotations, ...importData.annotations],
+                  future: [],
+                },
+              };
+            });
           }
         } catch (error) {
           console.error("Failed to import annotations:", error);
