@@ -7,7 +7,7 @@ import {
   getSystemInfo,
   type AppRuntimeInfo,
   type SystemInfo,
-} from "@/lib/tauri-bridge";
+} from "@/lib/platform";
 
 export function AboutRuntimeInfo() {
   const { t } = useTranslation();

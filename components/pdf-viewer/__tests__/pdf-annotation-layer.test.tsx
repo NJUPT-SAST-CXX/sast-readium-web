@@ -1,8 +1,8 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { PDFAnnotationLayer } from "../pdf-annotation-layer";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 
-jest.mock("@/lib/pdf-store");
+jest.mock("@/lib/pdf");
 
 describe("PDFAnnotationLayer", () => {
   const mockPage = {
@@ -47,7 +47,11 @@ describe("PDFAnnotationLayer", () => {
   it("renders existing annotations", async () => {
     render(
       <PDFAnnotationLayer
-        page={mockPage as unknown as Parameters<typeof PDFAnnotationLayer>[0]["page"]}
+        page={
+          mockPage as unknown as Parameters<
+            typeof PDFAnnotationLayer
+          >[0]["page"]
+        }
         scale={1}
         rotation={0}
         selectedAnnotationType={null}
@@ -55,7 +59,7 @@ describe("PDFAnnotationLayer", () => {
     );
 
     expect(screen.getByText("Test Comment")).toBeInTheDocument();
-    
+
     // Wait for native annotations (links)
     await waitFor(() => {
       const links = document.querySelectorAll("a");
@@ -66,7 +70,11 @@ describe("PDFAnnotationLayer", () => {
   it("handles drawing new annotation", () => {
     render(
       <PDFAnnotationLayer
-        page={mockPage as unknown as Parameters<typeof PDFAnnotationLayer>[0]["page"]}
+        page={
+          mockPage as unknown as Parameters<
+            typeof PDFAnnotationLayer
+          >[0]["page"]
+        }
         scale={1}
         rotation={0}
         selectedAnnotationType="highlight"
@@ -91,7 +99,11 @@ describe("PDFAnnotationLayer", () => {
   it("handles adding text annotation", () => {
     render(
       <PDFAnnotationLayer
-        page={mockPage as unknown as Parameters<typeof PDFAnnotationLayer>[0]["page"]}
+        page={
+          mockPage as unknown as Parameters<
+            typeof PDFAnnotationLayer
+          >[0]["page"]
+        }
         scale={1}
         rotation={0}
         selectedAnnotationType="text"
@@ -102,7 +114,7 @@ describe("PDFAnnotationLayer", () => {
     if (!container) throw new Error("Container not found");
 
     fireEvent.mouseDown(container, { clientX: 100, clientY: 100 });
-    
+
     const input = screen.getByPlaceholderText("Enter text...");
     fireEvent.change(input, { target: { value: "New Text" } });
     fireEvent.keyDown(input, { key: "Enter" });

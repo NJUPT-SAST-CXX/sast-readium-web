@@ -4,7 +4,7 @@
 
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ResearchWorkflowDisplay, ResearchInput } from "../research-workflow";
-import type { ResearchWorkflow } from "@/lib/ai-chat-store";
+import type { ResearchWorkflow } from "@/lib/ai/core";
 
 // Mock react-i18next
 jest.mock("react-i18next", () => ({

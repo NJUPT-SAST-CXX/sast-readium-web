@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { ChevronRight, ChevronDown, BookOpen, Search, X } from "lucide-react";
-import { PDFOutlineNode } from "@/lib/pdf-store";
+import { PDFOutlineNode } from "@/lib/pdf";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";

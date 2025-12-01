@@ -4,9 +4,9 @@
  */
 
 import { useState, useCallback } from "react";
-import { useAIChatStore } from "@/lib/ai-chat-store";
-import { chatStream, type AIServiceConfig } from "@/lib/ai-service";
-import { getAPIKeySecurely } from "@/lib/tauri-bridge-ai";
+import { useAIChatStore } from "@/lib/ai/core";
+import { chatStream, type AIServiceConfig } from "@/lib/ai/core";
+import { getAPIKeySecurely } from "@/lib/platform";
 
 // Report template types
 export type ReportTemplateType =

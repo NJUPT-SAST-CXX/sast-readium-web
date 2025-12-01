@@ -2,11 +2,22 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useAIChatStore, type ResearchWorkflow, type ResearchStep, type ResearchStepStatus } from "@/lib/ai-chat-store";
+import {
+  useAIChatStore,
+  type ResearchWorkflow,
+  type ResearchStep,
+  type ResearchStepStatus,
+} from "@/lib/ai/core";
 import { useDeepResearch } from "@/hooks/use-deep-research";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -29,7 +40,13 @@ import {
   ChainOfThoughtContent,
   ChainOfThoughtStep,
 } from "@/components/ai-elements/chain-of-thought";
-import { Tool, ToolHeader, ToolContent, ToolInput, ToolOutput } from "@/components/ai-elements/tool";
+import {
+  Tool,
+  ToolHeader,
+  ToolContent,
+  ToolInput,
+  ToolOutput,
+} from "@/components/ai-elements/tool";
 import {
   Search,
   FileSearch,
@@ -62,12 +79,27 @@ const STEP_ICONS: Record<string, React.ReactNode> = {
 // Status badge component
 function StatusBadge({ status }: { status: ResearchStepStatus }) {
   const { t } = useTranslation();
-  const variants: Record<ResearchStepStatus, { variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
+  const variants: Record<
+    ResearchStepStatus,
+    {
+      variant: "default" | "secondary" | "destructive" | "outline";
+      icon: React.ReactNode;
+    }
+  > = {
     pending: { variant: "outline", icon: <Clock className="h-3 w-3" /> },
-    running: { variant: "default", icon: <Loader2 className="h-3 w-3 animate-spin" /> },
-    complete: { variant: "secondary", icon: <CheckCircle className="h-3 w-3 text-green-500" /> },
+    running: {
+      variant: "default",
+      icon: <Loader2 className="h-3 w-3 animate-spin" />,
+    },
+    complete: {
+      variant: "secondary",
+      icon: <CheckCircle className="h-3 w-3 text-green-500" />,
+    },
     error: { variant: "destructive", icon: <XCircle className="h-3 w-3" /> },
-    skipped: { variant: "outline", icon: <Clock className="h-3 w-3 text-muted-foreground" /> },
+    skipped: {
+      variant: "outline",
+      icon: <Clock className="h-3 w-3 text-muted-foreground" />,
+    },
   };
 
   const { variant, icon } = variants[status];
@@ -81,22 +113,34 @@ function StatusBadge({ status }: { status: ResearchStepStatus }) {
 }
 
 // Research step card component
-function ResearchStepCard({ step, isActive }: { step: ResearchStep; isActive: boolean }) {
+function ResearchStepCard({
+  step,
+  isActive,
+}: {
+  step: ResearchStep;
+  isActive: boolean;
+}) {
   const { t } = useTranslation();
 
   return (
-    <Card className={cn(
-      "transition-all duration-300",
-      isActive && "ring-2 ring-primary/50 shadow-lg",
-      step.status === "complete" && "opacity-80"
-    )}>
+    <Card
+      className={cn(
+        "transition-all duration-300",
+        isActive && "ring-2 ring-primary/50 shadow-lg",
+        step.status === "complete" && "opacity-80"
+      )}
+    >
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className={cn(
-              "p-1.5 rounded-md",
-              step.status === "running" ? "bg-primary/10 text-primary" : "bg-muted"
-            )}>
+            <div
+              className={cn(
+                "p-1.5 rounded-md",
+                step.status === "running"
+                  ? "bg-primary/10 text-primary"
+                  : "bg-muted"
+              )}
+            >
               {STEP_ICONS[step.type] || <Brain className="h-4 w-4" />}
             </div>
             <CardTitle className="text-sm font-medium">{step.title}</CardTitle>
@@ -104,7 +148,9 @@ function ResearchStepCard({ step, isActive }: { step: ResearchStep; isActive: bo
           <StatusBadge status={step.status} />
         </div>
         {step.description && (
-          <CardDescription className="text-xs">{step.description}</CardDescription>
+          <CardDescription className="text-xs">
+            {step.description}
+          </CardDescription>
         )}
       </CardHeader>
 
@@ -119,7 +165,13 @@ function ResearchStepCard({ step, isActive }: { step: ResearchStep; isActive: bo
               <ChainOfThoughtContent>
                 <ChainOfThoughtStep
                   label={step.title}
-                  status={step.status === "complete" ? "complete" : step.status === "running" ? "active" : "pending"}
+                  status={
+                    step.status === "complete"
+                      ? "complete"
+                      : step.status === "running"
+                        ? "active"
+                        : "pending"
+                  }
                 >
                   <div className="text-xs text-muted-foreground whitespace-pre-wrap max-h-40 overflow-y-auto">
                     {step.reasoning}
@@ -134,11 +186,12 @@ function ResearchStepCard({ step, isActive }: { step: ResearchStep; isActive: bo
             <div className="mt-2 space-y-2">
               {step.toolCalls.map((toolCall) => {
                 // Map SimpleToolInvocation state to ToolState
-                const toolState = toolCall.state === "result" 
-                  ? "output-available" as const
-                  : toolCall.state === "error" 
-                    ? "output-error" as const
-                    : "input-available" as const;
+                const toolState =
+                  toolCall.state === "result"
+                    ? ("output-available" as const)
+                    : toolCall.state === "error"
+                      ? ("output-error" as const)
+                      : ("input-available" as const);
                 return (
                   <Tool key={toolCall.toolCallId} defaultOpen={false}>
                     <ToolHeader
@@ -148,7 +201,10 @@ function ResearchStepCard({ step, isActive }: { step: ResearchStep; isActive: bo
                     />
                     <ToolContent>
                       <ToolInput input={toolCall.input} />
-                      <ToolOutput output={toolCall.output} errorText={undefined} />
+                      <ToolOutput
+                        output={toolCall.output}
+                        errorText={undefined}
+                      />
                     </ToolContent>
                   </Tool>
                 );
@@ -175,13 +231,22 @@ interface ResearchWorkflowDisplayProps {
   onClear?: () => void;
 }
 
-export function ResearchWorkflowDisplay({ workflow, onCancel, onClear }: ResearchWorkflowDisplayProps) {
+export function ResearchWorkflowDisplay({
+  workflow,
+  onCancel,
+  onClear,
+}: ResearchWorkflowDisplayProps) {
   const { t } = useTranslation();
   const progress = Math.round(
-    (workflow.steps.filter((s) => s.status === "complete").length / Math.max(workflow.steps.length, 1)) * 100
+    (workflow.steps.filter((s) => s.status === "complete").length /
+      Math.max(workflow.steps.length, 1)) *
+      100
   );
 
-  const isRunning = workflow.status === "planning" || workflow.status === "researching" || workflow.status === "synthesizing";
+  const isRunning =
+    workflow.status === "planning" ||
+    workflow.status === "researching" ||
+    workflow.status === "synthesizing";
   const isComplete = workflow.status === "complete";
   const isError = workflow.status === "error";
 
@@ -205,7 +270,9 @@ export function ResearchWorkflowDisplay({ workflow, onCancel, onClear }: Researc
           {/* Progress */}
           <div className="mb-4">
             <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-muted-foreground">{t("ai.research_progress")}</span>
+              <span className="text-muted-foreground">
+                {t("ai.research_progress")}
+              </span>
               <span className="font-medium">{progress}%</span>
             </div>
             <Progress value={progress} className="h-2" />
@@ -213,7 +280,10 @@ export function ResearchWorkflowDisplay({ workflow, onCancel, onClear }: Researc
 
           {/* Research Plan */}
           {workflow.plan && (
-            <Reasoning isStreaming={isRunning && !workflow.plan} defaultOpen={false}>
+            <Reasoning
+              isStreaming={isRunning && !workflow.plan}
+              defaultOpen={false}
+            >
               <ReasoningTrigger />
               <ReasoningContent>{workflow.plan}</ReasoningContent>
             </Reasoning>
@@ -243,7 +313,9 @@ export function ResearchWorkflowDisplay({ workflow, onCancel, onClear }: Researc
               </CardHeader>
               <CardContent>
                 <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <div className="whitespace-pre-wrap text-sm">{workflow.finalReport}</div>
+                  <div className="whitespace-pre-wrap text-sm">
+                    {workflow.finalReport}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -303,7 +375,9 @@ export function ResearchInput({ onStart, disabled }: ResearchInputProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="space-y-2">
-        <label className="text-sm font-medium">{t("ai.research_question")}</label>
+        <label className="text-sm font-medium">
+          {t("ai.research_question")}
+        </label>
         <textarea
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -312,7 +386,11 @@ export function ResearchInput({ onStart, disabled }: ResearchInputProps) {
           disabled={disabled}
         />
       </div>
-      <Button type="submit" className="w-full" disabled={disabled || !query.trim()}>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={disabled || !query.trim()}
+      >
         {disabled ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -333,7 +411,8 @@ export function ResearchInput({ onStart, disabled }: ResearchInputProps) {
 export function ResearchPanel() {
   const { t } = useTranslation();
   const { currentResearch } = useAIChatStore();
-  const { isResearching, startResearch, cancelResearch, clearResearch } = useDeepResearch();
+  const { isResearching, startResearch, cancelResearch, clearResearch } =
+    useDeepResearch();
 
   return (
     <div className="h-full flex flex-col">
@@ -381,4 +460,3 @@ export function ResearchPanel() {
     </div>
   );
 }
-

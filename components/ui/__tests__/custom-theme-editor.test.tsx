@@ -5,7 +5,7 @@ import {
   useCustomThemeStore,
   DEFAULT_THEME_COLORS,
   BUILTIN_THEMES,
-} from "@/lib/custom-theme-store";
+} from "@/lib/ui";
 
 // Mock i18next
 jest.mock("react-i18next", () => ({

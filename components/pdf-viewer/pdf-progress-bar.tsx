@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, FormEvent, ChangeEvent } from "react";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";

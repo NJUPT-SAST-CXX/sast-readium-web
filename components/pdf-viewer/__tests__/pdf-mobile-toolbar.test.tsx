@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { PDFMobileToolbar } from "../pdf-mobile-toolbar";
-import { usePDFStore } from "@/lib/pdf-store";
-import { useAIChatStore } from "@/lib/ai-chat-store";
+import { usePDFStore } from "@/lib/pdf";
+import { useAIChatStore } from "@/lib/ai/core";
 
 // Mock react-i18next
 jest.mock("react-i18next", () => ({
@@ -11,10 +11,10 @@ jest.mock("react-i18next", () => ({
 }));
 
 // Mock pdf-store
-jest.mock("@/lib/pdf-store");
+jest.mock("@/lib/pdf");
 
 // Mock ai-chat-store
-jest.mock("@/lib/ai-chat-store");
+jest.mock("@/lib/ai/core");
 
 describe("PDFMobileToolbar", () => {
   const mockPDFStore = {

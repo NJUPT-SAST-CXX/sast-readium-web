@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, type FormEvent } from "react";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 import { useTranslation } from "react-i18next";
 import {
   Popover,

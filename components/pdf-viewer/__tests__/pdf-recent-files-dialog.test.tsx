@@ -1,9 +1,9 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { PDFRecentFilesDialog } from "../pdf-recent-files-dialog";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 
-jest.mock("@/lib/pdf-store");
-jest.mock("@/lib/tauri-bridge", () => ({
+jest.mock("@/lib/pdf");
+jest.mock("@/lib/platform", () => ({
   isTauri: jest.fn().mockReturnValue(false),
   readPdfFileAtPath: jest.fn(),
   revealInFileManager: jest.fn(),

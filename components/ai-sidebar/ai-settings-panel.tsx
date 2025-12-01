@@ -13,7 +13,7 @@ import {
   type BuiltInProvider,
   type QuickCommand,
   type PromptTemplate,
-} from "@/lib/ai-chat-store";
+} from "@/lib/ai/core";
 import {
   MCP_SERVER_PRESETS,
   createMCPServerFromPreset,
@@ -26,7 +26,7 @@ import {
   isStdioMCPAvailable,
   type MCPServerConfig,
   type MCPConnectionStatus,
-} from "@/lib/mcp-client";
+} from "@/lib/ai/core";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -40,8 +40,8 @@ import {
   getAPIKeySecurely,
   deleteAPIKeySecurely,
   getStorageRecommendation,
-} from "@/lib/tauri-bridge-ai";
-import { validateAPIKey, testConnection } from "@/lib/ai-service";
+} from "@/lib/platform";
+import { validateAPIKey, testConnection } from "@/lib/ai/core";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

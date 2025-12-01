@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   CircleCheckIcon,
@@ -6,13 +6,13 @@ import {
   Loader2Icon,
   OctagonXIcon,
   TriangleAlertIcon,
-} from "lucide-react"
-import { usePDFStore } from "@/lib/pdf-store"
-import { Toaster as Sonner, type ToasterProps } from "sonner"
+} from "lucide-react";
+import { usePDFStore } from "@/lib/pdf";
+import { Toaster as Sonner, type ToasterProps } from "sonner";
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const isDarkMode = usePDFStore((state) => state.isDarkMode)
-  const theme = isDarkMode ? "dark" : "light"
+  const isDarkMode = usePDFStore((state) => state.isDarkMode);
+  const theme = isDarkMode ? "dark" : "light";
 
   return (
     <Sonner
@@ -36,7 +36,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }
       {...props}
     />
-  )
-}
+  );
+};
 
-export { Toaster }
+export { Toaster };

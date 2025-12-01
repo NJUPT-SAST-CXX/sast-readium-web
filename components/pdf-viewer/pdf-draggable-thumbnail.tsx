@@ -5,7 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Trash2, RotateCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PDFThumbnail } from "./pdf-thumbnail";
-import { PDFPageProxy } from "@/lib/pdf-utils";
+import { PDFPageProxy } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
 
 interface PDFDraggableThumbnailProps {

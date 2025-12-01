@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pen, Image as ImageIcon, Trash2, Plus, Eraser } from "lucide-react";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 
 interface SignatureDialogProps {
   open: boolean;

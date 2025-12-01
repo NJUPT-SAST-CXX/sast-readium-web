@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { PDFMenuBar } from "../pdf-menubar";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 
 // Mock react-i18next
 jest.mock("react-i18next", () => ({
@@ -10,7 +10,7 @@ jest.mock("react-i18next", () => ({
 }));
 
 // Mock pdf-store
-jest.mock("@/lib/pdf-store");
+jest.mock("@/lib/pdf");
 
 // Mock LanguageSwitcher
 jest.mock("@/components/language-switcher", () => ({
@@ -32,7 +32,7 @@ jest.mock("../pdf-recent-files-dialog", () => ({
 }));
 
 // Mock tauri-bridge
-jest.mock("@/lib/tauri-bridge", () => ({
+jest.mock("@/lib/platform", () => ({
   isTauri: () => false,
   renameFile: jest.fn(),
 }));

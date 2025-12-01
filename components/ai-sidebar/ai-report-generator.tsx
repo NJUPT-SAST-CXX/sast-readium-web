@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useAIChatStore } from "@/lib/ai-chat-store";
+import { useAIChatStore } from "@/lib/ai/core";
 import {
   useReportTemplate,
   REPORT_TEMPLATES,

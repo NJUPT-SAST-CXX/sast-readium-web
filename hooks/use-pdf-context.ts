@@ -1,10 +1,10 @@
 import { useEffect, useCallback, useMemo } from "react";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 import {
   useAIChatStore,
   type PDFContext,
   type PDFPageImage,
-} from "@/lib/ai-chat-store";
+} from "@/lib/ai/core";
 
 /**
  * Hook to sync PDF state with AI chat context

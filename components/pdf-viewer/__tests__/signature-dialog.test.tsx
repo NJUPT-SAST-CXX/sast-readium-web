@@ -1,8 +1,8 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { SignatureDialog } from "../signature-dialog";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 
-jest.mock("@/lib/pdf-store");
+jest.mock("@/lib/pdf");
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,

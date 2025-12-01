@@ -1,13 +1,13 @@
 import { render } from "@testing-library/react";
 import { PDFTTSReader } from "../pdf-tts-reader";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 import { useTTS } from "@/hooks/use-tts";
 
 // Mock useTTS hook
 jest.mock("@/hooks/use-tts");
 
 // Mock pdf-store
-jest.mock("@/lib/pdf-store");
+jest.mock("@/lib/pdf");
 
 describe("PDFTTSReader", () => {
   const mockTTS = {

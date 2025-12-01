@@ -54,13 +54,13 @@ import {
   DEFAULT_THEME_COLORS,
   BUILTIN_THEMES,
   applyCustomTheme,
-} from "@/lib/custom-theme-store";
+} from "@/lib/ui";
 import { cn } from "@/lib/utils";
 import {
   isTauri,
   exportCustomThemesToFile,
   importCustomThemesFromFile,
-} from "@/lib/tauri-bridge";
+} from "@/lib/platform";
 
 interface ColorInputProps {
   label: string;

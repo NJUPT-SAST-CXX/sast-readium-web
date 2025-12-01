@@ -1,0 +1,195 @@
+site_name: SAST Readium Documentation
+site_description: A modern, feature-rich PDF reader and annotation application
+site_author: NJUPT SAST C++ Group
+site_url: https://njupt-sast-cxx.github.io/sast-readium-web/
+repo_name: NJUPT-SAST-CXX/sast-readium-web
+repo_url: https://github.com/NJUPT-SAST-CXX/sast-readium-web
+
+copyright: Copyright &copy; 2025 SAST - Students' Association for Science and Technology
+
+theme:
+  name: material
+  language: en
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Roboto
+    code: Roboto Mono
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search:
+      lang:
+        - en
+        - zh
+  - i18n:
+      docs_structure: folder
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: zh
+          name: 中文
+          build: true
+          nav_translations:
+            Home: 首页
+            Getting Started: 快速开始
+            Prerequisites: 前置要求
+            Installation: 安装
+            Quick Start: 快速入门
+            Architecture: 架构
+            Overview: 概述
+            Project Structure: 项目结构
+            State Management: 状态管理
+            Styling & Theming: 样式与主题
+            Internationalization: 国际化
+            Features: 功能特性
+            PDF Viewer: PDF 阅读器
+            Annotations: 注释工具
+            Custom Themes: 自定义主题
+            AI Assistant: AI 助手
+            Text-to-Speech: 文本转语音
+            Archive Support: 压缩包支持
+            Keyboard Shortcuts: 键盘快捷键
+            Development: 开发指南
+            Scripts & Commands: 脚本与命令
+            Coding Standards: 编码规范
+            Testing Guide: 测试指南
+            CI/CD Pipeline: CI/CD 流水线
+            Troubleshooting: 故障排除
+            Deployment: 部署
+            Web Deployment: Web 部署
+            Desktop Packaging: 桌面打包
+            Release Process: 发布流程
+            API Reference: API 参考
+            PDF Store: PDF 状态存储
+            AI Service: AI 服务
+            Tauri Commands: Tauri 命令
+            Contributing: 贡献指南
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/NJUPT-SAST-CXX
+    - icon: fontawesome/solid/globe
+      link: https://sast.fun/
+  alternate:
+    - name: English
+      link: /en/
+      lang: en
+    - name: 中文
+      link: /zh/
+      lang: zh
+  generator: false
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: NJUPT-SAST-CXX
+      repo: sast-readium-web
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Prerequisites: getting-started/prerequisites.md
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quick-start.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Project Structure: architecture/project-structure.md
+      - State Management: architecture/state-management.md
+      - Styling & Theming: architecture/styling.md
+      - Internationalization: architecture/i18n.md
+  - Features:
+      - PDF Viewer: features/pdf-viewer.md
+      - Annotations: features/annotations.md
+      - Custom Themes: features/custom-themes.md
+      - AI Assistant: features/ai-assistant.md
+      - Text-to-Speech: features/tts.md
+      - Archive Support: features/archive-support.md
+      - Keyboard Shortcuts: features/keyboard-shortcuts.md
+  - Development:
+      - Scripts & Commands: development/scripts.md
+      - Coding Standards: development/coding-standards.md
+      - Testing Guide: development/testing.md
+      - CI/CD Pipeline: development/ci-cd.md
+      - Troubleshooting: development/troubleshooting.md
+  - Deployment:
+      - Web Deployment: deployment/web.md
+      - Desktop Packaging: deployment/desktop.md
+      - Release Process: deployment/release.md
+  - API Reference:
+      - PDF Store: api/pdf-store.md
+      - AI Service: api/ai-service.md
+      - Tauri Commands: api/tauri-commands.md
+  - Contributing: contributing.md

@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 import { cn } from "@/lib/utils";
 import {
   ChevronLeft,
@@ -28,7 +28,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
-import { useAIChatStore } from "@/lib/ai-chat-store";
+import { useAIChatStore } from "@/lib/ai/core";
 
 interface PDFMobileToolbarProps {
   onSearch: () => void;

@@ -1,8 +1,8 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { PDFProgressBar } from "../pdf-progress-bar";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 
-jest.mock("@/lib/pdf-store");
+jest.mock("@/lib/pdf");
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
@@ -45,14 +45,14 @@ describe("PDFProgressBar", () => {
 
   it("navigates pages", () => {
     render(<PDFProgressBar />);
-    
-    // Find buttons by icon or tooltip. 
+
+    // Find buttons by icon or tooltip.
     // Since we mocked translation, tooltips are keys.
     // Tooltips are in DOM but might need interaction.
-    
+
     // We can try finding by accessible name from tooltip if tooltip renders immediately.
     // Radix Tooltip only renders content when active usually.
-    
+
     // But the buttons have onClick handlers. We can find them by their rendered SVG icons if we could.
     // Let's use getAllByRole("button").
     const buttons = screen.getAllByRole("button");
@@ -61,7 +61,7 @@ describe("PDFProgressBar", () => {
     // 2: previous page
     // 3: next page
     // 4: last page
-    
+
     fireEvent.click(buttons[3]); // Next page
     expect(mockStore.nextPage).toHaveBeenCalled();
   });

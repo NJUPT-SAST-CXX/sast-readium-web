@@ -4,8 +4,8 @@
 
 import { renderHook, act } from "@testing-library/react";
 import { usePDFContext } from "./use-pdf-context";
-import { usePDFStore } from "@/lib/pdf-store";
-import { useAIChatStore } from "@/lib/ai-chat-store";
+import { usePDFStore } from "@/lib/pdf";
+import { useAIChatStore } from "@/lib/ai/core";
 
 // Reset stores before each test
 beforeEach(() => {

@@ -3,75 +3,141 @@
  */
 
 import { renderHook, act } from "@testing-library/react";
-import { useDeepResearch } from "./use-deep-research";
-import { useAIChatStore } from "@/lib/ai-chat-store";
-import * as aiService from "@/lib/ai-service";
-import * as tauriBridgeAI from "@/lib/tauri-bridge-ai";
 
-// Mock dependencies
-jest.mock("@/lib/ai-service", () => ({
+// Helper to create mock research
+interface MockResearch {
+  id: string;
+  query: string;
+  status: "researching" | "completed" | "failed";
+  steps: Array<{
+    id: string;
+    type: string;
+    status: string;
+    title: string;
+    startedAt: number;
+    description?: string;
+  }>;
+  currentStepIndex: number;
+  sources: unknown[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+// Create a mock store state
+const mockStoreState = {
+  settings: {
+    provider: "openai",
+    model: "gpt-4o-mini",
+    temperature: 0.7,
+    maxTokens: 4096,
+    apiKeys: { openai: "test-api-key" } as Record<string, string>,
+    systemPrompt: "You are a helpful assistant.",
+    includePDFContext: true,
+    customProviders: [],
+    mcpServers: [],
+    enableMCPTools: false,
+    enableMultiStepTools: true,
+    maxToolSteps: 5,
+    imageSettings: {
+      model: "dall-e-3",
+      size: "1024x1024",
+      quality: "standard",
+      style: "vivid",
+    },
+    speechSettings: {
+      model: "tts-1",
+      voice: "alloy",
+      speed: 1.0,
+    },
+    transcriptionSettings: {
+      model: "whisper-1",
+      language: undefined,
+    },
+    quickCommands: [],
+    promptTemplates: [],
+    defaultTranslationLanguage: "Chinese",
+  },
+  pdfContext: {
+    fileName: "test.pdf",
+    currentPage: 1,
+    totalPages: 10,
+    pageText: "Test page content",
+  },
+  currentResearch: null as MockResearch | null,
+  conversations: {},
+  currentConversationId: null,
+  startResearch: jest.fn(),
+  addResearchStep: jest.fn(),
+  updateResearchStep: jest.fn(),
+  setResearchPlan: jest.fn(),
+  addResearchSource: jest.fn(),
+  completeResearch: jest.fn(),
+  failResearch: jest.fn(),
+  cancelResearch: jest.fn(),
+  clearCurrentResearch: jest.fn(),
+};
+
+// Helper to update mock store state
+function updateMockStoreState(updater: unknown) {
+  if (typeof updater === "function") {
+    Object.assign(
+      mockStoreState,
+      (updater as (state: typeof mockStoreState) => typeof mockStoreState)(
+        mockStoreState
+      )
+    );
+  } else {
+    Object.assign(mockStoreState, updater);
+  }
+}
+
+// Mock dependencies - these must come after variable definitions
+jest.mock("@/lib/ai/core", () => ({
   chatStream: jest.fn(),
+  useAIChatStore: Object.assign(
+    jest.fn(() => mockStoreState),
+    {
+      getState: () => mockStoreState,
+      setState: (updater: unknown) => {
+        if (typeof updater === "function") {
+          Object.assign(
+            mockStoreState,
+            (
+              updater as (state: typeof mockStoreState) => typeof mockStoreState
+            )(mockStoreState)
+          );
+        } else {
+          Object.assign(mockStoreState, updater);
+        }
+      },
+      subscribe: jest.fn(),
+    }
+  ),
 }));
 
-jest.mock("@/lib/tauri-bridge-ai", () => ({
+jest.mock("@/lib/platform", () => ({
   getAPIKeySecurely: jest.fn(),
+  isTauri: jest.fn(() => false),
 }));
 
-const mockChatStream = aiService.chatStream as jest.MockedFunction<
-  typeof aiService.chatStream
+// Import after mocks are set up
+import { useDeepResearch } from "./use-deep-research";
+import * as aiCore from "@/lib/ai/core";
+import * as platform from "@/lib/platform";
+
+// Get references to mocked functions
+const mockChatStream = aiCore.chatStream as jest.MockedFunction<
+  typeof aiCore.chatStream
 >;
-const mockGetAPIKeySecurely =
-  tauriBridgeAI.getAPIKeySecurely as jest.MockedFunction<
-    typeof tauriBridgeAI.getAPIKeySecurely
-  >;
+const mockGetAPIKeySecurely = platform.getAPIKeySecurely as jest.MockedFunction<
+  typeof platform.getAPIKeySecurely
+>;
 
 // Reset store before each test
 beforeEach(() => {
   jest.clearAllMocks();
-
-  useAIChatStore.setState({
-    settings: {
-      provider: "openai",
-      model: "gpt-4o-mini",
-      temperature: 0.7,
-      maxTokens: 4096,
-      apiKeys: { openai: "test-api-key" },
-      systemPrompt: "You are a helpful assistant.",
-      includePDFContext: true,
-      customProviders: [],
-      mcpServers: [],
-      enableMCPTools: false,
-      enableMultiStepTools: true,
-      maxToolSteps: 5,
-      imageSettings: {
-        model: "dall-e-3",
-        size: "1024x1024",
-        quality: "standard",
-        style: "vivid",
-      },
-      speechSettings: {
-        model: "tts-1",
-        voice: "alloy",
-        speed: 1.0,
-      },
-      transcriptionSettings: {
-        model: "whisper-1",
-        language: undefined,
-      },
-      quickCommands: [],
-      promptTemplates: [],
-      defaultTranslationLanguage: "Chinese",
-    },
-    pdfContext: {
-      fileName: "test.pdf",
-      currentPage: 1,
-      totalPages: 10,
-      pageText: "Test page content",
-    },
-    currentResearch: null,
-    conversations: {},
-    currentConversationId: null,
-  });
+  mockStoreState.currentResearch = null;
+  mockStoreState.settings.apiKeys = { openai: "test-api-key" };
 });
 
 describe("useDeepResearch", () => {
@@ -91,12 +157,12 @@ describe("useDeepResearch", () => {
   describe("startResearch", () => {
     it("should throw error when API key is not configured", async () => {
       mockGetAPIKeySecurely.mockRejectedValue(new Error("No key"));
-      useAIChatStore.setState((state) => ({
+      updateMockStoreState({
         settings: {
-          ...state.settings,
+          ...mockStoreState.settings,
           apiKeys: {},
         },
-      }));
+      });
 
       const { result } = renderHook(() => useDeepResearch());
 
@@ -168,7 +234,7 @@ describe("useDeepResearch", () => {
 
   describe("progress calculation", () => {
     it("should calculate progress based on completed steps", () => {
-      useAIChatStore.setState({
+      updateMockStoreState({
         currentResearch: {
           id: "research_1",
           query: "Test",
@@ -221,7 +287,7 @@ describe("useDeepResearch", () => {
         startedAt: Date.now(),
       };
 
-      useAIChatStore.setState({
+      updateMockStoreState({
         currentResearch: {
           id: "research_1",
           query: "Test",

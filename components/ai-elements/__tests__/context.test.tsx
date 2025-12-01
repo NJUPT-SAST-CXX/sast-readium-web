@@ -37,6 +37,8 @@ describe("Context Components", () => {
     totalTokens: 1500,
     inputTokens: 500,
     outputTokens: 1000,
+    reasoningTokens: 200,
+    cachedInputTokens: 100,
   };
 
   describe("Context", () => {

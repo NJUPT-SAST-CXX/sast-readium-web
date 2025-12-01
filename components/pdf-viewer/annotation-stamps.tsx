@@ -8,7 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { AnnotationStamp } from "@/lib/pdf-store";
+import { AnnotationStamp } from "@/lib/pdf";
 
 interface AnnotationStampsProps {
   onStampSelect: (stamp: AnnotationStamp) => void;

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 import { useTTS } from "@/hooks/use-tts";
-import { PDFPageProxy } from "@/lib/pdf-utils";
+import { PDFPageProxy } from "@/lib/pdf";
 
 interface PDFTTSReaderProps {
   currentPageObj: PDFPageProxy | null;

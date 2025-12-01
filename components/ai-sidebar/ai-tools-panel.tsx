@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useAIChatStore, AI_MODELS } from "@/lib/ai-chat-store";
+import { useAIChatStore, AI_MODELS } from "@/lib/ai/core";
 import { useAIChat } from "@/hooks/use-ai-chat";
 import { usePDFContext } from "@/hooks/use-pdf-context";
 import {
@@ -18,7 +18,7 @@ import {
   SPEECH_MODELS,
   SPEECH_VOICES,
   TRANSCRIPTION_MODELS,
-} from "@/lib/ai-providers";
+} from "@/lib/ai/core";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -72,7 +72,7 @@ import {
 } from "@/components/ui/select";
 import { Loader } from "@/components/ai-elements/loader";
 import { cn } from "@/lib/utils";
-import type { ImageSize, SpeechVoice } from "@/lib/ai-providers";
+import type { ImageSize, SpeechVoice } from "@/lib/ai/core";
 import { AIChartInsight } from "./ai-chart-insight";
 import { AIReportGenerator } from "./ai-report-generator";
 

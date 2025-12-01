@@ -1,8 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { PDFTextLayer } from "../pdf-text-layer";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 
-jest.mock("@/lib/pdf-store");
+jest.mock("@/lib/pdf");
 
 describe("PDFTextLayer", () => {
   const mockPage = {
@@ -58,7 +58,9 @@ describe("PDFTextLayer", () => {
 
     await waitFor(() => {
       const textElement = screen.getByText("Hello World");
-      expect(textElement).toHaveStyle({ backgroundColor: "rgba(255, 255, 0, 0.4)" });
+      expect(textElement).toHaveStyle({
+        backgroundColor: "rgba(255, 255, 0, 0.4)",
+      });
     });
   });
 });

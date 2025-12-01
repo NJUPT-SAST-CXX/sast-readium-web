@@ -1,13 +1,16 @@
 "use client";
 
-import { processArchive } from "@/lib/archive-utils";
+import { processArchive } from "@/lib/utils";
+import { isSupportedDocument, getAcceptString, isMarkdown } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import {
   Clock,
   FileArchive,
   FileText,
+  FileCode,
   FolderOpen,
+  HelpCircle,
   Sparkles,
   Upload,
 } from "lucide-react";
@@ -24,14 +27,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { usePDFStore, type RecentFile } from "@/lib/pdf-store";
+import { usePDFStore, type RecentFile } from "@/lib/pdf";
 import {
   isTauri,
   openPdfFileViaNativeDialog,
   openPdfFolderViaNativeDialog,
   readPdfFileAtPath,
-} from "@/lib/tauri-bridge";
-import { getSystemInfo } from "@/lib/tauri-bridge";
+} from "@/lib/platform";
+import { getSystemInfo } from "@/lib/platform";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -120,18 +123,14 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
   const handleFilesSelected = useCallback(
     (files: File[], origin: string) => {
       if (!files.length) return;
-      const pdfFiles = files.filter(
-        (file) =>
-          file.type === "application/pdf" ||
-          file.name.toLowerCase().endsWith(".pdf")
-      );
+      const supportedFiles = files.filter((file) => isSupportedDocument(file));
 
-      if (pdfFiles.length === 0) {
-        alert(t("dialog.no_pdf_found"));
+      if (supportedFiles.length === 0) {
+        alert(t("dialog.no_files_found"));
         return;
       }
 
-      const entries: PendingFile[] = pdfFiles.map((file) => ({
+      const entries: PendingFile[] = supportedFiles.map((file) => ({
         id:
           (globalThis.crypto?.randomUUID?.() ??
             Math.random().toString(36).slice(2)) + file.lastModified.toString(),
@@ -152,7 +151,7 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
         return merged.slice(0, 100);
       });
 
-      onFileSelect(pdfFiles[0]);
+      onFileSelect(supportedFiles[0]);
     },
     [onFileSelect, t]
   );
@@ -198,10 +197,7 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
         const isLast = i === parts.length - 1;
         const currentPath = parts.slice(0, i + 1).join("/");
         if (isLast) {
-          if (
-            file.type === "application/pdf" ||
-            file.name.toLowerCase().endsWith(".pdf")
-          ) {
+          if (isSupportedDocument(file)) {
             if (!current.children) current.children = [];
             current.children.push({
               name: segment,
@@ -326,21 +322,18 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
         file.name;
       const path = rel.split("/").filter(Boolean).join("/");
       if (selectedPaths.size === 0 || selectedPaths.has(path)) {
-        if (
-          file.type === "application/pdf" ||
-          file.name.toLowerCase().endsWith(".pdf")
-        ) {
+        if (isSupportedDocument(file)) {
           pdfs.push(file);
         }
       }
     }
 
-    handleFilesSelected(pdfs, "文件夹导入");
+    handleFilesSelected(pdfs, t("welcome.folder_import"));
     setFolderDialogOpen(false);
     setFolderFiles([]);
     setSelectedPaths(new Set());
     setFolderSearch("");
-  }, [folderFiles, handleFilesSelected, selectedPaths]);
+  }, [folderFiles, handleFilesSelected, selectedPaths, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -477,7 +470,7 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="application/pdf"
+        accept={getAcceptString()}
         multiple
         onChange={handleFileInputChange}
         className="hidden"
@@ -659,7 +652,11 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
                             className="h-7 w-7"
                             onClick={() => onFileSelect(pending.file)}
                           >
-                            <FileText className="h-3.5 w-3.5" />
+                            {isMarkdown(pending.file) ? (
+                              <FileCode className="h-3.5 w-3.5" />
+                            ) : (
+                              <FileText className="h-3.5 w-3.5" />
+                            )}
                           </Button>
                           <Button
                             size="icon"
@@ -686,6 +683,15 @@ export function WelcomePage({ onFileSelect }: WelcomePageProps) {
                   {t("welcome.help")}
                 </h2>
                 <ul className="space-y-1 text-xs text-muted-foreground">
+                  <li>
+                    <Link
+                      href="/help"
+                      className="flex items-center gap-1.5 hover:text-foreground hover:underline"
+                    >
+                      <HelpCircle className="h-3 w-3" />
+                      {t("help.view_help")}
+                    </Link>
+                  </li>
                   <li>
                     <a
                       href="https://github.com/NJUPT-SAST-CXX/sast-readium-web"

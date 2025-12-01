@@ -28,6 +28,16 @@
 - [AI Components Library](feature/ai-components-library.md): Reusable UI components for message display, tool rendering, suggestions, and confirmation workflows.
 - [Mobile and Responsive Design](feature/mobile-responsive-design.md): Mobile-first responsive architecture including bottom sheet drawers, adaptive dialogs, touch gestures, context menus, and breakpoint-based component switching.
 
+### AI Memory and Planning
+
+- [AI Memory System](feature/ai-memory-system.md): Hybrid memory model supporting document-specific and global memories with keyword extraction, relevance scoring, and automatic persistence for long-term AI context awareness.
+- [AI Plan System](feature/ai-plan-system.md): Multi-step plan creation, execution tracking, and dependency management enabling complex task decomposition with granular status tracking and resumable execution.
+
+### Advanced Features
+
+- [WebGL Rendering System](feature/webgl-rendering-system.md): GPU-accelerated PDF rendering with texture caching, smooth animations, filters, and graceful Canvas 2D fallback for high-performance page display.
+- [Export/Import System](feature/export-import-system.md): Comprehensive data portability for annotations, bookmarks, AI memories, and plans with flexible conflict resolution and format validation.
+- [AI Learning Module](feature/ai-learning-module.md): NotebookLM-like features including flashcard decks with SM-2 spaced repetition, quizzes with adaptive difficulty, and editable presentations with PPTX export, all with local data persistence and AI-powered content generation.
 ## Development Workflow
 
 ### Pre-commit Hooks
@@ -56,6 +66,16 @@ Hooks are automatically installed via `pnpm install`.
 ## Standard Operating Procedures
 
 - [Test Infrastructure and Coverage](sop/test-infrastructure-and-coverage.md): Describes Jest configuration, test organization by component module, mock patterns, coverage thresholds (70% lines/statements, 60% branches/functions), and current test results (76 suites, 936 passing tests).
+
+## Annotation System Documentation
+
+Comprehensive analysis of the SAST Readium annotation system, including data structures, rendering architecture, state management, and AI integration feasibility.
+
+- [Annotation System Investigation Summary](agent/annotation-system-investigation-summary.md): Executive summary of the complete annotation system analysis, including key findings, technical architecture, implementation roadmaps for AI integration, and recommendations.
+- [Annotation System Architecture and Data Flow](agent/annotation-system-architecture-and-data-flow.md): Detailed examination of annotation type definitions, data structures, state management with undo/redo, history tracking, and coordinate normalization systems.
+- [Annotation Rendering and Interaction Flow](agent/annotation-rendering-and-interaction-flow.md): Analysis of the multi-layer rendering architecture, type-specific rendering patterns, user interaction flows, and performance optimizations.
+- [AI Annotation Reference Feasibility Analysis](agent/ai-annotation-reference-feasibility-analysis.md): Comprehensive feasibility study for integrating AI-generated annotation references, including three-phase implementation roadmap (low-friction naming convention, metadata support, and full AI tool integration).
+- [Annotation System: Key Files and Quick Reference](agent/annotation-system-key-files-and-reference.md): Quick reference guide with file locations, critical functions, type definitions, code patterns, and troubleshooting guide.
 
 ## Architecture Notes
 

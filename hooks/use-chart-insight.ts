@@ -4,9 +4,9 @@
  */
 
 import { useState, useCallback } from "react";
-import { useAIChatStore } from "@/lib/ai-chat-store";
-import { chat, type AIServiceConfig } from "@/lib/ai-service";
-import { getAPIKeySecurely } from "@/lib/tauri-bridge-ai";
+import { useAIChatStore } from "@/lib/ai/core";
+import { chat, type AIServiceConfig } from "@/lib/ai/core";
+import { getAPIKeySecurely } from "@/lib/platform";
 
 // Chart data types
 export type ChartType = "bar" | "line" | "pie" | "area" | "scatter";

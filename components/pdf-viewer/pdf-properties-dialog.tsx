@@ -1,7 +1,7 @@
 "use client";
 
-import { usePDFStore } from "@/lib/pdf-store";
-import { updatePDFMetadata, PDFMetadataUpdate } from "@/lib/pdf-utils";
+import { usePDFStore } from "@/lib/pdf";
+import { updatePDFMetadata, PDFMetadataUpdate } from "@/lib/pdf";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,

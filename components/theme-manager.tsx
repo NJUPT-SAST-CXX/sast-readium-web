@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePDFStore } from "@/lib/pdf-store";
-import { isTauri, loadDesktopPreferences } from "@/lib/tauri-bridge";
+import { usePDFStore } from "@/lib/pdf";
+import { isTauri, loadDesktopPreferences } from "@/lib/platform";
 import {
   useCustomThemeStore,
   applyCustomTheme,
   loadCustomThemesFromDesktop,
   setupDesktopThemeSync,
-} from "@/lib/custom-theme-store";
+} from "@/lib/ui";
 
 export function ThemeManager() {
   const { themeMode, isDarkMode } = usePDFStore();

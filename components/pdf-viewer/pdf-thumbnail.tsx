@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { PDFPageProxy, PDFRenderTask } from "@/lib/pdf-utils";
+import { PDFPageProxy, PDFRenderTask } from "@/lib/pdf";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
-import { useAIChatStore, AI_MODELS } from "@/lib/ai-chat-store";
+import { useAIChatStore, AI_MODELS } from "@/lib/ai/core";
 import { useAIChat } from "@/hooks/use-ai-chat";
 import { useTranslation } from "react-i18next";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -105,7 +105,7 @@ import { Loader } from "@/components/ai-elements/loader";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { CodeBlock } from "@/components/ai-elements/code-block";
 import { cn } from "@/lib/utils";
-import type { SimpleToolInvocation } from "@/lib/ai-service";
+import type { SimpleToolInvocation } from "@/lib/ai/core";
 import type { BundledLanguage } from "shiki";
 
 type ChatMode = "chat" | "research";

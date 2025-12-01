@@ -52,8 +52,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { cn } from "@/lib/utils";
-import { usePDFStore, AnnotationStamp } from "@/lib/pdf-store";
-import { useAIChatStore } from "@/lib/ai-chat-store";
+import { usePDFStore, AnnotationStamp } from "@/lib/pdf";
+import { useAIChatStore } from "@/lib/ai/core";
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { PDFSettingsDialog } from "./pdf-settings-dialog";
@@ -64,7 +64,7 @@ import {
   isTauri,
   openPdfFileViaNativeDialog,
   openPdfFolderViaNativeDialog,
-} from "@/lib/tauri-bridge";
+} from "@/lib/platform";
 
 interface PDFToolbarProps {
   onDownload: () => void;

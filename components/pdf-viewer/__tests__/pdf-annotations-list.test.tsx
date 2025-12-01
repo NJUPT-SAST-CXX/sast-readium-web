@@ -1,8 +1,8 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { PDFAnnotationsList } from "../pdf-annotations-list";
-import { usePDFStore, Annotation } from "@/lib/pdf-store";
+import { usePDFStore, Annotation } from "@/lib/pdf";
 
-jest.mock("@/lib/pdf-store");
+jest.mock("@/lib/pdf");
 
 describe("PDFAnnotationsList", () => {
   const mockAnnotations: Annotation[] = [

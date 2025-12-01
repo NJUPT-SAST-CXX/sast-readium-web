@@ -1,16 +1,28 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { WelcomePage } from "../welcome-page";
-import { usePDFStore } from "@/lib/pdf-store";
-import { isTauri, openPdfFileViaNativeDialog, getSystemInfo } from "@/lib/tauri-bridge";
-import { processArchive } from "@/lib/archive-utils";
+import { usePDFStore } from "@/lib/pdf";
+import {
+  isTauri,
+  openPdfFileViaNativeDialog,
+  getSystemInfo,
+} from "@/lib/platform";
+import { processArchive } from "@/lib/utils";
 
-jest.mock("@/lib/pdf-store");
-jest.mock("@/lib/tauri-bridge");
-jest.mock("@/lib/archive-utils");
+jest.mock("@/lib/pdf");
+jest.mock("@/lib/platform");
+jest.mock("@/lib/utils", () => ({
+  ...jest.requireActual("@/lib/utils"),
+  processArchive: jest.fn(),
+}));
 jest.mock("next/image", () => ({
   __esModule: true,
-  // eslint-disable-next-line @next/next/no-img-element
-  default: (props: Record<string, unknown>) => <img {...(props as React.ImgHTMLAttributes<HTMLImageElement>)} alt={(props.alt as string) || ""} />,
+
+  default: (props: Record<string, unknown>) => (
+    <img
+      {...(props as React.ImgHTMLAttributes<HTMLImageElement>)}
+      alt={(props.alt as string) || ""}
+    />
+  ),
 }));
 jest.mock("@/components/language-switcher", () => ({
   LanguageSwitcher: () => <div data-testid="language-switcher">Lang</div>,
@@ -49,8 +61,12 @@ describe("WelcomePage", () => {
     render(<WelcomePage onFileSelect={mockOnFileSelect} />);
 
     const file = new File(["content"], "test.pdf", { type: "application/pdf" });
-    const input = document.querySelector('input[type="file"][accept="application/pdf"]');
-    
+    // Find the file input that accepts PDFs (the accept string contains application/pdf)
+    const inputs = document.querySelectorAll('input[type="file"]');
+    const input = Array.from(inputs).find((i) =>
+      i.getAttribute("accept")?.includes("application/pdf")
+    );
+
     if (!input) throw new Error("Input not found");
 
     fireEvent.change(input, { target: { files: [file] } });
@@ -65,13 +81,15 @@ describe("WelcomePage", () => {
 
     render(<WelcomePage onFileSelect={mockOnFileSelect} />);
 
-    const archive = new File(["zip content"], "test.zip", { type: "application/zip" });
+    const archive = new File(["zip content"], "test.zip", {
+      type: "application/zip",
+    });
     const input = document.querySelector('input[type="file"][accept=".zip"]');
-    
+
     if (!input) throw new Error("Archive input not found");
 
     fireEvent.change(input, { target: { files: [archive] } });
-    
+
     expect(screen.getByText("welcome.parsing_zip")).toBeInTheDocument();
 
     await waitFor(() => {
@@ -98,7 +116,12 @@ describe("WelcomePage", () => {
   it("shows recent files", () => {
     (usePDFStore as unknown as jest.Mock).mockReturnValue({
       recentFiles: [
-        { name: "Recent.pdf", url: "blob:url", readingProgress: 50, numPages: 10 },
+        {
+          name: "Recent.pdf",
+          url: "blob:url",
+          readingProgress: 50,
+          numPages: 10,
+        },
       ],
     });
 

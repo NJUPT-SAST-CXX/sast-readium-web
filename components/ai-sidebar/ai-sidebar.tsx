@@ -1,6 +1,6 @@
 "use client";
 
-import { useAIChatStore } from "@/lib/ai-chat-store";
+import { useAIChatStore } from "@/lib/ai/core";
 import { cn } from "@/lib/utils";
 import {
   X,
@@ -9,6 +9,7 @@ import {
   History,
   Sparkles,
   GripVertical,
+  GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,6 +25,7 @@ import { AIChatPanel } from "./ai-chat-panel";
 import { AISettingsPanel } from "./ai-settings-panel";
 import { AIHistoryPanel } from "./ai-history-panel";
 import { AIToolsPanel } from "./ai-tools-panel";
+import { LearningTab } from "@/components/ai-learning/shared/learning-tab";
 import { useEffect, useState, useCallback, useRef } from "react";
 
 interface AISidebarProps {
@@ -42,7 +44,7 @@ function AISidebarContent({ isMobile = false }: AISidebarContentProps) {
     <Tabs defaultValue="chat" className="flex-1 flex flex-col overflow-hidden">
       <TabsList
         className={cn(
-          "w-full grid grid-cols-4 rounded-none border-b border-border/50 bg-muted/30",
+          "w-full grid grid-cols-5 rounded-none border-b border-border/50 bg-muted/30",
           isMobile ? "h-12" : "h-11"
         )}
       >
@@ -92,6 +94,21 @@ function AISidebarContent({ isMobile = false }: AISidebarContentProps) {
           </span>
         </TabsTrigger>
         <TabsTrigger
+          value="learn"
+          className={cn(
+            "gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm",
+            "transition-all duration-200",
+            isMobile ? "text-sm py-2.5" : "text-xs sm:text-sm"
+          )}
+        >
+          <GraduationCap className={cn(isMobile ? "w-5 h-5" : "w-4 h-4")} />
+          <span
+            className={cn(isMobile ? "inline" : "hidden xs:inline sm:inline")}
+          >
+            {t("ai.learn", "Learn")}
+          </span>
+        </TabsTrigger>
+        <TabsTrigger
           value="settings"
           className={cn(
             "gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm",
@@ -128,6 +145,13 @@ function AISidebarContent({ isMobile = false }: AISidebarContentProps) {
           className="h-full m-0 p-0 overflow-auto data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:slide-in-from-bottom-2 duration-200"
         >
           <AIHistoryPanel />
+        </TabsContent>
+
+        <TabsContent
+          value="learn"
+          className="h-full m-0 p-0 overflow-auto data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:slide-in-from-bottom-2 duration-200"
+        >
+          <LearningTab />
         </TabsContent>
 
         <TabsContent

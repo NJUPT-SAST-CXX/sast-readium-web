@@ -2,14 +2,14 @@
 
 import type React from "react";
 import { useState } from "react";
-import { usePDFStore, ViewMode, FitMode } from "@/lib/pdf-store";
-import { isTauri, saveDesktopPreferences } from "@/lib/tauri-bridge";
+import { usePDFStore, ViewMode, FitMode } from "@/lib/pdf";
+import { isTauri, saveDesktopPreferences } from "@/lib/platform";
 import {
   checkForAppUpdates,
   installAppUpdate,
   type UpdateStatus,
-} from "@/lib/update-service";
-import { sendSystemNotification } from "@/lib/notification-service";
+} from "@/lib/platform";
+import { sendSystemNotification } from "@/lib/platform";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,

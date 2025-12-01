@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, memo, useMemo } from "react";
-import { PDFPageProxy } from "@/lib/pdf-utils";
-import { usePDFStore } from "@/lib/pdf-store";
+import { PDFPageProxy } from "@/lib/pdf";
+import { usePDFStore } from "@/lib/pdf";
 import { PDFWatermark } from "./pdf-watermark";
 
 interface PDFPageProps {
@@ -293,11 +293,15 @@ const PDFPageComponent = ({
 // Only re-render when page, scale, or rotation changes
 export const PDFPage = memo(PDFPageComponent, (prevProps, nextProps) => {
   // Check if it's effectively the same page (same page index)
-  const prevIndex = prevProps.page ? (prevProps.page as unknown as { _pageIndex: number })._pageIndex : -1;
-  const nextIndex = nextProps.page ? (nextProps.page as unknown as { _pageIndex: number })._pageIndex : -1;
+  const prevIndex = prevProps.page
+    ? (prevProps.page as unknown as { _pageIndex: number })._pageIndex
+    : -1;
+  const nextIndex = nextProps.page
+    ? (nextProps.page as unknown as { _pageIndex: number })._pageIndex
+    : -1;
 
   const isSamePage =
-    (prevProps.page === nextProps.page) ||
+    prevProps.page === nextProps.page ||
     (prevIndex !== -1 && nextIndex !== -1 && prevIndex === nextIndex);
 
   return (

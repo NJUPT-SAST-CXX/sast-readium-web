@@ -1,9 +1,12 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import Home from "./page";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 
 // Mock dependencies
-jest.mock("@/lib/pdf-store");
+jest.mock("@/lib/pdf", () => ({
+  usePDFStore: jest.fn(),
+  unloadPDFDocument: jest.fn(),
+}));
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
@@ -34,9 +37,6 @@ jest.mock("@/components/pdf-viewer/pdf-viewer", () => ({
 }));
 jest.mock("@/components/pdf-viewer/pdf-tab-bar", () => ({
   PDFTabBar: () => <div data-testid="pdf-tab-bar">Tabs</div>,
-}));
-jest.mock("@/lib/pdf-utils", () => ({
-  unloadPDFDocument: jest.fn(),
 }));
 jest.mock("@/hooks/use-pdf-context", () => ({
   usePDFContext: jest.fn(),

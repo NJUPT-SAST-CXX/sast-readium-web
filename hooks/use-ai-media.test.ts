@@ -11,18 +11,24 @@ import {
   downloadAudio,
   copyToClipboard,
 } from "./use-ai-media";
-import { useAIChatStore } from "@/lib/ai-chat-store";
-import * as aiService from "@/lib/ai-service";
+import { useAIChatStore } from "@/lib/ai/core";
 
-// Mock the AI service
-jest.mock("@/lib/ai-service", () => ({
-  generateImage: jest.fn(),
-  generateSpeech: jest.fn(),
-  transcribeAudio: jest.fn(),
-  createAudioBlobUrl: jest.fn(),
-  readAudioFile: jest.fn(),
-  isValidAudioFile: jest.fn(),
-}));
+// Mock the AI service - keep the store but mock API functions
+jest.mock("@/lib/ai/core", () => {
+  const actual = jest.requireActual("@/lib/ai/core");
+  return {
+    ...actual,
+    generateImage: jest.fn(),
+    generateSpeech: jest.fn(),
+    transcribeAudio: jest.fn(),
+    createAudioBlobUrl: jest.fn(),
+    readAudioFile: jest.fn(),
+    isValidAudioFile: jest.fn(),
+  };
+});
+
+// Import after mocks
+import * as aiService from "@/lib/ai/core";
 
 // Mock URL.createObjectURL and URL.revokeObjectURL
 const mockCreateObjectURL = jest.fn(() => "blob:mock-url");
@@ -592,6 +598,12 @@ describe("useTranscription", () => {
       };
       (aiService.transcribeAudio as jest.Mock).mockResolvedValue(mockResult);
 
+      // Mock fetch to return a blob
+      const mockBlob = new Blob(["audio data"], { type: "audio/mpeg" });
+      global.fetch = jest.fn().mockResolvedValue({
+        blob: jest.fn().mockResolvedValue(mockBlob),
+      });
+
       const { result } = renderHook(() => useTranscription());
 
       await act(async () => {
@@ -601,7 +613,7 @@ describe("useTranscription", () => {
       expect(aiService.transcribeAudio).toHaveBeenCalledWith(
         expect.any(Object),
         expect.objectContaining({
-          audio: expect.any(URL),
+          audio: expect.any(Blob),
         })
       );
     });

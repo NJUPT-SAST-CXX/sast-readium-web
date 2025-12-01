@@ -1,19 +1,19 @@
 import { render, waitFor } from "@testing-library/react";
 import { ThemeManager } from "../theme-manager";
-import { usePDFStore } from "@/lib/pdf-store";
-import { isTauri, loadDesktopPreferences } from "@/lib/tauri-bridge";
+import { usePDFStore } from "@/lib/pdf";
+import { isTauri, loadDesktopPreferences } from "@/lib/platform";
 import {
   useCustomThemeStore,
   DEFAULT_THEME_COLORS,
   applyCustomTheme,
-} from "@/lib/custom-theme-store";
+} from "@/lib/ui";
 
-jest.mock("@/lib/pdf-store");
-jest.mock("@/lib/tauri-bridge", () => ({
+jest.mock("@/lib/pdf");
+jest.mock("@/lib/platform", () => ({
   isTauri: jest.fn(),
   loadDesktopPreferences: jest.fn(),
 }));
-jest.mock("@/lib/custom-theme-store", () => ({
+jest.mock("@/lib/ui", () => ({
   useCustomThemeStore: jest.fn(),
   applyCustomTheme: jest.fn(),
   DEFAULT_THEME_COLORS: {},

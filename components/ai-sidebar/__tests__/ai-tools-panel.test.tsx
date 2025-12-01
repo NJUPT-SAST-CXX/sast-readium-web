@@ -8,7 +8,7 @@ import {
   useAIChatStore,
   type AISettings,
   type PDFContext,
-} from "@/lib/ai-chat-store";
+} from "@/lib/ai/core";
 import { useAIChat } from "@/hooks/use-ai-chat";
 import { usePDFContext } from "@/hooks/use-pdf-context";
 import {
@@ -199,15 +199,21 @@ jest.mock("@/components/ai-elements/loader", () => ({
 }));
 
 // Mock libraries
-jest.mock("@/lib/ai-providers", () => ({
-  IMAGE_MODELS: [{ id: "dall-e-3", name: "DALL-E 3" }],
-  IMAGE_SIZES: {
-    "dall-e-3": ["1024x1024", "1024x1792", "1792x1024"],
-  },
-  SPEECH_MODELS: [{ id: "tts-1", name: "TTS-1" }],
-  SPEECH_VOICES: [{ id: "nova", name: "Nova", description: "A woman's voice" }],
-  TRANSCRIPTION_MODELS: [{ id: "whisper-1", name: "Whisper" }],
-}));
+jest.mock("@/lib/ai/core", () => {
+  const actual = jest.requireActual("@/lib/ai/core");
+  return {
+    ...actual,
+    IMAGE_MODELS: [{ id: "dall-e-3", name: "DALL-E 3" }],
+    IMAGE_SIZES: {
+      "dall-e-3": ["1024x1024", "1024x1792", "1792x1024"],
+    },
+    SPEECH_MODELS: [{ id: "tts-1", name: "TTS-1" }],
+    SPEECH_VOICES: [
+      { id: "nova", name: "Nova", description: "A woman's voice" },
+    ],
+    TRANSCRIPTION_MODELS: [{ id: "whisper-1", name: "Whisper" }],
+  };
+});
 
 const mockUseAIChat = useAIChat as jest.MockedFunction<typeof useAIChat>;
 const mockUsePDFContext = usePDFContext as jest.MockedFunction<

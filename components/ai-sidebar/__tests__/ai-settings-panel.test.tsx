@@ -4,7 +4,7 @@
 
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { AISettingsPanel } from "../ai-settings-panel";
-import { useAIChatStore, type AISettings } from "@/lib/ai-chat-store";
+import { useAIChatStore, type AISettings } from "@/lib/ai/core";
 
 // Helper to create valid AISettings for tests
 const createTestSettings = (
@@ -59,34 +59,32 @@ jest.mock("react-i18next", () => ({
   }),
 }));
 
-// Mock tauri-bridge-ai
-jest.mock("@/lib/tauri-bridge-ai", () => ({
+// Mock platform
+jest.mock("@/lib/platform", () => ({
   saveAPIKeySecurely: jest.fn().mockResolvedValue(undefined),
   getAPIKeySecurely: jest.fn().mockResolvedValue(null),
   deleteAPIKeySecurely: jest.fn().mockResolvedValue(undefined),
   getStorageRecommendation: jest.fn().mockResolvedValue("browser"),
+  isTauri: jest.fn(() => false),
 }));
 
-// Mock ai-service
-jest.mock("@/lib/ai-service", () => ({
-  validateAPIKey: jest.fn().mockResolvedValue(true),
-  testConnection: jest.fn().mockResolvedValue({ success: true }),
-}));
-
-// Mock mcp-client
-jest.mock("@/lib/mcp-client", () => ({
-  MCP_SERVER_PRESETS: [
-    { id: "preset1", name: "Preset Server 1", type: "stdio" },
-  ],
-  createMCPServerFromPreset: jest.fn(),
-  createCustomMCPServer: jest.fn(),
-  testMCPConnection: jest.fn().mockResolvedValue({ success: true }),
-  getMCPConnectionStatus: jest.fn().mockReturnValue(null),
-  getCachedMCPTools: jest.fn().mockReturnValue([]),
-  closeMCPClient: jest.fn(),
-  clearMCPConnectionStatus: jest.fn(),
-  isStdioMCPAvailable: jest.fn().mockResolvedValue(true),
-}));
+// Mock ai-service (now in @/lib/ai/core)
+jest.mock("@/lib/ai/core", () => {
+  const actual = jest.requireActual("@/lib/ai/core");
+  return {
+    ...actual,
+    validateAPIKey: jest.fn().mockResolvedValue(true),
+    testConnection: jest.fn().mockResolvedValue({ success: true }),
+    createMCPServerFromPreset: jest.fn(),
+    createCustomMCPServer: jest.fn(),
+    testMCPConnection: jest.fn().mockResolvedValue({ success: true }),
+    getMCPConnectionStatus: jest.fn().mockReturnValue(null),
+    getCachedMCPTools: jest.fn().mockReturnValue([]),
+    closeMCPClient: jest.fn(),
+    clearMCPConnectionStatus: jest.fn(),
+    isStdioMCPAvailable: jest.fn().mockResolvedValue(true),
+  };
+});
 
 // Mock UI components to reduce complexity
 jest.mock("@/components/ui/tabs", () => ({

@@ -7,7 +7,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 import {
   loadPDFDocument,
   searchInPDF,
@@ -16,7 +16,7 @@ import {
   savePDF,
   PDFDocumentProxy,
   PDFPageProxy,
-} from "@/lib/pdf-utils";
+} from "@/lib/pdf";
 import { PDFToolbar } from "./pdf-toolbar";
 import { PDFMobileToolbar } from "./pdf-mobile-toolbar";
 import { PDFTTSReader } from "./pdf-tts-reader";
@@ -34,7 +34,7 @@ import { PDFSelectionLayer } from "./pdf-selection-layer";
 import { KeyboardShortcutsDialog } from "./keyboard-shortcuts-dialog";
 import { PDFContextMenu } from "./pdf-context-menu";
 import { AISidebar } from "@/components/ai-sidebar/ai-sidebar";
-import { useAIChatStore } from "@/lib/ai-chat-store";
+import { useAIChatStore } from "@/lib/ai/core";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
@@ -60,11 +60,11 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { AnnotationStamp } from "@/lib/pdf-store";
+import { AnnotationStamp } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
 import { PDFLoadingAnimation } from "./loading-animations";
 import { useTranslation } from "react-i18next";
-import { revealInFileManager, isTauri, getFileTimes } from "@/lib/tauri-bridge";
+import { revealInFileManager, isTauri, getFileTimes } from "@/lib/platform";
 import { SignatureDialog } from "./signature-dialog";
 import { useDeviceOrientation } from "@/hooks/use-device-orientation";
 

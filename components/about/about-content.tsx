@@ -16,7 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { AboutRuntimeInfo } from "./about-runtime-info";
 import { Github, Bug, Loader2, RefreshCw } from "lucide-react";
-import { checkForAppUpdates } from "@/lib/update-service";
+import { checkForAppUpdates } from "@/lib/platform";
 import pkg from "../../package.json";
 
 export function AboutContent() {

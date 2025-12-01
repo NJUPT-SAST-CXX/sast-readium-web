@@ -1,8 +1,8 @@
 import { render } from "@testing-library/react";
 import { PDFDrawingLayer } from "../pdf-drawing-layer";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 
-jest.mock("@/lib/pdf-store");
+jest.mock("@/lib/pdf");
 
 describe("PDFDrawingLayer", () => {
   const mockPage = {
@@ -26,7 +26,9 @@ describe("PDFDrawingLayer", () => {
   it("renders canvas", () => {
     const { container } = render(
       <PDFDrawingLayer
-        page={mockPage as unknown as Parameters<typeof PDFDrawingLayer>[0]["page"]}
+        page={
+          mockPage as unknown as Parameters<typeof PDFDrawingLayer>[0]["page"]
+        }
         scale={1}
         rotation={0}
         isDrawingMode={false}
@@ -41,7 +43,9 @@ describe("PDFDrawingLayer", () => {
   it("sets drawing cursor when in drawing mode", () => {
     const { container } = render(
       <PDFDrawingLayer
-        page={mockPage as unknown as Parameters<typeof PDFDrawingLayer>[0]["page"]}
+        page={
+          mockPage as unknown as Parameters<typeof PDFDrawingLayer>[0]["page"]
+        }
         scale={1}
         rotation={0}
         isDrawingMode={true}

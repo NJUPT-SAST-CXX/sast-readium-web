@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import { usePDFStore } from "@/lib/pdf-store";
-import { PDFPageProxy } from "@/lib/pdf-utils";
+import { usePDFStore } from "@/lib/pdf";
+import { PDFPageProxy } from "@/lib/pdf";
 import { cn } from "@/lib/utils";
 
 interface PDFDrawingLayerProps {

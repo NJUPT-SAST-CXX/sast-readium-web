@@ -10,7 +10,7 @@ import {
   useSlashCommands,
   VariableInsert,
 } from "../quick-commands";
-import type { QuickCommand, PromptTemplate } from "@/lib/ai-chat-store";
+import type { QuickCommand, PromptTemplate } from "@/lib/ai/core";
 
 // Mock react-i18next
 jest.mock("react-i18next", () => ({
@@ -20,7 +20,7 @@ jest.mock("react-i18next", () => ({
 }));
 
 // Mock AI chat store
-jest.mock("@/lib/ai-chat-store", () => ({
+jest.mock("@/lib/ai/core", () => ({
   useAIChatStore: () => ({
     settings: {
       promptTemplates: [

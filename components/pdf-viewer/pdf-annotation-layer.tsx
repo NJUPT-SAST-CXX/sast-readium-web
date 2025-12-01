@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef, useState, useEffect, useMemo, useCallback } from "react";
-import { usePDFStore, Annotation } from "@/lib/pdf-store";
-import { PDFPageProxy, PDFAnnotationData } from "@/lib/pdf-utils";
-import { X, MessageSquare, GripHorizontal } from "lucide-react";
+import { usePDFStore, Annotation } from "@/lib/pdf";
+import { PDFPageProxy, PDFAnnotationData } from "@/lib/pdf";
+import { X, MessageSquare, GripHorizontal, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -167,11 +167,33 @@ function DraggableAnnotationPopup({
         )}
 
         {/* Metadata */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span>Page {annotation.pageNumber}</span>
           <span>•</span>
           <span>{new Date(annotation.timestamp).toLocaleDateString()}</span>
+          {annotation.metadata?.source === "ai" && (
+            <>
+              <span>•</span>
+              <span className="flex items-center gap-1 text-purple-600">
+                <Sparkles className="h-3 w-3" />
+                AI Generated
+              </span>
+            </>
+          )}
         </div>
+
+        {/* AI Reasoning (if available) */}
+        {annotation.metadata?.source === "ai" &&
+          annotation.metadata.reasoning && (
+            <div className="mt-2 p-2 bg-purple-50 dark:bg-purple-950/30 rounded text-xs">
+              <p className="font-medium text-purple-700 dark:text-purple-300 mb-1">
+                AI Reasoning:
+              </p>
+              <p className="text-muted-foreground italic">
+                {annotation.metadata.reasoning}
+              </p>
+            </div>
+          )}
 
         {/* Action Buttons */}
         <div className="flex gap-2 pt-2 border-t border-border">
@@ -464,12 +486,18 @@ export function PDFAnnotationLayer({
             ...getAnnotationStyle(annotation),
             backgroundColor:
               annotation.type === "highlight"
-                ? `${annotation.color}80`
+                ? annotation.metadata?.source === "ai"
+                  ? "rgba(147, 51, 234, 0.3)" // Purple for AI highlights
+                  : `${annotation.color}80`
                 : annotation.type === "shape"
                   ? "transparent"
                   : undefined,
             borderColor:
-              annotation.type === "shape" ? annotation.color : undefined,
+              annotation.type === "shape"
+                ? annotation.metadata?.source === "ai"
+                  ? "#9333ea" // Purple border for AI shapes
+                  : annotation.color
+                : undefined,
             color: annotation.type === "text" ? annotation.color : undefined,
           }}
           onClick={(e) => {
@@ -486,12 +514,29 @@ export function PDFAnnotationLayer({
           }}
         >
           {annotation.type === "comment" && (
-            <div className="flex items-center gap-1 bg-white rounded px-2 py-1 shadow-md border border-border pointer-events-auto">
-              <MessageSquare
-                className="h-3 w-3 shrink-0"
-                style={{ color: annotation.color }}
-              />
-              <span className="text-xs max-w-[200px] truncate">
+            <div
+              className={cn(
+                "flex items-center gap-1 rounded px-2 py-1 shadow-md border pointer-events-auto",
+                annotation.metadata?.source === "ai"
+                  ? "bg-purple-50 border-purple-200 dark:bg-purple-950/50 dark:border-purple-800"
+                  : "bg-white border-border dark:bg-background"
+              )}
+            >
+              {annotation.metadata?.source === "ai" ? (
+                <Sparkles className="h-3 w-3 shrink-0 text-purple-600" />
+              ) : (
+                <MessageSquare
+                  className="h-3 w-3 shrink-0"
+                  style={{ color: annotation.color }}
+                />
+              )}
+              <span
+                className={cn(
+                  "text-xs max-w-[200px] truncate",
+                  annotation.metadata?.source === "ai" &&
+                    "text-purple-700 dark:text-purple-300"
+                )}
+              >
                 {annotation.content}
               </span>
               <button

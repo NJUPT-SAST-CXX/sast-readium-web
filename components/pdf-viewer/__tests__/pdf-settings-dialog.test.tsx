@@ -1,16 +1,12 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { PDFSettingsDialog } from "../pdf-settings-dialog";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 
-jest.mock("@/lib/pdf-store");
-jest.mock("@/lib/tauri-bridge", () => ({
+jest.mock("@/lib/pdf");
+jest.mock("@/lib/platform", () => ({
   isTauri: jest.fn().mockReturnValue(false),
   saveDesktopPreferences: jest.fn(),
-}));
-jest.mock("@/lib/update-service", () => ({
   checkForAppUpdates: jest.fn(),
-}));
-jest.mock("@/lib/notification-service", () => ({
   sendSystemNotification: jest.fn(),
 }));
 jest.mock("react-i18next", () => ({
@@ -44,7 +40,7 @@ describe("PDFSettingsDialog", () => {
     watermarkGapY: 4,
     watermarkRotation: -45,
     autoCheckUpdate: false,
-    
+
     setViewMode: jest.fn(),
     setFitMode: jest.fn(),
     setZoom: jest.fn(),
@@ -76,13 +72,8 @@ describe("PDFSettingsDialog", () => {
   });
 
   it("renders settings dialog", () => {
-    render(
-      <PDFSettingsDialog
-        open={true}
-        onOpenChange={jest.fn()}
-      />
-    );
-    
+    render(<PDFSettingsDialog open={true} onOpenChange={jest.fn()} />);
+
     expect(screen.getByText("settings.title")).toBeInTheDocument();
     expect(screen.getByText("settings.section.display")).toBeInTheDocument();
     expect(screen.getByText("settings.section.interface")).toBeInTheDocument();
@@ -92,21 +83,16 @@ describe("PDFSettingsDialog", () => {
 
   it("applies changes on save", () => {
     const onOpenChange = jest.fn();
-    render(
-      <PDFSettingsDialog
-        open={true}
-        onOpenChange={onOpenChange}
-      />
-    );
-    
+    render(<PDFSettingsDialog open={true} onOpenChange={onOpenChange} />);
+
     // Change view mode locally
     const continuousBtn = screen.getByText("settings.option.continuous");
     fireEvent.click(continuousBtn);
-    
+
     // Click save
     const saveBtn = screen.getByText("settings.button.save");
     fireEvent.click(saveBtn);
-    
+
     expect(mockStore.setViewMode).toHaveBeenCalledWith("continuous");
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });

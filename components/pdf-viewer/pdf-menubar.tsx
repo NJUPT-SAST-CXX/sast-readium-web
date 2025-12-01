@@ -37,12 +37,12 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 import { cn } from "@/lib/utils";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { PDFPropertiesDialog } from "./pdf-properties-dialog";
 import { PDFRecentFilesDialog } from "./pdf-recent-files-dialog";
-import { isTauri, renameFile } from "@/lib/tauri-bridge";
+import { isTauri, renameFile } from "@/lib/platform";
 
 interface MenuSection {
   id: string;

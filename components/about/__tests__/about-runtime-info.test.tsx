@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { AboutRuntimeInfo } from "../about-runtime-info";
-import { getAppRuntimeInfo, getSystemInfo } from "@/lib/tauri-bridge";
+import { getAppRuntimeInfo, getSystemInfo } from "@/lib/platform";
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -8,7 +8,7 @@ jest.mock("react-i18next", () => ({
   }),
 }));
 
-jest.mock("@/lib/tauri-bridge", () => ({
+jest.mock("@/lib/platform", () => ({
   getAppRuntimeInfo: jest.fn(),
   getSystemInfo: jest.fn(),
 }));

@@ -1,10 +1,10 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { PDFViewer } from "../pdf-viewer";
-import { usePDFStore } from "@/lib/pdf-store";
-import { loadPDFDocument } from "@/lib/pdf-utils";
+import { usePDFStore } from "@/lib/pdf";
+import { loadPDFDocument } from "@/lib/pdf";
 
 // Mock dependencies
-jest.mock("@/lib/pdf-store", () => {
+jest.mock("@/lib/pdf", () => {
   const mockState = {
     currentPage: 1,
     zoom: 1,
@@ -74,16 +74,17 @@ jest.mock("@/lib/pdf-store", () => {
       jest.fn(() => mockState),
       { getState: jest.fn(() => mockState) }
     ),
+    loadPDFDocument: jest.fn(),
+    unloadPDFDocument: jest.fn(),
   };
 });
 
-jest.mock("@/lib/pdf-utils");
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
 }));
-jest.mock("@/lib/tauri-bridge", () => ({
+jest.mock("@/lib/platform", () => ({
   revealInFileManager: jest.fn(),
 }));
 

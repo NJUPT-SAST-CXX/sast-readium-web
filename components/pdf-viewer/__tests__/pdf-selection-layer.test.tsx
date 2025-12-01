@@ -1,11 +1,11 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { PDFSelectionLayer } from "../pdf-selection-layer";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 
-jest.mock("@/lib/pdf-store");
+jest.mock("@/lib/pdf");
 
 // Mock AI chat store to avoid TransformStream issues
-jest.mock("@/lib/ai-chat-store", () => ({
+jest.mock("@/lib/ai/core", () => ({
   useAIChatStore: () => ({
     updatePDFContext: jest.fn(),
     setSidebarOpen: jest.fn(),

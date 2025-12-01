@@ -2,7 +2,12 @@
 
 import { useState, useMemo, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { useAIChatStore, type QuickCommand, type PromptTemplate, TEMPLATE_VARIABLES } from "@/lib/ai-chat-store";
+import {
+  useAIChatStore,
+  type QuickCommand,
+  type PromptTemplate,
+  TEMPLATE_VARIABLES,
+} from "@/lib/ai/core";
 import {
   Command,
   CommandEmpty,
@@ -70,22 +75,28 @@ export function QuickCommands({
   position,
 }: QuickCommandsProps) {
   const { t } = useTranslation();
-  const { settings, getEnabledQuickCommands, processTemplate } = useAIChatStore();
+  const { settings, getEnabledQuickCommands, processTemplate } =
+    useAIChatStore();
   const [searchValue, setSearchValue] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
 
   // Get enabled quick commands
-  const enabledCommands = useMemo(() => getEnabledQuickCommands(), [getEnabledQuickCommands]);
-  
+  const enabledCommands = useMemo(
+    () => getEnabledQuickCommands(),
+    [getEnabledQuickCommands]
+  );
+
   // Filter by search or slash command
   const filteredCommands = useMemo(() => {
-    const query = searchValue.toLowerCase() || filterText.toLowerCase().replace(/^\//, "");
+    const query =
+      searchValue.toLowerCase() || filterText.toLowerCase().replace(/^\//, "");
     if (!query) return enabledCommands;
-    
-    return enabledCommands.filter((cmd) => 
-      cmd.name.toLowerCase().includes(query) ||
-      cmd.description.toLowerCase().includes(query) ||
-      cmd.shortcut?.toLowerCase().includes(`/${query}`)
+
+    return enabledCommands.filter(
+      (cmd) =>
+        cmd.name.toLowerCase().includes(query) ||
+        cmd.description.toLowerCase().includes(query) ||
+        cmd.shortcut?.toLowerCase().includes(`/${query}`)
     );
   }, [enabledCommands, searchValue, filterText]);
 
@@ -102,28 +113,37 @@ export function QuickCommands({
   }, [settings.promptTemplates]);
 
   // Handle command selection
-  const handleSelectCommand = useCallback((command: QuickCommand) => {
-    const processedPrompt = processTemplate(command.prompt);
-    onSelect(processedPrompt);
-    onOpenChange(false);
-    setSearchValue("");
-  }, [processTemplate, onSelect, onOpenChange]);
+  const handleSelectCommand = useCallback(
+    (command: QuickCommand) => {
+      const processedPrompt = processTemplate(command.prompt);
+      onSelect(processedPrompt);
+      onOpenChange(false);
+      setSearchValue("");
+    },
+    [processTemplate, onSelect, onOpenChange]
+  );
 
   // Handle template selection
-  const handleSelectTemplate = useCallback((template: PromptTemplate) => {
-    const processedPrompt = processTemplate(template.content);
-    onSelect(processedPrompt);
-    onOpenChange(false);
-    setSearchValue("");
-  }, [processTemplate, onSelect, onOpenChange]);
+  const handleSelectTemplate = useCallback(
+    (template: PromptTemplate) => {
+      const processedPrompt = processTemplate(template.content);
+      onSelect(processedPrompt);
+      onOpenChange(false);
+      setSearchValue("");
+    },
+    [processTemplate, onSelect, onOpenChange]
+  );
 
   // Reset search when closed - using onOpenChange callback pattern
-  const handleOpenChange = useCallback((newOpen: boolean) => {
-    if (!newOpen) {
-      setSearchValue("");
-    }
-    onOpenChange(newOpen);
-  }, [onOpenChange]);
+  const handleOpenChange = useCallback(
+    (newOpen: boolean) => {
+      if (!newOpen) {
+        setSearchValue("");
+      }
+      onOpenChange(newOpen);
+    },
+    [onOpenChange]
+  );
 
   // Get icon component for a command
   const getIcon = (iconName?: string) => {
@@ -131,18 +151,20 @@ export function QuickCommands({
     return ICON_MAP[iconName] || Zap;
   };
 
-  const popoverStyle = position ? {
-    position: 'fixed' as const,
-    top: position.top,
-    left: position.left,
-  } : {};
+  const popoverStyle = position
+    ? {
+        position: "fixed" as const,
+        top: position.top,
+        left: position.left,
+      }
+    : {};
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <span className="hidden" />
       </PopoverTrigger>
-      <PopoverContent 
+      <PopoverContent
         className={cn("w-80 p-0", className)}
         style={popoverStyle}
         align="start"
@@ -150,8 +172,11 @@ export function QuickCommands({
         sideOffset={8}
       >
         <Command className="rounded-lg border-0">
-          <CommandInput 
-            placeholder={t("ai.quick_commands.search_placeholder", "Search commands...")}
+          <CommandInput
+            placeholder={t(
+              "ai.quick_commands.search_placeholder",
+              "Search commands..."
+            )}
             value={searchValue}
             onValueChange={setSearchValue}
           />
@@ -162,7 +187,9 @@ export function QuickCommands({
 
             {/* Quick Commands */}
             {filteredCommands.length > 0 && (
-              <CommandGroup heading={t("ai.quick_commands.title", "Quick Commands")}>
+              <CommandGroup
+                heading={t("ai.quick_commands.title", "Quick Commands")}
+              >
                 {filteredCommands.map((cmd) => {
                   const Icon = getIcon(cmd.icon);
                   return (
@@ -177,7 +204,10 @@ export function QuickCommands({
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{cmd.name}</span>
                           {cmd.shortcut && (
-                            <Badge variant="outline" className="text-[10px] px-1 py-0">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1 py-0"
+                            >
                               {cmd.shortcut}
                             </Badge>
                           )}
@@ -197,27 +227,29 @@ export function QuickCommands({
             {!searchValue && Object.entries(templatesByCategory).length > 0 && (
               <>
                 <CommandSeparator />
-                {Object.entries(templatesByCategory).map(([category, templates]) => (
-                  <CommandGroup key={category} heading={category}>
-                    {templates.slice(0, 3).map((tpl) => (
-                      <CommandItem
-                        key={tpl.id}
-                        value={tpl.name}
-                        onSelect={() => handleSelectTemplate(tpl)}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        <Hash className="h-4 w-4 text-muted-foreground" />
-                        <div className="flex-1 min-w-0">
-                          <span className="font-medium">{tpl.name}</span>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {tpl.description}
-                          </p>
-                        </div>
-                        <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                ))}
+                {Object.entries(templatesByCategory).map(
+                  ([category, templates]) => (
+                    <CommandGroup key={category} heading={category}>
+                      {templates.slice(0, 3).map((tpl) => (
+                        <CommandItem
+                          key={tpl.id}
+                          value={tpl.name}
+                          onSelect={() => handleSelectTemplate(tpl)}
+                          className="flex items-center gap-2 cursor-pointer"
+                        >
+                          <Hash className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex-1 min-w-0">
+                            <span className="font-medium">{tpl.name}</span>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {tpl.description}
+                            </p>
+                          </div>
+                          <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  )
+                )}
               </>
             )}
           </CommandList>
@@ -229,7 +261,11 @@ export function QuickCommands({
             </p>
             <div className="flex flex-wrap gap-1">
               {TEMPLATE_VARIABLES.slice(0, 4).map((v) => (
-                <Badge key={v.key} variant="secondary" className="text-[10px] px-1 py-0">
+                <Badge
+                  key={v.key}
+                  variant="secondary"
+                  className="text-[10px] px-1 py-0"
+                >
                   {v.key}
                 </Badge>
               ))}
@@ -250,9 +286,12 @@ export interface QuickCommandsTriggerProps {
   className?: string;
 }
 
-export function QuickCommandsTrigger({ onClick, className }: QuickCommandsTriggerProps) {
+export function QuickCommandsTrigger({
+  onClick,
+  className,
+}: QuickCommandsTriggerProps) {
   const { t } = useTranslation();
-  
+
   return (
     <Button
       type="button"
@@ -271,22 +310,22 @@ export function QuickCommandsTrigger({ onClick, className }: QuickCommandsTrigge
 // Returns computed values and handlers - no side effects in render
 export function useSlashCommands(inputValue: string) {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   // Compute if input starts with slash
   const startsWithSlash = inputValue.startsWith("/");
   const slashFilter = startsWithSlash ? inputValue : "";
-  
+
   // Handler to check input and update open state
   const checkInput = useCallback((value: string) => {
     const shouldBeOpen = value.startsWith("/");
     setIsOpen(shouldBeOpen);
   }, []);
-  
+
   // Close handler
   const close = useCallback(() => {
     setIsOpen(false);
   }, []);
-  
+
   // Open handler
   const open = useCallback(() => {
     setIsOpen(true);
@@ -328,7 +367,10 @@ export function VariableInsert({ onInsert, className }: VariableInsertProps) {
       </PopoverTrigger>
       <PopoverContent className="w-64 p-2" align="start">
         <p className="text-xs font-medium mb-2">
-          {t("ai.quick_commands.select_variable", "Select a variable to insert")}
+          {t(
+            "ai.quick_commands.select_variable",
+            "Select a variable to insert"
+          )}
         </p>
         <ScrollArea className="h-48">
           <div className="space-y-1">

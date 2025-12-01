@@ -1,11 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useAIChatStore, type Message } from "@/lib/ai-chat-store";
+import { useAIChatStore, type Message } from "@/lib/ai/core";
 import {
   chatStream,
   type AIServiceConfig,
   type SimpleToolInvocation,
-} from "@/lib/ai-service";
-import { getAPIKeySecurely } from "@/lib/tauri-bridge-ai";
+} from "@/lib/ai/core";
+import { getAPIKeySecurely } from "@/lib/platform";
 
 // Debounce interval for streaming updates (ms)
 const STREAMING_UPDATE_INTERVAL = 50;

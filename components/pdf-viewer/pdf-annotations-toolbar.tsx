@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
-import { usePDFStore, AnnotationStamp } from "@/lib/pdf-store";
+import { usePDFStore, AnnotationStamp } from "@/lib/pdf";
 import { AnnotationColorPicker } from "./annotation-color-picker";
 import { AnnotationStamps } from "./annotation-stamps";
 import { cn } from "@/lib/utils";
@@ -131,7 +131,9 @@ export function PDFAnnotationsToolbar({
                 <Highlighter className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>{t("annotations.toolbar.highlight")}</TooltipContent>
+            <TooltipContent>
+              {t("annotations.toolbar.highlight")}
+            </TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -296,7 +298,9 @@ export function PDFAnnotationsToolbar({
                 <PenLine className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>{t("annotations.toolbar.signature")}</TooltipContent>
+            <TooltipContent>
+              {t("annotations.toolbar.signature")}
+            </TooltipContent>
           </Tooltip>
 
           <Separator orientation="vertical" className="h-6" />
@@ -354,7 +358,9 @@ export function PDFAnnotationsToolbar({
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>{t("annotations.toolbar.clear_page")}</TooltipContent>
+                <TooltipContent>
+                  {t("annotations.toolbar.clear_page")}
+                </TooltipContent>
               </Tooltip>
             )}
           </div>

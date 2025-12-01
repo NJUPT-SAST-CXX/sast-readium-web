@@ -1,11 +1,24 @@
 import { useState, useCallback, useRef } from "react";
-import { useAIChatStore, type ResearchStep, type ResearchStepType, type ResearchSource } from "@/lib/ai-chat-store";
-import { chatStream, type AIServiceConfig } from "@/lib/ai-service";
-import { getAPIKeySecurely } from "@/lib/tauri-bridge-ai";
+import {
+  useAIChatStore,
+  type ResearchStep,
+  type ResearchStepType,
+  type ResearchSource,
+} from "@/lib/ai/core";
+import { chatStream, type AIServiceConfig } from "@/lib/ai/core";
+import { getAPIKeySecurely } from "@/lib/platform";
 
 // Research step configuration
-const RESEARCH_STEPS: { type: ResearchStepType; title: string; description: string }[] = [
-  { type: "plan", title: "制定研究计划", description: "分析问题并规划研究方向" },
+const RESEARCH_STEPS: {
+  type: ResearchStepType;
+  title: string;
+  description: string;
+}[] = [
+  {
+    type: "plan",
+    title: "制定研究计划",
+    description: "分析问题并规划研究方向",
+  },
   { type: "search", title: "搜索信息", description: "在文档中查找相关内容" },
   { type: "read", title: "深度阅读", description: "仔细阅读和理解关键内容" },
   { type: "analyze", title: "分析推理", description: "分析信息并进行逻辑推理" },
@@ -144,12 +157,14 @@ export function useDeepResearch(): UseDeepResearchReturn {
 
   // Get API config
   const getConfig = useCallback(async (): Promise<AIServiceConfig | null> => {
-    const providerId = settings.provider === "custom"
-      ? settings.customProviderId || ""
-      : settings.provider;
-    
-    const apiKey = await getAPIKeySecurely(providerId as "openai" | "anthropic")
-      .catch(() => settings.apiKeys[providerId]);
+    const providerId =
+      settings.provider === "custom"
+        ? settings.customProviderId || ""
+        : settings.provider;
+
+    const apiKey = await getAPIKeySecurely(
+      providerId as "openai" | "anthropic"
+    ).catch(() => settings.apiKeys[providerId]);
 
     if (!apiKey) {
       return null;
@@ -157,7 +172,9 @@ export function useDeepResearch(): UseDeepResearchReturn {
 
     const customProvider =
       settings.provider === "custom"
-        ? (settings.customProviders || []).find((p) => p.id === settings.customProviderId)
+        ? (settings.customProviders || []).find(
+            (p) => p.id === settings.customProviderId
+          )
         : undefined;
 
     return {
@@ -178,7 +195,11 @@ export function useDeepResearch(): UseDeepResearchReturn {
       stepTitle: string,
       stepDescription: string,
       previousContext: string
-    ): Promise<{ result: string; reasoning: string; sources: ResearchSource[] }> => {
+    ): Promise<{
+      result: string;
+      reasoning: string;
+      sources: ResearchSource[];
+    }> => {
       const stepId = addResearchStep({
         type: stepType,
         status: "running",
@@ -247,7 +268,10 @@ export function useDeepResearch(): UseDeepResearchReturn {
           result: fullResult,
           sources,
           completedAt: Date.now(),
-          duration: Date.now() - (currentResearch?.steps.find((s) => s.id === stepId)?.startedAt || Date.now()),
+          duration:
+            Date.now() -
+            (currentResearch?.steps.find((s) => s.id === stepId)?.startedAt ||
+              Date.now()),
         });
 
         return { result: fullResult, reasoning: fullResult, sources };
@@ -327,7 +351,14 @@ export function useDeepResearch(): UseDeepResearchReturn {
         currentStepIdRef.current = null;
       }
     },
-    [getConfig, initResearch, executeStep, setResearchPlan, completeResearch, pdfContext]
+    [
+      getConfig,
+      initResearch,
+      executeStep,
+      setResearchPlan,
+      completeResearch,
+      pdfContext,
+    ]
   );
 
   // Cancel research

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
-import { PDFPageProxy, TextItem } from "@/lib/pdf-utils";
-import { usePDFStore } from "@/lib/pdf-store";
-import { useAIChatStore } from "@/lib/ai-chat-store";
+import { PDFPageProxy, TextItem } from "@/lib/pdf";
+import { usePDFStore } from "@/lib/pdf";
+import { useAIChatStore } from "@/lib/ai/core";
 import { Button } from "@/components/ui/button";
 import { Copy, Download, FileText, X, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -233,7 +233,11 @@ export function PDFSelectionLayer({
         // Sync to AI context
         updatePDFContext({ selectedText });
         alert(
-          t("selection.text_copied", { preview: selectedText.substring(0, 50) + (selectedText.length > 50 ? "..." : "") })
+          t("selection.text_copied", {
+            preview:
+              selectedText.substring(0, 50) +
+              (selectedText.length > 50 ? "..." : ""),
+          })
         );
         setSelection(null);
         setShowMenu(false);
@@ -301,12 +305,14 @@ export function PDFSelectionLayer({
             );
             const dataUrl = tempCanvas.toDataURL("image/png");
             updatePDFContext({
-              pageImages: [{
-                dataUrl,
-                width: rect.width,
-                height: rect.height,
-                pageNumber,
-              }],
+              pageImages: [
+                {
+                  dataUrl,
+                  width: rect.width,
+                  height: rect.height,
+                  pageNumber,
+                },
+              ],
             });
             setSidebarOpen(true);
           }

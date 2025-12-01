@@ -4,7 +4,7 @@
 
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { AIChatPanel } from "../ai-chat-panel";
-import { useAIChatStore, type AISettings } from "@/lib/ai-chat-store";
+import { useAIChatStore, type AISettings } from "@/lib/ai/core";
 import { useAIChat } from "@/hooks/use-ai-chat";
 
 // Helper to create valid AISettings for tests

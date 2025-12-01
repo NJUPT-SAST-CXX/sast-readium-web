@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { AboutContent } from "../about-content";
-import { checkForAppUpdates } from "@/lib/update-service";
+import { checkForAppUpdates } from "@/lib/platform";
 
 // Mock next/image
 jest.mock("next/image", () => ({
@@ -25,7 +25,7 @@ jest.mock("react-i18next", () => ({
 }));
 
 // Mock update service
-jest.mock("@/lib/update-service", () => ({
+jest.mock("@/lib/platform", () => ({
   checkForAppUpdates: jest.fn(),
 }));
 

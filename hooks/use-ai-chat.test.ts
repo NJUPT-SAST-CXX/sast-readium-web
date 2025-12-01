@@ -4,19 +4,34 @@
 
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useAIChat } from "./use-ai-chat";
-import { useAIChatStore } from "@/lib/ai-chat-store";
-import * as aiService from "@/lib/ai-service";
-import * as tauriBridgeAI from "@/lib/tauri-bridge-ai";
+import { useAIChatStore } from "@/lib/ai/core";
 
-// Mock the AI service
-jest.mock("@/lib/ai-service", () => ({
-  chatStream: jest.fn(),
-}));
+// Mock chatStream but keep the rest of the module
+jest.mock("@/lib/ai/core", () => {
+  const actual = jest.requireActual("@/lib/ai/core");
+  return {
+    ...actual,
+    chatStream: jest.fn(),
+  };
+});
 
-// Mock the Tauri bridge
-jest.mock("@/lib/tauri-bridge-ai", () => ({
+// Mock the platform module
+jest.mock("@/lib/platform", () => ({
   getAPIKeySecurely: jest.fn(),
+  isTauri: jest.fn(() => false),
 }));
+
+// Import after mocks
+import * as aiCore from "@/lib/ai/core";
+import * as platform from "@/lib/platform";
+
+// Get references to mocked functions
+const aiService = {
+  chatStream: aiCore.chatStream as jest.MockedFunction<
+    typeof aiCore.chatStream
+  >,
+};
+const tauriBridgeAI = platform;
 
 // Reset store before each test
 beforeEach(() => {

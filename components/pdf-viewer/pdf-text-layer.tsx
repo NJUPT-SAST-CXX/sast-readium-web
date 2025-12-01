@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { PDFPageProxy, TextItem } from "@/lib/pdf-utils";
+import { PDFPageProxy, TextItem } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
 import { Copy, Highlighter, X } from "lucide-react";
-import { usePDFStore } from "@/lib/pdf-store";
+import { usePDFStore } from "@/lib/pdf";
 
 interface PDFTextLayerProps {
   page: PDFPageProxy | null;

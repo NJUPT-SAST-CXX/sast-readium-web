@@ -127,6 +127,11 @@ const config: Config = {
     // Mock ESM-only modules
     "^use-stick-to-bottom$": "<rootDir>/__mocks__/use-stick-to-bottom.js",
     "^pkce-challenge$": "<rootDir>/__mocks__/pkce-challenge.js",
+    "^nanoid$": "<rootDir>/__mocks__/nanoid.js",
+    "^react-markdown$": "<rootDir>/__mocks__/react-markdown.js",
+    "^remark-gfm$": "<rootDir>/__mocks__/remark-gfm.js",
+    "^rehype-raw$": "<rootDir>/__mocks__/rehype-raw.js",
+    "^shiki$": "<rootDir>/__mocks__/shiki.js",
   },
 
   // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
@@ -211,7 +216,13 @@ const config: Config = {
   ],
 
   // An array of regexp pattern strings that are matched against all test paths, matched tests are skipped
-  testPathIgnorePatterns: ["/node_modules/", "/.next/", "/out/", "/src-tauri/"],
+  testPathIgnorePatterns: [
+    "/node_modules/",
+    "/.next/",
+    "/out/",
+    "/src-tauri/",
+    "/e2e/",
+  ],
 
   // The regexp pattern or array of patterns that Jest uses to detect test files
   // testRegex: [],

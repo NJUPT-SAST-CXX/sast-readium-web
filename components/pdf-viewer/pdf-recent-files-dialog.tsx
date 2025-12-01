@@ -1,6 +1,6 @@
 "use client";
 
-import { usePDFStore, type RecentFile } from "@/lib/pdf-store";
+import { usePDFStore, type RecentFile } from "@/lib/pdf";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -26,7 +26,7 @@ import {
   revealInFileManager,
   renameFile,
   deleteFile,
-} from "@/lib/tauri-bridge";
+} from "@/lib/platform";
 
 interface PDFRecentFilesDialogProps {
   open: boolean;

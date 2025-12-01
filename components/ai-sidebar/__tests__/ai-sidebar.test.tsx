@@ -4,7 +4,7 @@
 
 import { render, screen, fireEvent } from "@testing-library/react";
 import { AISidebar } from "../ai-sidebar";
-import { useAIChatStore } from "@/lib/ai-chat-store";
+import { useAIChatStore } from "@/lib/ai/core";
 
 // Mock child components
 jest.mock("../ai-chat-panel", () => ({
