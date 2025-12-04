@@ -5,11 +5,12 @@
 import {
   createHTTPMCPClient,
   createSSEMCPClient,
-  createStdioMCPClient,
+  createUnifiedMCPClient,
   createMCPClientFromConfig,
   getMCPClient,
   getMCPTools,
   getAllMCPTools,
+  getAllMCPToolsUnified,
   closeMCPClient,
   closeAllMCPClients,
   listMCPResources,
@@ -23,6 +24,8 @@ import {
   testMCPConnection,
   clearMCPConnectionStatus,
   isStdioMCPAvailable,
+  connectMCPServer,
+  disconnectMCPServer,
   type MCPServerConfig,
 } from "./mcp-client";
 
@@ -98,29 +101,102 @@ describe("MCP Client", () => {
     });
   });
 
-  describe("createStdioMCPClient", () => {
-    it("should return null in browser mode", async () => {
-      mockIsTauri.mockReturnValue(false);
+  describe("createUnifiedMCPClient", () => {
+    it("should return null for disabled config", async () => {
+      const config: MCPServerConfig = {
+        id: "test-server",
+        name: "Test Server",
+        type: "http",
+        enabled: false,
+        url: "https://mcp.example.com",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
 
-      const client = await createStdioMCPClient({
-        command: "npx",
-        args: ["-y", "@modelcontextprotocol/server-filesystem"],
-      });
+      const client = await createUnifiedMCPClient(config);
 
       expect(client).toBeNull();
     });
 
-    it("should log warning in Tauri mode (not fully implemented)", async () => {
-      mockIsTauri.mockReturnValue(true);
-      const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
+    it("should create unified client for HTTP config", async () => {
+      const config: MCPServerConfig = {
+        id: "unified-http",
+        name: "Unified HTTP",
+        type: "http",
+        enabled: true,
+        url: "https://mcp.example.com",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
 
-      const client = await createStdioMCPClient({
+      const client = await createUnifiedMCPClient(config);
+
+      expect(client).toBeDefined();
+      expect(client?.transportType).toBe("http");
+      expect(client?.isNative).toBe(false);
+    });
+
+    it("should fail for stdio in browser mode", async () => {
+      mockIsTauri.mockReturnValue(false);
+
+      const config: MCPServerConfig = {
+        id: "stdio-test",
+        name: "Stdio Test",
+        type: "stdio",
+        enabled: true,
         command: "npx",
-        args: ["-y", "@modelcontextprotocol/server-filesystem"],
-      });
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      const client = await createUnifiedMCPClient(config);
+
+      expect(client).toBeNull();
+    });
+  });
+
+  describe("connectMCPServer and disconnectMCPServer", () => {
+    it("should connect and disconnect HTTP server", async () => {
+      const config: MCPServerConfig = {
+        id: "connect-test",
+        name: "Connect Test",
+        type: "http",
+        enabled: true,
+        url: "https://mcp.example.com",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      const client = await connectMCPServer(config);
+      expect(client).toBeDefined();
+
+      await disconnectMCPServer(config.id);
+      expect(mockMCPClient.close).toHaveBeenCalled();
+    });
+  });
+
+  describe("getAllMCPToolsUnified", () => {
+    it("should return tools from HTTP servers", async () => {
+      const mockTools = {
+        tool1: { description: "Tool 1" },
+      };
+      mockMCPClient.tools.mockResolvedValue(mockTools);
+
+      const configs: MCPServerConfig[] = [
+        {
+          id: "unified-server",
+          name: "Unified Server",
+          type: "http",
+          enabled: true,
+          url: "https://mcp.example.com",
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ];
+
+      const tools = await getAllMCPToolsUnified(configs);
+
+      expect(Object.keys(tools).length).toBeGreaterThan(0);
     });
   });
 

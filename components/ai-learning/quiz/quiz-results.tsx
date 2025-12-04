@@ -10,15 +10,8 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Accordion,
   AccordionContent,
@@ -112,9 +105,9 @@ export function QuizResults({ attemptId, onRetry, onExit }: QuizResultsProps) {
 
   if (!attempt || !quiz || !stats) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-6">
+      <div className="flex flex-col items-center justify-center h-full p-4 sm:p-6 text-center">
         <p className="text-muted-foreground">{t("learning.common.error")}</p>
-        <Button onClick={onExit} className="mt-4">
+        <Button onClick={onExit} className="mt-4 w-full sm:w-auto">
           {t("learning.common.close")}
         </Button>
       </div>
@@ -151,15 +144,24 @@ export function QuizResults({ attemptId, onRetry, onExit }: QuizResultsProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={onExit}>
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            {t("learning.common.close")}
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onExit}
+            className="shrink-0 h-8 px-2 sm:px-3"
+          >
+            <ArrowLeft className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">
+              {t("learning.common.close")}
+            </span>
           </Button>
-          <div>
-            <h3 className="font-medium">{quiz.title}</h3>
-            <p className="text-xs text-muted-foreground">
+          <div className="min-w-0">
+            <h3 className="font-medium text-sm sm:text-base truncate">
+              {quiz.title}
+            </h3>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
               {t("learning.quiz.results.title")}
             </p>
           </div>
@@ -167,7 +169,7 @@ export function QuizResults({ attemptId, onRetry, onExit }: QuizResultsProps) {
       </div>
 
       {/* Results */}
-      <div className="flex-1 overflow-auto p-6 space-y-6">
+      <div className="flex-1 overflow-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Score Card */}
         <Card
           className={cn(
@@ -177,30 +179,30 @@ export function QuizResults({ attemptId, onRetry, onExit }: QuizResultsProps) {
               : "border-red-200 bg-red-50/50"
           )}
         >
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-center mb-4">
+          <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6">
+            <div className="flex items-center justify-center mb-3 sm:mb-4">
               <div className="relative">
                 <Trophy
                   className={cn(
-                    "w-16 h-16",
+                    "w-12 h-12 sm:w-16 sm:h-16",
                     isPassing ? "text-green-500" : "text-gray-400"
                   )}
                 />
                 {isPassing && (
-                  <CheckCircle2 className="w-6 h-6 text-green-600 absolute -bottom-1 -right-1 bg-white rounded-full" />
+                  <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 absolute -bottom-1 -right-1 bg-white rounded-full" />
                 )}
               </div>
             </div>
             <div className="text-center">
               <p
                 className={cn(
-                  "text-5xl font-bold mb-2",
+                  "text-4xl sm:text-5xl font-bold mb-1 sm:mb-2",
                   getScoreColor(scorePercentage)
                 )}
               >
                 {scorePercentage}%
               </p>
-              <p className="text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {stats.correctCount} / {stats.totalQuestions}{" "}
                 {t("learning.quiz.results.correct")}
               </p>
@@ -209,31 +211,31 @@ export function QuizResults({ attemptId, onRetry, onExit }: QuizResultsProps) {
         </Card>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-4">
-          <Card className="p-4 text-center">
-            <CheckCircle2 className="w-6 h-6 text-green-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-green-600">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          <Card className="p-2.5 sm:p-4 text-center">
+            <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 mx-auto mb-1 sm:mb-2" />
+            <p className="text-xl sm:text-2xl font-bold text-green-600">
               {stats.correctCount}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
               {t("learning.quiz.results.correct")}
             </p>
           </Card>
-          <Card className="p-4 text-center">
-            <XCircle className="w-6 h-6 text-red-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-red-600">
+          <Card className="p-2.5 sm:p-4 text-center">
+            <XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-red-500 mx-auto mb-1 sm:mb-2" />
+            <p className="text-xl sm:text-2xl font-bold text-red-600">
               {stats.incorrectCount}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
               {t("learning.quiz.results.incorrect")}
             </p>
           </Card>
-          <Card className="p-4 text-center">
-            <Clock className="w-6 h-6 text-blue-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-blue-600">
+          <Card className="p-2.5 sm:p-4 text-center">
+            <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500 mx-auto mb-1 sm:mb-2" />
+            <p className="text-lg sm:text-2xl font-bold text-blue-600">
               {formatDuration(stats.totalTime)}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
               {t("learning.quiz.results.time_taken")}
             </p>
           </Card>
@@ -241,10 +243,15 @@ export function QuizResults({ attemptId, onRetry, onExit }: QuizResultsProps) {
 
         {/* Difficulty Breakdown */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Performance by Difficulty</CardTitle>
+          <CardHeader className="pb-2 px-3 sm:px-6">
+            <CardTitle className="text-sm">
+              {t(
+                "learning.quiz.results.performance_by_difficulty",
+                "Performance by Difficulty"
+              )}
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 px-3 sm:px-6">
             {(["easy", "medium", "hard"] as const).map((difficulty) => {
               const diffStats = stats.byDifficulty[difficulty];
               if (!diffStats || diffStats.total === 0) return null;
@@ -253,7 +260,7 @@ export function QuizResults({ attemptId, onRetry, onExit }: QuizResultsProps) {
               );
               return (
                 <div key={difficulty} className="space-y-1">
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs sm:text-sm">
                     <span className="capitalize">
                       {t(`learning.quiz.difficulty.${difficulty}`)}
                     </span>
@@ -261,7 +268,7 @@ export function QuizResults({ attemptId, onRetry, onExit }: QuizResultsProps) {
                       {diffStats.correct}/{diffStats.total} ({pct}%)
                     </span>
                   </div>
-                  <Progress value={pct} className="h-2" />
+                  <Progress value={pct} className="h-1.5 sm:h-2" />
                 </div>
               );
             })}
@@ -270,17 +277,17 @@ export function QuizResults({ attemptId, onRetry, onExit }: QuizResultsProps) {
       </div>
 
       {/* Actions */}
-      <div className="px-4 py-4 border-t bg-muted/30">
-        <div className="flex gap-3">
+      <div className="px-3 sm:px-4 py-3 sm:py-4 border-t bg-muted/30">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <Button
             variant="outline"
-            className="flex-1"
+            className="flex-1 h-10 sm:h-11"
             onClick={() => setShowReview(true)}
           >
             <ChevronRight className="w-4 h-4 mr-1" />
             {t("learning.quiz.results.review_answers")}
           </Button>
-          <Button className="flex-1" onClick={onRetry}>
+          <Button className="flex-1 h-10 sm:h-11" onClick={onRetry}>
             <RotateCcw className="w-4 h-4 mr-1" />
             {t("learning.quiz.results.try_again")}
           </Button>
@@ -336,8 +343,8 @@ function AnswerReview({
                 )}
               >
                 <AccordionTrigger className="hover:no-underline">
-                  <div className="flex items-center gap-3 text-left">
-                    <span className="flex-shrink-0">
+                  <div className="flex items-center gap-2 sm:gap-3 text-left">
+                    <span className="shrink-0">
                       {isCorrect === true && (
                         <CheckCircle2 className="w-5 h-5 text-green-500" />
                       )}

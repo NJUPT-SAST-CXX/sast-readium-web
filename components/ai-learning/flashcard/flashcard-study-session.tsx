@@ -6,7 +6,7 @@
  * Displays cards for review with flip animation and rating buttons.
  */
 
-import { useState, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -46,7 +46,6 @@ export function FlashcardStudySession({
   onExit,
 }: FlashcardStudySessionProps) {
   const { t } = useTranslation();
-  const [isFlipped, setIsFlipped] = useState(false);
 
   const currentSession = useFlashcardStore((state) => state.currentSession);
   const currentCardIndex = useFlashcardStore((state) => state.currentCardIndex);
@@ -69,7 +68,6 @@ export function FlashcardStudySession({
   const handleRate = useCallback(
     (rating: "again" | "hard" | "good" | "easy") => {
       rateCard(rating);
-      setIsFlipped(false);
 
       // Check if session is complete
       if (currentCardIndex >= studyQueue.length - 1) {
@@ -85,7 +83,6 @@ export function FlashcardStudySession({
     } else {
       hideAnswer();
     }
-    setIsFlipped((prev) => !prev);
   }, [showAnswer, revealAnswer, hideAnswer]);
 
   const handleExit = useCallback(() => {
@@ -95,18 +92,42 @@ export function FlashcardStudySession({
 
   if (!currentCard || !deck) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-6">
-        <CheckCircle2 className="w-16 h-16 text-green-500 mb-4" />
-        <h2 className="text-xl font-semibold mb-2">
-          {t("learning.flashcard.study.session_complete")}
+      <div className="flex flex-col items-center justify-center h-full p-4 sm:p-6 text-center">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-green-500/10 flex items-center justify-center mb-4">
+          <CheckCircle2 className="w-8 h-8 sm:w-10 sm:h-10 text-green-500" />
+        </div>
+        <h2 className="text-lg sm:text-xl font-semibold mb-2">
+          {t("learning.flashcard.study.session_complete", "Session Complete!")}
         </h2>
-        <p className="text-muted-foreground mb-4">
+        <p className="text-sm text-muted-foreground mb-4 max-w-xs">
           {currentSession &&
             t("learning.flashcard.study.cards_studied", {
               count: currentSession.cardsStudied.length,
             })}
         </p>
-        <Button onClick={onExit}>{t("learning.common.close")}</Button>
+        {currentSession && (
+          <div className="flex gap-4 mb-6 text-center">
+            <div>
+              <p className="text-2xl font-bold text-green-600">
+                {currentSession.cardsCorrect.length}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t("learning.flashcard.correct", "Correct")}
+              </p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-red-600">
+                {currentSession.cardsIncorrect.length}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t("learning.flashcard.incorrect", "Incorrect")}
+              </p>
+            </div>
+          </div>
+        )}
+        <Button onClick={onExit} className="w-full sm:w-auto">
+          {t("learning.common.close")}
+        </Button>
       </div>
     );
   }
@@ -114,22 +135,31 @@ export function FlashcardStudySession({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={handleExit}>
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            {t("learning.common.close")}
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleExit}
+            className="shrink-0 h-8 px-2 sm:px-3"
+          >
+            <ArrowLeft className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">
+              {t("learning.common.close")}
+            </span>
           </Button>
-          <div>
-            <h3 className="font-medium">{deck.name}</h3>
-            <p className="text-xs text-muted-foreground">
+          <div className="min-w-0">
+            <h3 className="font-medium text-sm sm:text-base truncate">
+              {deck.name}
+            </h3>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
               {t("learning.flashcard.study.cards_remaining", {
                 count: studyQueue.length - currentCardIndex,
               })}
             </p>
           </div>
         </div>
-        <Badge variant="outline" className="gap-1">
+        <Badge variant="outline" className="gap-1 text-xs shrink-0">
           <Target className="w-3 h-3" />
           {currentCardIndex + 1} / {studyQueue.length}
         </Badge>
@@ -139,18 +169,18 @@ export function FlashcardStudySession({
       <Progress value={progress} className="h-1 rounded-none" />
 
       {/* Card Display */}
-      <div className="flex-1 flex items-center justify-center p-6">
+      <div className="flex-1 flex items-center justify-center p-3 sm:p-6 overflow-auto">
         <div
           className={cn(
             "w-full max-w-md cursor-pointer",
-            "transition-transform duration-500"
+            "transition-transform duration-300 active:scale-[0.98]"
           )}
           onClick={handleFlip}
         >
-          <Card className="min-h-[300px] flex flex-col">
-            <CardHeader className="pb-2">
+          <Card className="min-h-[250px] sm:min-h-[300px] flex flex-col shadow-lg">
+            <CardHeader className="pb-2 px-3 sm:px-6">
               <div className="flex items-center justify-between">
-                <Badge variant="secondary">
+                <Badge variant="secondary" className="text-[10px] sm:text-xs">
                   {currentCard.type === "qa" && "Q&A"}
                   {currentCard.type === "fill-blank" &&
                     t("learning.flashcard.card_types.fill_blank")}
@@ -159,7 +189,12 @@ export function FlashcardStudySession({
                   {currentCard.type === "multiple-choice" &&
                     t("learning.flashcard.card_types.multiple_choice")}
                 </Badge>
-                <Button variant="ghost" size="sm" onClick={handleFlip}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleFlip}
+                  className="h-8 w-8 p-0"
+                >
                   {showAnswer ? (
                     <EyeOff className="w-4 h-4" />
                   ) : (
@@ -168,7 +203,7 @@ export function FlashcardStudySession({
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col justify-center">
+            <CardContent className="flex-1 flex flex-col justify-center px-3 sm:px-6 py-4">
               {!showAnswer ? (
                 <FlashcardFront card={currentCard} />
               ) : (
@@ -176,59 +211,68 @@ export function FlashcardStudySession({
               )}
             </CardContent>
           </Card>
+          {/* Tap hint for mobile */}
+          <p className="text-center text-[10px] text-muted-foreground mt-2 sm:hidden">
+            {t("learning.flashcard.study.tap_to_flip", "Tap card to flip")}
+          </p>
         </div>
       </div>
 
       {/* Controls */}
-      <div className="px-4 py-4 border-t bg-muted/30">
+      <div className="px-3 sm:px-4 py-3 sm:py-4 border-t bg-muted/30">
         {!showAnswer ? (
           <div className="flex justify-center">
-            <Button onClick={handleFlip} size="lg" className="gap-2">
+            <Button
+              onClick={handleFlip}
+              size="lg"
+              className="gap-2 w-full sm:w-auto h-11 sm:h-12"
+            >
               <Eye className="w-4 h-4" />
               {t("learning.flashcard.study.show_answer")}
             </Button>
           </div>
         ) : (
-          <div className="space-y-3">
-            <p className="text-center text-sm text-muted-foreground">
+          <div className="space-y-2 sm:space-y-3">
+            <p className="text-center text-xs sm:text-sm text-muted-foreground">
               {t("learning.flashcard.study.rate_card")}
             </p>
-            <div className="flex justify-center gap-2">
+            {/* Mobile: 2x2 grid, Desktop: 4 columns */}
+            <div className="grid grid-cols-2 sm:flex sm:justify-center gap-2">
               <Button
                 variant="outline"
                 size="lg"
-                className="flex-1 max-w-[120px] border-red-200 hover:bg-red-50 hover:text-red-700"
+                className="h-11 sm:h-12 sm:flex-1 sm:max-w-[120px] border-red-200 hover:bg-red-50 hover:text-red-700 text-sm"
                 onClick={() => handleRate("again")}
               >
                 <RotateCcw className="w-4 h-4 mr-1" />
-                {t("learning.flashcard.study.again")}
+                {t("learning.flashcard.study.again", "Again")}
               </Button>
               <Button
                 variant="outline"
                 size="lg"
-                className="flex-1 max-w-[120px] border-orange-200 hover:bg-orange-50 hover:text-orange-700"
+                className="h-11 sm:h-12 sm:flex-1 sm:max-w-[120px] border-orange-200 hover:bg-orange-50 hover:text-orange-700 text-sm"
                 onClick={() => handleRate("hard")}
               >
                 <ThumbsDown className="w-4 h-4 mr-1" />
-                {t("learning.flashcard.study.hard")}
+                {t("learning.flashcard.study.hard", "Hard")}
               </Button>
               <Button
                 variant="outline"
                 size="lg"
-                className="flex-1 max-w-[120px] border-green-200 hover:bg-green-50 hover:text-green-700"
+                className="h-11 sm:h-12 sm:flex-1 sm:max-w-[120px] border-green-200 hover:bg-green-50 hover:text-green-700 text-sm"
                 onClick={() => handleRate("good")}
               >
                 <ThumbsUp className="w-4 h-4 mr-1" />
-                {t("learning.flashcard.study.good")}
+                {t("learning.flashcard.study.good", "Good")}
               </Button>
               <Button
                 variant="outline"
                 size="lg"
-                className="flex-1 max-w-[120px] border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                className="h-11 sm:h-12 sm:flex-1 sm:max-w-[120px] border-blue-200 hover:bg-blue-50 hover:text-blue-700 text-sm"
                 onClick={() => handleRate("easy")}
               >
                 <Zap className="w-4 h-4 mr-1" />
-                {t("learning.flashcard.study.easy")}
+                {t("learning.flashcard.study.easy", "Easy")}
               </Button>
             </div>
           </div>

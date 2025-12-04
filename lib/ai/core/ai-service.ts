@@ -43,7 +43,7 @@ import {
   type SpeechVoice,
   type TranscriptionModelId,
 } from "./ai-providers";
-import { getAllMCPTools, type MCPServerConfig } from "./mcp-client";
+import { getAllMCPToolsUnified, type MCPServerConfig } from "./mcp-client";
 
 // ============================================================================
 // Types
@@ -601,12 +601,14 @@ export async function chatStream(
     // Combine PDF tools with MCP tools
     let tools = enableTools ? createPDFTools(pdfContext) : undefined;
 
-    // Add MCP tools if configured
+    // Add MCP tools if configured (unified API handles both local and remote)
     if (enableTools && mcpServers.length > 0) {
       try {
-        const mcpTools = await getAllMCPTools(mcpServers);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        tools = { ...tools, ...mcpTools } as any;
+        const mcpTools = await getAllMCPToolsUnified(mcpServers);
+        if (Object.keys(mcpTools).length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          tools = { ...tools, ...mcpTools } as any;
+        }
       } catch (error) {
         console.warn("Failed to load MCP tools:", error);
       }

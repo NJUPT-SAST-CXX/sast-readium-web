@@ -18,6 +18,11 @@ import {
   ChevronDown,
   FileText,
   Menu,
+  Edit,
+  Eye,
+  PanelRight,
+  List,
+  Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,26 +40,38 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
-import { readMarkdownContent } from "@/lib/utils";
-import { MarkdownRenderer } from "@/components/help/markdown-renderer";
+import {
+  cn,
+  readMarkdownContent,
+  searchInContent,
+  type SearchResult,
+} from "@/lib/utils";
 import { usePDFStore } from "@/lib/pdf";
+import { MarkdownPreview, TOCSidebar, type TOCItem } from "./markdown-preview";
+import { MarkdownEditor } from "./markdown-editor";
+
+export type MarkdownViewMode = "view" | "edit" | "split";
 
 interface MarkdownViewerProps {
   file: File;
   onClose?: () => void;
   header?: React.ReactNode;
+  initialMode?: MarkdownViewMode;
+  onSave?: (content: string, file: File) => void;
 }
 
-interface SearchResult {
-  index: number;
-  text: string;
-  context: string;
-}
+// SearchResult type is now imported from @/lib/utils
 
-export function MarkdownViewer({ file, onClose, header }: MarkdownViewerProps) {
-  const { t, i18n } = useTranslation();
+export function MarkdownViewer({
+  file,
+  onClose,
+  header,
+  initialMode = "view",
+  onSave,
+}: MarkdownViewerProps) {
+  const { t } = useTranslation();
   const [content, setContent] = useState<string>("");
+  const [originalContent, setOriginalContent] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1.0);
@@ -64,11 +81,41 @@ export function MarkdownViewer({ file, onClose, header }: MarkdownViewerProps) {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
   const [showToolbar, setShowToolbar] = useState(true);
+  const [viewMode, setViewMode] = useState<MarkdownViewMode>(initialMode);
+  const [showTOC, setShowTOC] = useState(false);
+  const [headings, setHeadings] = useState<TOCItem[]>([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { isDarkMode, themeMode, setThemeMode } = usePDFStore();
+
+  // Track unsaved changes
+  const handleContentChange = useCallback(
+    (newContent: string) => {
+      setContent(newContent);
+      setHasUnsavedChanges(newContent !== originalContent);
+    },
+    [originalContent]
+  );
+
+  // Handle save
+  const handleSave = useCallback(() => {
+    if (onSave) {
+      onSave(content, file);
+      setOriginalContent(content);
+      setHasUnsavedChanges(false);
+    }
+  }, [content, file, onSave]);
+
+  // Handle anchor click from TOC
+  const handleAnchorClick = useCallback((id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
 
   // Load markdown content
   useEffect(() => {
@@ -81,6 +128,7 @@ export function MarkdownViewer({ file, onClose, header }: MarkdownViewerProps) {
         const text = await readMarkdownContent(file);
         if (!cancelled) {
           setContent(text);
+          setOriginalContent(text);
         }
       } catch (err) {
         console.error("Failed to load markdown:", err);
@@ -101,38 +149,14 @@ export function MarkdownViewer({ file, onClose, header }: MarkdownViewerProps) {
     };
   }, [file, t]);
 
-  // Search functionality
+  // Search functionality - using imported searchInContent utility
   const handleSearch = useCallback(() => {
     if (!searchQuery.trim() || !content) {
       setSearchResults([]);
       return;
     }
 
-    const query = searchQuery.toLowerCase();
-    const results: SearchResult[] = [];
-    const lines = content.split("\n");
-    let charIndex = 0;
-
-    lines.forEach((line) => {
-      let lineIndex = 0;
-      while (true) {
-        const foundIndex = line.toLowerCase().indexOf(query, lineIndex);
-        if (foundIndex === -1) break;
-
-        results.push({
-          index: charIndex + foundIndex,
-          text: line.substring(foundIndex, foundIndex + query.length),
-          context: line.substring(
-            Math.max(0, foundIndex - 30),
-            Math.min(line.length, foundIndex + query.length + 30)
-          ),
-        });
-
-        lineIndex = foundIndex + 1;
-      }
-      charIndex += line.length + 1; // +1 for newline
-    });
-
+    const results = searchInContent(content, searchQuery, false);
     setSearchResults(results);
     setCurrentSearchIndex(0);
   }, [searchQuery, content]);
@@ -261,6 +285,14 @@ export function MarkdownViewer({ file, onClose, header }: MarkdownViewerProps) {
           nextSearchResult();
         }
       }
+
+      // Ctrl/Cmd + S: Save
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        if (onSave && hasUnsavedChanges) {
+          handleSave();
+        }
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -273,6 +305,9 @@ export function MarkdownViewer({ file, onClose, header }: MarkdownViewerProps) {
     toggleFullscreen,
     nextSearchResult,
     previousSearchResult,
+    onSave,
+    hasUnsavedChanges,
+    handleSave,
   ]);
 
   // Theme background class
@@ -314,18 +349,40 @@ export function MarkdownViewer({ file, onClose, header }: MarkdownViewerProps) {
         {/* Header (Tab bar) */}
         {header}
 
+        {/* Collapsed toolbar toggle button */}
+        {!showToolbar && (
+          <div className="absolute top-2 left-2 z-10 print:hidden">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="h-8 w-8 shadow-md"
+                  onClick={() => setShowToolbar(true)}
+                >
+                  <Menu className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {t("toolbar.tooltip.toggle_menu")}
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        )}
+
         {/* Toolbar */}
         {showToolbar && (
-          <div className="flex items-center justify-between border-b border-border bg-background/95 px-2 py-1 backdrop-blur print:hidden">
-            <div className="flex items-center gap-1">
-              {/* Menu toggle */}
+          <div className="flex items-center justify-between border-b border-border bg-background/95 px-2 py-1 backdrop-blur print:hidden overflow-x-auto">
+            <div className="flex items-center gap-1 shrink-0">
+              {/* Menu toggle - always visible */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={() => setShowToolbar((prev) => !prev)}
+                    onClick={() => setShowToolbar(false)}
+                    aria-label={t("toolbar.tooltip.toggle_menu")}
                   >
                     <Menu className="h-4 w-4" />
                   </Button>
@@ -335,60 +392,72 @@ export function MarkdownViewer({ file, onClose, header }: MarkdownViewerProps) {
                 </TooltipContent>
               </Tooltip>
 
-              <Separator orientation="vertical" className="mx-1 h-6" />
+              <Separator
+                orientation="vertical"
+                className="mx-1 h-6 hidden sm:block"
+              />
 
-              {/* Zoom controls */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={zoomOut}
-                  >
-                    <ZoomOut className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{t("toolbar.tooltip.zoom_out")}</TooltipContent>
-              </Tooltip>
+              {/* Zoom controls - hidden on mobile */}
+              <div className="hidden sm:flex items-center gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={zoomOut}
+                      aria-label={t("toolbar.tooltip.zoom_out")}
+                    >
+                      <ZoomOut className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {t("toolbar.tooltip.zoom_out")}
+                  </TooltipContent>
+                </Tooltip>
 
-              <span className="min-w-[4rem] text-center text-sm">
-                {Math.round(zoom * 100)}%
-              </span>
+                <span className="min-w-[3rem] text-center text-sm">
+                  {Math.round(zoom * 100)}%
+                </span>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={zoomIn}
-                  >
-                    <ZoomIn className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{t("toolbar.tooltip.zoom_in")}</TooltipContent>
-              </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={zoomIn}
+                      aria-label={t("toolbar.tooltip.zoom_in")}
+                    >
+                      <ZoomIn className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {t("toolbar.tooltip.zoom_in")}
+                  </TooltipContent>
+                </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={resetZoom}
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {t("toolbar.tooltip.actual_size")}
-                </TooltipContent>
-              </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={resetZoom}
+                      aria-label={t("toolbar.tooltip.actual_size")}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {t("toolbar.tooltip.actual_size")}
+                  </TooltipContent>
+                </Tooltip>
 
-              <Separator orientation="vertical" className="mx-1 h-6" />
+                <Separator orientation="vertical" className="mx-1 h-6" />
+              </div>
 
-              {/* Search */}
+              {/* Search - always visible */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -401,19 +470,132 @@ export function MarkdownViewer({ file, onClose, header }: MarkdownViewerProps) {
                         setTimeout(() => searchInputRef.current?.focus(), 100);
                       }
                     }}
+                    aria-label={t("toolbar.tooltip.search")}
                   >
                     <Search className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>{t("toolbar.tooltip.search")}</TooltipContent>
               </Tooltip>
+
+              <Separator
+                orientation="vertical"
+                className="mx-1 h-6 hidden sm:block"
+              />
+
+              {/* TOC toggle - hidden on mobile in split/edit mode */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={showTOC ? "secondary" : "ghost"}
+                    size="icon"
+                    className={cn(
+                      "h-8 w-8",
+                      viewMode !== "view" && "hidden sm:flex"
+                    )}
+                    onClick={() => setShowTOC((prev) => !prev)}
+                    disabled={headings.length === 0}
+                    aria-label={t("markdown.toc", "Table of Contents")}
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {t("markdown.toc", "Table of Contents")}
+                </TooltipContent>
+              </Tooltip>
             </div>
 
-            <div className="flex items-center gap-1">
-              {/* Theme toggle */}
+            <div className="flex items-center gap-1 shrink-0">
+              {/* View mode toggle - use compact toggle on mobile */}
+              <div className="flex items-center bg-muted/50 rounded-md p-0.5">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={viewMode === "view" ? "secondary" : "ghost"}
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setViewMode("view")}
+                      aria-label={t("markdown.view_mode", "View")}
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {t("markdown.view_mode", "View")}
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={viewMode === "edit" ? "secondary" : "ghost"}
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setViewMode("edit")}
+                      aria-label={t("markdown.edit_mode", "Edit")}
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {t("markdown.edit_mode", "Edit")}
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Split view - hidden on mobile */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={viewMode === "split" ? "secondary" : "ghost"}
+                      size="icon"
+                      className="h-7 w-7 hidden sm:flex"
+                      onClick={() => setViewMode("split")}
+                      aria-label={t("markdown.split_mode", "Split View")}
+                    >
+                      <PanelRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {t("markdown.split_mode", "Split View")}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+
+              <Separator
+                orientation="vertical"
+                className="mx-1 h-6 hidden sm:block"
+              />
+
+              {/* Save button (only show if onSave provided and has changes) */}
+              {onSave && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={hasUnsavedChanges ? "default" : "ghost"}
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={handleSave}
+                      disabled={!hasUnsavedChanges}
+                      aria-label={t("markdown.save", "Save (Ctrl+S)")}
+                    >
+                      <Save className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {t("markdown.save", "Save (Ctrl+S)")}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              {/* Theme toggle - hidden on mobile */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 hidden sm:flex"
+                  >
                     {isDarkMode ? (
                       <Moon className="h-4 w-4" />
                     ) : (
@@ -437,9 +619,12 @@ export function MarkdownViewer({ file, onClose, header }: MarkdownViewerProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <Separator orientation="vertical" className="mx-1 h-6" />
+              <Separator
+                orientation="vertical"
+                className="mx-1 h-6 hidden sm:block"
+              />
 
-              {/* Download */}
+              {/* Download - always visible */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -447,6 +632,7 @@ export function MarkdownViewer({ file, onClose, header }: MarkdownViewerProps) {
                     size="icon"
                     className="h-8 w-8"
                     onClick={handleDownload}
+                    aria-label={t("toolbar.tooltip.download")}
                   >
                     <Download className="h-4 w-4" />
                   </Button>
@@ -454,14 +640,15 @@ export function MarkdownViewer({ file, onClose, header }: MarkdownViewerProps) {
                 <TooltipContent>{t("toolbar.tooltip.download")}</TooltipContent>
               </Tooltip>
 
-              {/* Print */}
+              {/* Print - hidden on mobile */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-8 w-8 hidden sm:flex"
                     onClick={handlePrint}
+                    aria-label={t("toolbar.tooltip.print")}
                   >
                     <Printer className="h-4 w-4" />
                   </Button>
@@ -469,14 +656,15 @@ export function MarkdownViewer({ file, onClose, header }: MarkdownViewerProps) {
                 <TooltipContent>{t("toolbar.tooltip.print")}</TooltipContent>
               </Tooltip>
 
-              {/* Fullscreen */}
+              {/* Fullscreen - hidden on mobile */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-8 w-8 hidden sm:flex"
                     onClick={toggleFullscreen}
+                    aria-label={t("toolbar.tooltip.fullscreen")}
                   >
                     {isFullscreen ? (
                       <Minimize2 className="h-4 w-4" />
@@ -544,28 +732,134 @@ export function MarkdownViewer({ file, onClose, header }: MarkdownViewerProps) {
         )}
 
         {/* Content */}
-        <ScrollArea className="flex-1">
-          <div
-            ref={contentRef}
-            className="mx-auto max-w-4xl px-6 py-8"
-            style={{
-              fontSize: `${zoom * 100}%`,
-            }}
-          >
-            <MarkdownRenderer
-              content={content}
-              docPath={file.name}
-              language={i18n.language.startsWith("zh") ? "zh" : "en"}
-            />
+        <div className="flex-1 flex overflow-hidden relative">
+          {/* TOC Sidebar - overlay on mobile, fixed on desktop */}
+          {showTOC && headings.length > 0 && viewMode !== "edit" && (
+            <>
+              {/* Mobile overlay backdrop */}
+              <div
+                className="fixed inset-0 bg-black/50 z-20 sm:hidden"
+                onClick={() => setShowTOC(false)}
+              />
+              {/* TOC Sidebar */}
+              <div
+                className={cn(
+                  "border-r border-border shrink-0 bg-background z-30",
+                  // Mobile: absolute overlay from left
+                  "absolute left-0 top-0 bottom-0 w-64 sm:relative sm:w-56 lg:w-64",
+                  // Animation
+                  "transition-transform duration-200 ease-in-out"
+                )}
+              >
+                <div className="flex items-center justify-between p-2 border-b sm:hidden">
+                  <span className="text-sm font-medium">
+                    {t("markdown.toc", "Table of Contents")}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setShowTOC(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <TOCSidebar
+                  items={headings}
+                  onItemClick={(id) => {
+                    handleAnchorClick(id);
+                    // Close TOC on mobile after clicking
+                    if (window.innerWidth < 640) {
+                      setShowTOC(false);
+                    }
+                  }}
+                />
+              </div>
+            </>
+          )}
+
+          {/* Main content area */}
+          <div className="flex-1 overflow-hidden">
+            {viewMode === "view" && (
+              <ScrollArea className="h-full">
+                <div
+                  ref={contentRef}
+                  className="mx-auto max-w-4xl px-4 sm:px-6 py-6 sm:py-8"
+                  style={{ fontSize: `${zoom * 100}%` }}
+                >
+                  <MarkdownPreview
+                    content={content}
+                    showTOC={false}
+                    enableAnchors={true}
+                    onHeadingsChange={setHeadings}
+                  />
+                </div>
+              </ScrollArea>
+            )}
+
+            {viewMode === "edit" && (
+              <MarkdownEditor
+                value={content}
+                onChange={handleContentChange}
+                onSave={onSave ? handleSave : undefined}
+                fileName={file.name}
+                showToolbar={false}
+                defaultViewMode="edit"
+                className="h-full border-0 rounded-none"
+              />
+            )}
+
+            {viewMode === "split" && (
+              <div className="flex h-full">
+                {/* Editor pane */}
+                <div className="w-1/2 border-r border-border">
+                  <MarkdownEditor
+                    value={content}
+                    onChange={handleContentChange}
+                    onSave={onSave ? handleSave : undefined}
+                    fileName={file.name}
+                    showToolbar={false}
+                    showStatusBar={false}
+                    defaultViewMode="edit"
+                    className="h-full border-0 rounded-none"
+                  />
+                </div>
+                {/* Preview pane */}
+                <div className="w-1/2">
+                  <ScrollArea className="h-full">
+                    <div
+                      className="px-4 sm:px-6 py-6 sm:py-8"
+                      style={{ fontSize: `${zoom * 100}%` }}
+                    >
+                      <MarkdownPreview
+                        content={content}
+                        showTOC={false}
+                        enableAnchors={true}
+                        onHeadingsChange={setHeadings}
+                      />
+                    </div>
+                  </ScrollArea>
+                </div>
+              </div>
+            )}
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Footer status bar */}
-        <div className="flex items-center justify-between border-t border-border bg-background/95 px-4 py-1 text-xs text-muted-foreground print:hidden">
-          <span>{file.name}</span>
-          <span>
-            {content.split(/\s+/).filter(Boolean).length} {t("markdown.words")}{" "}
-            · {content.split("\n").length} {t("markdown.lines")}
+        <div className="flex items-center justify-between border-t border-border bg-background/95 px-2 sm:px-4 py-1 text-xs text-muted-foreground print:hidden gap-2">
+          <span className="truncate max-w-[40%] sm:max-w-none">
+            {file.name}
+          </span>
+          <span className="shrink-0">
+            <span className="hidden sm:inline">
+              {content.split(/\s+/).filter(Boolean).length}{" "}
+              {t("markdown.words")} · {content.split("\n").length}{" "}
+              {t("markdown.lines")}
+            </span>
+            <span className="sm:hidden">
+              {content.split(/\s+/).filter(Boolean).length}W ·{" "}
+              {content.split("\n").length}L
+            </span>
           </span>
         </div>
       </div>

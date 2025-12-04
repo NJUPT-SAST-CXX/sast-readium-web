@@ -8,7 +8,6 @@
 
 import { useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -83,13 +82,18 @@ export function PresentationList({
 
   if (presentationList.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-center">
-        <Presentation className="w-12 h-12 text-muted-foreground mb-4" />
-        <h3 className="font-medium text-lg mb-1">
+      <div className="flex flex-col items-center justify-center h-64 text-center px-4">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-purple-500/10 flex items-center justify-center mb-4">
+          <Presentation className="w-8 h-8 sm:w-10 sm:h-10 text-purple-500" />
+        </div>
+        <h3 className="font-medium text-base sm:text-lg mb-1">
           {t("learning.common.empty")}
         </h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          {t("learning.ppt.presentations")}
+        <p className="text-xs sm:text-sm text-muted-foreground mb-4 max-w-xs">
+          {t(
+            "learning.ppt.empty_desc",
+            "Create your first presentation to get started"
+          )}
         </p>
         <Button onClick={onCreatePresentation} className="gap-2">
           <Plus className="w-4 h-4" />
@@ -100,28 +104,34 @@ export function PresentationList({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Summary */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <Presentation className="w-4 h-4 text-muted-foreground" />
-            <div>
-              <p className="text-2xl font-bold">{presentationList.length}</p>
-              <p className="text-xs text-muted-foreground">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        <Card className="p-2.5 sm:p-3">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="p-1.5 rounded-lg bg-purple-500/10 shrink-0">
+              <Presentation className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-500" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-bold">
+                {presentationList.length}
+              </p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                 {t("learning.ppt.presentations")}
               </p>
             </div>
           </div>
         </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-muted-foreground" />
-            <div>
-              <p className="text-2xl font-bold">
+        <Card className="p-2.5 sm:p-3">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="p-1.5 rounded-lg bg-blue-500/10 shrink-0">
+              <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-bold">
                 {presentationList.reduce((sum, p) => sum + p.slides.length, 0)}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                 {t("learning.ppt.slides_count")}
               </p>
             </div>
@@ -133,14 +143,14 @@ export function PresentationList({
       <Button
         onClick={onCreatePresentation}
         variant="outline"
-        className="w-full gap-2"
+        className="w-full gap-2 h-9 sm:h-10"
       >
         <Plus className="w-4 h-4" />
         {t("learning.ppt.create")}
       </Button>
 
       {/* Presentation List */}
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {presentationList.map((presentation) => (
           <PresentationCard
             key={presentation.id}
@@ -183,27 +193,29 @@ function PresentationCard({
 
   return (
     <Card
-      className="cursor-pointer transition-all hover:shadow-md"
+      className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]"
       onClick={onSelect}
     >
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
+      <CardHeader className="pb-2 px-3 sm:px-6 pt-3 sm:pt-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <div
-              className="w-10 h-10 rounded flex items-center justify-center"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded flex items-center justify-center shrink-0"
               style={{
                 backgroundColor: presentation.theme.primaryColor + "20",
               }}
             >
               <Presentation
-                className="w-5 h-5"
+                className="w-4 h-4 sm:w-5 sm:h-5"
                 style={{ color: presentation.theme.primaryColor }}
               />
             </div>
-            <div>
-              <CardTitle className="text-base">{presentation.title}</CardTitle>
-              <CardDescription className="text-xs flex items-center gap-1">
-                <Clock className="w-3 h-3" />
+            <div className="min-w-0">
+              <CardTitle className="text-sm sm:text-base truncate">
+                {presentation.title}
+              </CardTitle>
+              <CardDescription className="text-[10px] sm:text-xs flex items-center gap-1">
+                <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 {formatDate(presentation.updatedAt)}
               </CardDescription>
             </div>
@@ -213,7 +225,11 @@ function PresentationCard({
               asChild
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 sm:h-8 sm:w-8 shrink-0"
+              >
                 <MoreHorizontal className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -260,15 +276,20 @@ function PresentationCard({
           </DropdownMenu>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
-        <div className="flex items-center justify-between">
-          <div className="flex gap-2">
-            <Badge variant="secondary" className="gap-1">
-              <Layers className="w-3 h-3" />
-              {presentation.slides.length} slides
+      <CardContent className="pt-0 px-3 sm:px-6 pb-3 sm:pb-4">
+        {/* Mobile: stacked layout, Desktop: row layout */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+            <Badge
+              variant="secondary"
+              className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2"
+            >
+              <Layers className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+              {presentation.slides.length} {t("learning.ppt.slides", "slides")}
             </Badge>
             <Badge
               variant="outline"
+              className="text-[10px] sm:text-xs px-1.5 sm:px-2"
               style={{
                 borderColor: presentation.theme.primaryColor + "40",
                 color: presentation.theme.primaryColor,
@@ -277,20 +298,24 @@ function PresentationCard({
               {presentation.theme.name}
             </Badge>
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1.5 sm:gap-2">
             <Button
               size="sm"
               variant="ghost"
+              className="h-8 text-xs flex-1 sm:flex-none"
               onClick={(e) => {
                 e.stopPropagation();
                 onPreview();
               }}
             >
               <Play className="w-3 h-3 mr-1" />
-              {t("learning.ppt.preview")}
+              <span className="hidden xs:inline">
+                {t("learning.ppt.preview")}
+              </span>
             </Button>
             <Button
               size="sm"
+              className="h-8 text-xs flex-1 sm:flex-none"
               onClick={(e) => {
                 e.stopPropagation();
                 onExport();
@@ -303,23 +328,23 @@ function PresentationCard({
         </div>
 
         {/* Slide Thumbnails */}
-        <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+        <div className="flex gap-1.5 sm:gap-2 mt-2 sm:mt-3 overflow-x-auto pb-1">
           {presentation.slides.slice(0, 4).map((slide, index) => (
             <div
               key={slide.id}
-              className="flex-shrink-0 w-16 h-9 rounded border bg-white overflow-hidden"
+              className="shrink-0 w-12 h-7 sm:w-16 sm:h-9 rounded border bg-white overflow-hidden"
               style={{
                 backgroundColor:
                   slide.backgroundColor || presentation.theme.backgroundColor,
               }}
             >
-              <div className="w-full h-full flex items-center justify-center text-[6px] text-muted-foreground p-1 truncate">
+              <div className="w-full h-full flex items-center justify-center text-[5px] sm:text-[6px] text-muted-foreground p-0.5 sm:p-1 truncate">
                 {slide.title || `Slide ${index + 1}`}
               </div>
             </div>
           ))}
           {presentation.slides.length > 4 && (
-            <div className="flex-shrink-0 w-16 h-9 rounded border bg-muted flex items-center justify-center text-xs text-muted-foreground">
+            <div className="shrink-0 w-12 h-7 sm:w-16 sm:h-9 rounded border bg-muted flex items-center justify-center text-[10px] sm:text-xs text-muted-foreground">
               +{presentation.slides.length - 4}
             </div>
           )}

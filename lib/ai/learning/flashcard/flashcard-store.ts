@@ -16,11 +16,9 @@ import type {
   Flashcard,
   FlashcardDeck,
   SRSData,
-  SRSQuality,
   StudySession,
   StudyMode,
   DeckStats,
-  CardType,
 } from "../types";
 import {
   createInitialSRSData,
@@ -371,6 +369,7 @@ export const useFlashcardStore = create<FlashcardState>()(
           const deck = state.decks[deckId];
           if (!deck) return state;
 
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { [cardId]: deletedSrs, ...remainingSrs } = state.srsData;
 
           return {

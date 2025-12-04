@@ -665,6 +665,26 @@
     "no_tools": "No tools",
     "refresh_tools": "Refresh Tools",
     "mcp_tools_section": "Tool Execution Settings",
+    "mcp": {
+      "tools": "Tools",
+      "selectTools": "Select MCP Tools",
+      "refresh": "Refresh",
+      "clearAll": "Clear",
+      "searchTools": "Search tools...",
+      "noServers": "No MCP servers configured",
+      "configureHint": "Configure servers in AI Settings",
+      "noConnections": "No servers connected",
+      "connectHint": "Connect to a server to use tools",
+      "noResults": "No tools found",
+      "connect": "Connect",
+      "disconnect": "Disconnect",
+      "connecting": "Connecting...",
+      "connectionError": "Connection failed",
+      "notConnected": "Not connected",
+      "noToolsAvailable": "No tools available",
+      "selectedTools": "Selected Tools",
+      "toolsFromServer": "from {{server}}"
+    },
     "image_generation": "Image Generation",
     "image_generation_description": "Generate images from text prompts using AI",
     "image_model": "Image Model",
@@ -974,7 +994,51 @@
     "loading": "Loading Markdown...",
     "error_loading": "Failed to load Markdown file",
     "words": "words",
-    "lines": "lines"
+    "lines": "lines",
+    "chars": "characters",
+    "headings": "headings",
+    "placeholder": "Write your markdown here...",
+    "toc": "Table of Contents",
+    "view_mode": "View",
+    "edit_mode": "Edit",
+    "split_mode": "Split View",
+    "save": "Save (Ctrl+S)",
+    "toolbar": {
+      "bold": "Bold (Ctrl+B)",
+      "italic": "Italic (Ctrl+I)",
+      "strikethrough": "Strikethrough",
+      "code": "Inline Code",
+      "code_block": "Code Block",
+      "link": "Link (Ctrl+K)",
+      "image": "Image",
+      "heading1": "Heading 1",
+      "heading2": "Heading 2",
+      "heading3": "Heading 3",
+      "bullet_list": "Bullet List",
+      "numbered_list": "Numbered List",
+      "task_list": "Task List",
+      "quote": "Quote",
+      "table": "Table",
+      "hr": "Horizontal Rule",
+      "inline_math": "Inline Math ($...$)",
+      "block_math": "Block Math ($$...$$)",
+      "undo": "Undo (Ctrl+Z)",
+      "redo": "Redo (Ctrl+Y)",
+      "copy": "Copy",
+      "download": "Download",
+      "import": "Import",
+      "save": "Save (Ctrl+S)",
+      "fullscreen": "Toggle Fullscreen"
+    },
+    "new": "New",
+    "open": "Open",
+    "save_btn": "Save",
+    "save_as": "Save As",
+    "save_as_desc": "Enter a file name for your document.",
+    "filename": "File Name",
+    "unsaved_title": "Unsaved Changes",
+    "unsaved_desc": "You have unsaved changes. Do you want to save them before continuing?",
+    "discard": "Discard"
   },
   "learning": {
     "overview": "Overview",
@@ -1011,7 +1075,10 @@
       "deck_description": "Description",
       "study": "Study",
       "edit": "Edit",
+      "edit_deck": "Edit Deck",
       "delete": "Delete",
+      "delete_deck": "Delete Deck",
+      "empty_desc": "Create your first flashcard deck to start learning",
       "learn_new": "Learn New",
       "review": "Review",
       "practice": "Practice All",
@@ -1033,6 +1100,7 @@
       "session_complete": "Session Complete!",
       "cards_studied": "Cards Studied",
       "correct": "Correct",
+      "incorrect": "Incorrect",
       "continue": "Continue",
       "end_session": "End Session",
       "generate": "Generate Cards",
@@ -1046,7 +1114,20 @@
       "source_pages": "Source Pages",
       "all_pages": "All Pages",
       "current_page": "Current Page",
-      "selected_pages": "Selected Pages"
+      "selected_pages": "Selected Pages",
+      "study": {
+        "start": "Study",
+        "session_complete": "Session Complete!",
+        "cards_studied": "{{count}} cards studied",
+        "cards_remaining": "{{count}} cards remaining",
+        "show_answer": "Show Answer",
+        "rate_card": "How well did you know this?",
+        "again": "Again",
+        "hard": "Hard",
+        "good": "Good",
+        "easy": "Easy",
+        "tap_to_flip": "Tap card to flip"
+      }
     },
     "quiz": {
       "new_quiz": "New Quiz",
@@ -1073,10 +1154,11 @@
       "your_answer": "Your Answer",
       "correct_answer": "Correct Answer",
       "explanation": "Explanation",
-      "difficulty": "Difficulty",
-      "easy": "Easy",
-      "medium": "Medium",
-      "hard": "Hard",
+      "difficulty": {
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard"
+      },
       "topic": "Topic",
       "adaptive": "Adaptive",
       "adaptive_desc": "Difficulty adjusts based on your performance",
@@ -1086,14 +1168,37 @@
       "show_explanations": "Show Explanations",
       "generate": "Generate Quiz",
       "generating": "Generating quiz questions...",
-      "question_types": "Question Types",
-      "true_false": "True/False",
-      "short_answer": "Short Answer"
+      "question_types": {
+        "multiple_choice": "Multiple Choice",
+        "true_false": "True/False",
+        "short_answer": "Short Answer",
+        "fill_blank": "Fill in Blank"
+      },
+      "session": {
+        "question_of": "Question {{current}} of {{total}}",
+        "previous": "Previous",
+        "next": "Next",
+        "skip": "Skip",
+        "submit": "Submit"
+      },
+      "results": {
+        "title": "Quiz Results",
+        "correct": "Correct",
+        "incorrect": "Incorrect",
+        "time_taken": "Time Taken",
+        "review_answers": "Review Answers",
+        "try_again": "Try Again",
+        "performance_by_difficulty": "Performance by Difficulty"
+      }
     },
     "ppt": {
       "new_presentation": "New Presentation",
       "title": "Title",
       "slides": "Slides",
+      "slides_count": "Slides",
+      "presentations": "Presentations",
+      "create": "Create Presentation",
+      "empty_desc": "Create your first presentation to get started",
       "add_slide": "Add Slide",
       "delete_slide": "Delete Slide",
       "duplicate_slide": "Duplicate Slide",
@@ -1106,11 +1211,13 @@
       "export": "Export PPTX",
       "theme": "Theme",
       "layout": "Layout",
-      "layout_title": "Title Slide",
-      "layout_content": "Content",
-      "layout_two_column": "Two Column",
-      "layout_image_focus": "Image Focus",
-      "layout_blank": "Blank",
+      "layouts": {
+        "title": "Title Slide",
+        "content": "Content",
+        "two_column": "Two Column",
+        "image_focus": "Image Focus",
+        "blank": "Blank"
+      },
       "generate": "Generate Slides",
       "generating": "Generating presentation...",
       "slide_count": "Number of Slides",
@@ -1125,7 +1232,15 @@
       "zoom_out": "Zoom Out",
       "fit": "Fit to View",
       "grid": "Show Grid",
-      "notes": "Show Notes"
+      "notes": "Show Notes",
+      "export": {
+        "title": "Export"
+      },
+      "editor": {
+        "duplicate": "Duplicate",
+        "move_up": "Move Up",
+        "move_down": "Move Down"
+      }
     }
   }
 }

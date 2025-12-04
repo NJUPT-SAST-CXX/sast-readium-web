@@ -17,9 +17,6 @@ import type {
   Presentation,
   Slide,
   SlideElement,
-  SlideElementStyle,
-  SlideElementType,
-  SlideLayout,
   PresentationTheme,
 } from "../types";
 import { DEFAULT_THEMES } from "../types";
@@ -202,8 +199,9 @@ const DEFAULT_THEME: PresentationTheme = {
   bodyFontSize: 18,
 };
 
-const SLIDE_WIDTH = 960; // 16:9 aspect ratio base
-const SLIDE_HEIGHT = 540;
+// Slide dimensions for 16:9 aspect ratio (reserved for future use)
+// const SLIDE_WIDTH = 960;
+// const SLIDE_HEIGHT = 540;
 
 function createDefaultSlide(order: number): Omit<Slide, "id"> {
   return {
@@ -307,7 +305,9 @@ export const usePPTStore = create<PPTState>()(
 
       deletePresentation: (id) => {
         set((state) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { [id]: deleted, ...remaining } = state.presentations;
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { [id]: deletedHistory, ...remainingHistory } = state.history;
           return {
             presentations: remaining,

@@ -85,13 +85,18 @@ export function FlashcardDeckList({
 
   if (deckList.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-center">
-        <Layers className="w-12 h-12 text-muted-foreground mb-4" />
-        <h3 className="font-medium text-lg mb-1">
+      <div className="flex flex-col items-center justify-center h-64 text-center px-4">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+          <Layers className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
+        </div>
+        <h3 className="font-medium text-base sm:text-lg mb-1">
           {t("learning.common.empty")}
         </h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          {t("learning.flashcard.decks")}
+        <p className="text-xs sm:text-sm text-muted-foreground mb-4 max-w-xs">
+          {t(
+            "learning.flashcard.empty_desc",
+            "Create your first flashcard deck to start learning"
+          )}
         </p>
         <Button onClick={onCreateDeck} className="gap-2">
           <Plus className="w-4 h-4" />
@@ -102,38 +107,50 @@ export function FlashcardDeckList({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Summary Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-muted-foreground" />
-            <div>
-              <p className="text-2xl font-bold">{totalStats.totalCards}</p>
-              <p className="text-xs text-muted-foreground">
-                {t("learning.overview.total_cards")}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <Card className="p-2.5 sm:p-3">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="p-1.5 rounded-lg bg-blue-500/10 shrink-0">
+              <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-bold">
+                {totalStats.totalCards}
+              </p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                {t("learning.overview.total_cards", "Total")}
               </p>
             </div>
           </div>
         </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-orange-500" />
-            <div>
-              <p className="text-2xl font-bold">{totalStats.dueCards}</p>
-              <p className="text-xs text-muted-foreground">
-                {t("learning.overview.due_today")}
+        <Card className="p-2.5 sm:p-3">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="p-1.5 rounded-lg bg-orange-500/10 shrink-0">
+              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-bold">
+                {totalStats.dueCards}
+              </p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                {t("learning.overview.due_today", "Due")}
               </p>
             </div>
           </div>
         </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <Target className="w-4 h-4 text-green-500" />
-            <div>
-              <p className="text-2xl font-bold">{totalStats.masteredCards}</p>
-              <p className="text-xs text-muted-foreground">
-                {t("learning.overview.mastered")}
+        <Card className="p-2.5 sm:p-3">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="p-1.5 rounded-lg bg-green-500/10 shrink-0">
+              <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-bold">
+                {totalStats.masteredCards}
+              </p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                {t("learning.overview.mastered", "Mastered")}
               </p>
             </div>
           </div>
@@ -141,13 +158,17 @@ export function FlashcardDeckList({
       </div>
 
       {/* Create Button */}
-      <Button onClick={onCreateDeck} variant="outline" className="w-full gap-2">
+      <Button
+        onClick={onCreateDeck}
+        variant="outline"
+        className="w-full gap-2 h-9 sm:h-10"
+      >
         <Plus className="w-4 h-4" />
         {t("learning.flashcard.new_deck")}
       </Button>
 
       {/* Deck List */}
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {deckList.map((deck) => (
           <DeckCard
             key={deck.id}
@@ -187,21 +208,24 @@ function DeckCard({
   return (
     <Card
       className={cn(
-        "cursor-pointer transition-all hover:shadow-md",
-        "border-l-4",
-        stats.reviewCards > 0 ? "border-l-orange-500" : "border-l-green-500"
+        "cursor-pointer transition-all hover:shadow-md active:scale-[0.98]",
+        "border-l-4"
       )}
       style={{ borderLeftColor: deck.color }}
       onClick={onSelect}
     >
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">{deck.icon || "📚"}</span>
-            <div>
-              <CardTitle className="text-base">{deck.name}</CardTitle>
+      <CardHeader className="pb-2 px-3 sm:px-6 pt-3 sm:pt-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="text-lg sm:text-xl shrink-0">
+              {deck.icon || "📚"}
+            </span>
+            <div className="min-w-0">
+              <CardTitle className="text-sm sm:text-base truncate">
+                {deck.name}
+              </CardTitle>
               {deck.description && (
-                <CardDescription className="text-xs line-clamp-1">
+                <CardDescription className="text-[10px] sm:text-xs line-clamp-1">
                   {deck.description}
                 </CardDescription>
               )}
@@ -212,7 +236,11 @@ function DeckCard({
               asChild
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 sm:h-8 sm:w-8 shrink-0"
+              >
                 <MoreHorizontal className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -241,35 +269,38 @@ function DeckCard({
           </DropdownMenu>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
-        <div className="flex items-center justify-between">
-          <div className="flex gap-2 text-xs">
-            <Badge variant="secondary" className="gap-1">
-              <BookOpen className="w-3 h-3" />
+      <CardContent className="pt-0 px-3 sm:px-6 pb-3 sm:pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 text-xs">
+            <Badge
+              variant="secondary"
+              className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2"
+            >
+              <BookOpen className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
               {deck.cards.length}
             </Badge>
             {stats.reviewCards > 0 && (
               <Badge
                 variant="outline"
-                className="gap-1 border-orange-200 text-orange-700"
+                className="gap-1 border-orange-200 text-orange-700 text-[10px] sm:text-xs px-1.5 sm:px-2"
               >
-                <Clock className="w-3 h-3" />
-                {stats.reviewCards} due
+                <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                {stats.reviewCards} {t("learning.due", "due")}
               </Badge>
             )}
             {stats.newCards > 0 && (
               <Badge
                 variant="outline"
-                className="gap-1 border-blue-200 text-blue-700"
+                className="gap-1 border-blue-200 text-blue-700 text-[10px] sm:text-xs px-1.5 sm:px-2"
               >
-                <Sparkles className="w-3 h-3" />
-                {stats.newCards} new
+                <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                {stats.newCards} {t("learning.flashcard.new", "new")}
               </Badge>
             )}
           </div>
           <Button
             size="sm"
-            className="gap-1"
+            className="gap-1 h-8 sm:h-9 w-full sm:w-auto"
             onClick={(e) => {
               e.stopPropagation();
               onStudy();
@@ -277,7 +308,7 @@ function DeckCard({
             disabled={deck.cards.length === 0}
           >
             <Play className="w-3 h-3" />
-            {t("learning.flashcard.study.start")}
+            {t("learning.flashcard.study.start", "Study")}
           </Button>
         </div>
       </CardContent>

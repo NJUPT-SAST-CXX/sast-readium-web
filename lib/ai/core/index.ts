@@ -114,11 +114,23 @@ export {
   type AudioFormat,
 } from "./ai-providers";
 
-// MCP Client
+// MCP Client - Unified API (recommended)
 export {
+  // Unified client API
+  createUnifiedMCPClient,
+  getUnifiedMCPClient,
+  getAllMCPToolsUnified,
+  closeUnifiedMCPClient,
+  connectMCPServer,
+  disconnectMCPServer,
+  getConnectedMCPClients,
+  isServerConnected,
+  getServerConnectionInfo,
+  type UnifiedMCPClient,
+
+  // Legacy API (deprecated, for backward compatibility)
   createHTTPMCPClient,
   createSSEMCPClient,
-  createStdioMCPClient,
   createMCPClientFromConfig,
   getMCPClient,
   getMCPTools,
@@ -139,7 +151,24 @@ export {
   MCP_SERVER_PRESETS,
   createMCPServerFromPreset,
   createCustomMCPServer,
+
+  // Native MCP client (Tauri/rmcp SDK) - deprecated, use unified API
+  getNativeMCPTools,
+  clearNativeMCPToolsCache,
+  getConnectedNativeMCPClients,
+  connectNativeMCPServer,
+  disconnectNativeMCPServer,
+  createNativeMCPToolsForAI,
+  getAllNativeMCPToolsForAI,
+
+  // Types
   type MCPServerConfig,
   type MCPClient,
   type MCPConnectionStatus,
+  type MCPToolInfo,
+  type MCPClientInfo,
+  type MCPResourceInfo,
+  type MCPPromptInfo,
+  type MCPResourceReadResult,
+  type MCPPromptGetResult,
 } from "./mcp-client";

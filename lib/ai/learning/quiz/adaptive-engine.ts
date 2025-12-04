@@ -26,7 +26,8 @@ const INCREASE_THRESHOLD = 0.8; // 80% correct -> increase difficulty
 const DECREASE_THRESHOLD = 0.4; // 40% correct -> decrease difficulty
 
 // Target accuracy for optimal learning (Zone of Proximal Development)
-const TARGET_ACCURACY = 0.7;
+// Reserved for future adaptive algorithm enhancements
+// const TARGET_ACCURACY = 0.7;
 
 // Topic proficiency levels
 const PROFICIENCY_LEVELS = {
@@ -313,7 +314,6 @@ export function gradeObjectiveAnswer(
       }
 
       const isCorrect = correctCount === question.blanks.length;
-      const partialScore = (correctCount / question.blanks.length) * 100;
 
       return {
         isCorrect,

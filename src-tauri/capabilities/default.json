@@ -2,9 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "enables the default permissions",
-  "windows": [
-    "main"
-  ],
+  "windows": ["main"],
   "permissions": [
     "core:default",
     "dialog:default",
@@ -27,10 +25,18 @@
         },
         {
           "path": "$APPCONFIG/*"
+        },
+        {
+          "path": "$APPDATA/*"
         }
       ]
     },
     "notification:default",
-    "process:default"
+    "process:default",
+    "shell:default",
+    "shell:allow-spawn",
+    "shell:allow-execute",
+    "shell:allow-stdin-write",
+    "shell:allow-kill"
   ]
 }

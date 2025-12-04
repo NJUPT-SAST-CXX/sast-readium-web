@@ -21,9 +21,15 @@ jest.mock("@/lib/platform", () => ({
   getAPIKeySecurely: jest.fn().mockResolvedValue("test-api-key"),
 }));
 
-import { chatStream } from "@/lib/ai/core";
+import { chatStream, type StreamResult } from "@/lib/ai/core";
 
 const mockChatStream = chatStream as jest.MockedFunction<typeof chatStream>;
+
+const createStreamResult = (text: string): StreamResult => ({
+  text,
+  toolInvocations: [],
+  suggestions: [],
+});
 
 // Mock clipboard
 Object.assign(navigator, {
@@ -124,6 +130,11 @@ Brief overview of the meeting.
       mockChatStream.mockImplementation(async (config, options) => {
         options.onUpdate?.(mockMarkdown.slice(0, 50));
         options.onFinish?.(mockMarkdown);
+        return {
+          text: mockMarkdown,
+          toolInvocations: [],
+          suggestions: [],
+        };
       });
 
       const { result } = renderHook(() => useReportTemplate());
@@ -150,6 +161,11 @@ This is the abstract.`;
 
       mockChatStream.mockImplementation(async (config, options) => {
         options.onFinish?.(mockMarkdown);
+        return {
+          text: mockMarkdown,
+          toolInvocations: [],
+          suggestions: [],
+        };
       });
 
       const { result } = renderHook(() => useReportTemplate());
@@ -178,6 +194,11 @@ More content here.`;
 
       mockChatStream.mockImplementation(async (config, options) => {
         options.onFinish?.(mockMarkdown);
+        return {
+          text: mockMarkdown,
+          toolInvocations: [],
+          suggestions: [],
+        };
       });
 
       const { result } = renderHook(() => useReportTemplate());
@@ -206,6 +227,11 @@ Content for section two.
 
       mockChatStream.mockImplementation(async (config, options) => {
         options.onFinish?.(mockMarkdown);
+        return {
+          text: mockMarkdown,
+          toolInvocations: [],
+          suggestions: [],
+        };
       });
 
       const { result } = renderHook(() => useReportTemplate());
@@ -233,6 +259,11 @@ Content for section two.
 
       mockChatStream.mockImplementation(async (config, options) => {
         options.onFinish?.(mockMarkdown);
+        return {
+          text: mockMarkdown,
+          toolInvocations: [],
+          suggestions: [],
+        };
       });
 
       const { result } = renderHook(() => useReportTemplate());
@@ -259,6 +290,7 @@ Content for section two.
 
       mockChatStream.mockImplementation(async (config, options) => {
         options.onFinish?.(mockMarkdown);
+        return createStreamResult(mockMarkdown);
       });
 
       const { result } = renderHook(() => useReportTemplate());
@@ -283,6 +315,7 @@ Custom content.`;
 
       mockChatStream.mockImplementation(async (config, options) => {
         options.onFinish?.(mockMarkdown);
+        return createStreamResult(mockMarkdown);
       });
 
       const { result } = renderHook(() => useReportTemplate());
@@ -309,6 +342,7 @@ This is a report with some words in it.`;
 
       mockChatStream.mockImplementation(async (config, options) => {
         options.onFinish?.(mockMarkdown);
+        return createStreamResult(mockMarkdown);
       });
 
       const { result } = renderHook(() => useReportTemplate());
@@ -329,6 +363,7 @@ This is a report with some words in it.`;
 
       mockChatStream.mockImplementation(async (config, options) => {
         options.onFinish?.(mockMarkdown);
+        return createStreamResult(mockMarkdown);
       });
 
       const { result } = renderHook(() => useReportTemplate());
@@ -373,6 +408,11 @@ This is a report with some words in it.`;
         options.onUpdate?.("Part 1 Part 2");
         streamingUpdates.push("Part 1 Part 2");
         options.onFinish?.("Part 1 Part 2 Part 3");
+        return {
+          text: "Part 1 Part 2 Part 3",
+          toolInvocations: [],
+          suggestions: [],
+        };
       });
 
       const { result } = renderHook(() => useReportTemplate());
@@ -391,6 +431,7 @@ This is a report with some words in it.`;
 
       mockChatStream.mockImplementation(async (config, options) => {
         options.onFinish?.(mockMarkdown);
+        return createStreamResult(mockMarkdown);
       });
 
       const { result } = renderHook(() => useReportTemplate());
@@ -419,6 +460,7 @@ This is a report with some words in it.`;
 
       mockChatStream.mockImplementation(async (config, options) => {
         options.onFinish?.(mockMarkdown);
+        return createStreamResult(mockMarkdown);
       });
 
       const { result } = renderHook(() => useReportTemplate());

@@ -10,59 +10,169 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Check, Copy } from "lucide-react";
 
-// Supported languages - add more as needed
+// Supported languages - comprehensive list
 const SUPPORTED_LANGUAGES: BundledLanguage[] = [
+  // Web
   "javascript",
   "typescript",
   "jsx",
   "tsx",
-  "python",
-  "rust",
-  "go",
-  "java",
-  "c",
-  "cpp",
-  "csharp",
-  "php",
-  "ruby",
-  "swift",
-  "kotlin",
-  "scala",
   "html",
   "css",
   "scss",
+  "less",
+  "vue",
+  "svelte",
+  "astro",
+  // Systems
+  "rust",
+  "go",
+  "c",
+  "cpp",
+  "zig",
+  // JVM
+  "java",
+  "kotlin",
+  "scala",
+  "groovy",
+  // .NET
+  "csharp",
+  "fsharp",
+  // Scripting
+  "python",
+  "ruby",
+  "php",
+  "perl",
+  "lua",
+  "r",
+  // Mobile
+  "swift",
+  "objective-c",
+  "dart",
+  // Data/Config
   "json",
   "yaml",
   "toml",
   "xml",
-  "markdown",
+  "ini",
+  "csv",
+  // Database
   "sql",
+  "plsql",
+  "prisma",
+  // Shell
   "bash",
   "shell",
   "powershell",
+  "fish",
+  "bat",
+  // DevOps
   "dockerfile",
+  "nginx",
+  "apache",
+  "terraform",
+  // Markup
+  "markdown",
+  "latex",
+  "rst",
+  // API
   "graphql",
-  "vue",
-  "svelte",
-  "astro",
+  "protobuf",
+  // Functional
+  "haskell",
+  "elixir",
+  "erlang",
+  "clojure",
+  "ocaml",
+  // Other
+  "vim",
+  "diff",
+  "git-commit",
+  "git-rebase",
+  "makefile",
+  "cmake",
+  "asm",
+  "wasm",
+  "regex",
 ];
 
 // Language aliases mapping
 const LANGUAGE_ALIASES: Record<string, BundledLanguage> = {
+  // JavaScript/TypeScript
   js: "javascript",
   ts: "typescript",
+  mjs: "javascript",
+  cjs: "javascript",
+  mts: "typescript",
+  cts: "typescript",
+  // Python
   py: "python",
+  py3: "python",
+  pyw: "python",
+  // Ruby
   rb: "ruby",
+  // Rust
   rs: "rust",
+  // C#
   cs: "csharp",
-  "c++": "cpp",
   "c#": "csharp",
+  // C++
+  "c++": "cpp",
+  cc: "cpp",
+  cxx: "cpp",
+  hpp: "cpp",
+  hxx: "cpp",
+  h: "c",
+  // Shell
   sh: "bash",
   zsh: "bash",
+  ksh: "bash",
+  // YAML
   yml: "yaml",
+  // Markdown
   md: "markdown",
+  mdx: "markdown",
+  // PowerShell
   ps1: "powershell",
   psm1: "powershell",
+  psd1: "powershell",
+  // F#
+  fs: "fsharp",
+  fsx: "fsharp",
+  // Objective-C
+  m: "objective-c",
+  mm: "objective-c",
+  // Other
+  kt: "kotlin",
+  kts: "kotlin",
+  ex: "elixir",
+  exs: "elixir",
+  erl: "erlang",
+  hrl: "erlang",
+  hs: "haskell",
+  lhs: "haskell",
+  ml: "ocaml",
+  mli: "ocaml",
+  clj: "clojure",
+  cljs: "clojure",
+  edn: "clojure",
+  tf: "terraform",
+  tfvars: "terraform",
+  proto: "protobuf",
+  gql: "graphql",
+  tex: "latex",
+  dockerfile: "dockerfile",
+  makefile: "makefile",
+  mk: "makefile",
+  s: "asm",
+  asm: "asm",
+  wat: "wasm",
+  wast: "wasm",
+  conf: "ini",
+  cfg: "ini",
+  properties: "ini",
+  pl: "perl",
+  pm: "perl",
 };
 
 // Singleton highlighter instance
@@ -101,7 +211,11 @@ interface CodeHighlighterProps {
   className?: string;
   showLineNumbers?: boolean;
   showCopyButton?: boolean;
+  showLanguageLabel?: boolean;
   theme?: "light" | "dark" | "auto";
+  maxHeight?: string;
+  wrapLines?: boolean;
+  highlightLines?: number[];
 }
 
 function CodeHighlighterInner({
@@ -110,7 +224,11 @@ function CodeHighlighterInner({
   className,
   showLineNumbers = false,
   showCopyButton = true,
+  showLanguageLabel = true,
   theme = "auto",
+  maxHeight,
+  wrapLines = false,
+  highlightLines = [],
 }: CodeHighlighterProps) {
   const [highlightedCode, setHighlightedCode] = useState<string>("");
   const [copied, setCopied] = useState(false);
@@ -187,21 +305,56 @@ function CodeHighlighterInner({
     if (!showLineNumbers) return null;
     const lines = trimmedCode.split("\n");
     return (
-      <div className="select-none pr-4 text-right text-muted-foreground/50 text-xs leading-relaxed">
+      <div className="select-none pr-4 text-right text-muted-foreground/50 text-xs leading-relaxed border-r border-border/50 mr-4">
         {lines.map((_, i) => (
-          <div key={i}>{i + 1}</div>
+          <div
+            key={i}
+            className={cn(
+              "px-2",
+              highlightLines.includes(i + 1) && "bg-yellow-500/20"
+            )}
+          >
+            {i + 1}
+          </div>
         ))}
       </div>
     );
-  }, [trimmedCode, showLineNumbers]);
+  }, [trimmedCode, showLineNumbers, highlightLines]);
+
+  // Language label
+  const languageLabel = useMemo(() => {
+    if (!showLanguageLabel || normalizedLang === "text") return null;
+    return (
+      <span className="absolute top-2 right-12 text-xs text-muted-foreground/70 font-mono uppercase">
+        {normalizedLang}
+      </span>
+    );
+  }, [showLanguageLabel, normalizedLang]);
+
+  // Container style
+  const containerStyle = useMemo(() => {
+    const style: React.CSSProperties = {};
+    if (maxHeight) {
+      style.maxHeight = maxHeight;
+      style.overflow = "auto";
+    }
+    return style;
+  }, [maxHeight]);
+
+  // Code wrapper classes
+  const codeWrapperClasses = cn(
+    "flex-1",
+    wrapLines ? "whitespace-pre-wrap break-words" : "overflow-x-auto"
+  );
 
   // Fallback for plain text or loading state
   if (isLoading || !highlightedCode) {
     return (
-      <div className={cn("relative group", className)}>
+      <div className={cn("relative group", className)} style={containerStyle}>
+        {languageLabel}
         <div className="flex">
           {lineNumbers}
-          <pre className="flex-1 overflow-x-auto">
+          <pre className={codeWrapperClasses}>
             <code className="font-mono text-sm leading-relaxed">
               {trimmedCode}
             </code>
@@ -227,11 +380,15 @@ function CodeHighlighterInner({
   }
 
   return (
-    <div className={cn("relative group", className)}>
+    <div className={cn("relative group", className)} style={containerStyle}>
+      {languageLabel}
       <div className="flex">
         {lineNumbers}
         <div
-          className="flex-1 overflow-x-auto [&>pre]:bg-transparent! [&>pre]:p-0! [&>pre]:m-0! [&_code]:text-sm [&_code]:leading-relaxed"
+          className={cn(
+            codeWrapperClasses,
+            "[&>pre]:bg-transparent! [&>pre]:p-0! [&>pre]:m-0! [&_code]:text-sm [&_code]:leading-relaxed"
+          )}
           dangerouslySetInnerHTML={{ __html: highlightedCode }}
         />
       </div>

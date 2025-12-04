@@ -6,7 +6,7 @@
  * Interactive slide editor with element manipulation and styling.
  */
 
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -14,19 +14,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Type,
   Square,
@@ -35,7 +36,6 @@ import {
   Image as ImageIcon,
   Trash2,
   Copy,
-  Layers,
   Lock,
   Unlock,
   Bold,
@@ -43,15 +43,11 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  Palette,
-  Move,
-  RotateCw,
   ArrowUp,
   ArrowDown,
 } from "lucide-react";
 import { usePPTStore } from "@/lib/ai/learning";
 import type {
-  Slide,
   SlideElement,
   SlideElementType,
   SlideElementStyle,
@@ -83,8 +79,6 @@ export function SlideEditor({
   const bringForward = usePPTStore((state) => state.bringForward);
   const sendBackward = usePPTStore((state) => state.sendBackward);
   const addElement = usePPTStore((state) => state.addElement);
-  const copyElements = usePPTStore((state) => state.copyElements);
-  const setSelectedElements = usePPTStore((state) => state.setSelectedElements);
 
   const presentation = presentations[presentationId];
   const slide = presentation?.slides.find((s) => s.id === slideId);
@@ -247,136 +241,199 @@ export function SlideEditor({
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b bg-muted/30">
-        {/* Add Elements */}
-        <div className="flex items-center gap-1 border-r pr-2 mr-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleAddElement("text")}
-            title={t("learning.ppt.editor.add_text")}
-          >
-            <Type className="w-4 h-4" />
-          </Button>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                title={t("learning.ppt.editor.add_shape")}
-              >
-                <Square className="w-4 h-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-40 p-2">
-              <div className="grid grid-cols-2 gap-1">
+      <TooltipProvider delayDuration={300}>
+        <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 border-b bg-muted/30 overflow-x-auto">
+          {/* Add Elements */}
+          <div className="flex items-center gap-0.5 sm:gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleAddElement("shape", "rectangle")}
+                  className="h-8 w-8 p-0"
+                  onClick={() => handleAddElement("text")}
                 >
-                  <Square className="w-4 h-4" />
+                  <Type className="w-4 h-4" />
                 </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {t("learning.ppt.editor.add_text")}
+              </TooltipContent>
+            </Tooltip>
+            <Popover>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <Square className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {t("learning.ppt.editor.add_shape")}
+                </TooltipContent>
+              </Tooltip>
+              <PopoverContent className="w-40 p-2">
+                <div className="grid grid-cols-2 gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleAddElement("shape", "rectangle")}
+                  >
+                    <Square className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleAddElement("shape", "circle")}
+                  >
+                    <Circle className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleAddElement("shape", "arrow")}
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleAddElement("shape", "line")}
+                  >
+                    <div className="w-4 h-0.5 bg-current" />
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleAddElement("shape", "circle")}
+                  className="h-8 w-8 p-0"
+                  onClick={() => handleAddElement("image")}
                 >
-                  <Circle className="w-4 h-4" />
+                  <ImageIcon className="w-4 h-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleAddElement("shape", "arrow")}
-                >
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleAddElement("shape", "line")}
-                >
-                  <div className="w-4 h-0.5 bg-current" />
-                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {t("learning.ppt.editor.add_image")}
+              </TooltipContent>
+            </Tooltip>
+          </div>
+
+          <Separator orientation="vertical" className="h-6 mx-1" />
+
+          {/* Selection actions */}
+          {selectedElement && (
+            <>
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={handleDuplicateSelected}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {t("learning.ppt.editor.duplicate")}
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                      onClick={handleDeleteSelected}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {t("learning.ppt.editor.delete")}
+                  </TooltipContent>
+                </Tooltip>
               </div>
-            </PopoverContent>
-          </Popover>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleAddElement("image")}
-            title={t("learning.ppt.editor.add_image")}
-          >
-            <ImageIcon className="w-4 h-4" />
-          </Button>
+
+              <Separator orientation="vertical" className="h-6 mx-1" />
+
+              {/* Layer controls */}
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => handleMoveLayer("up")}
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {t("learning.ppt.editor.bring_forward")}
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => handleMoveLayer("down")}
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {t("learning.ppt.editor.send_backward")}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+
+              <Separator orientation="vertical" className="h-6 mx-1" />
+
+              {/* Lock toggle */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={selectedElement.locked ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() =>
+                      updateElement(
+                        presentationId,
+                        slideId,
+                        selectedElementId!,
+                        {
+                          locked: !selectedElement.locked,
+                        }
+                      )
+                    }
+                  >
+                    {selectedElement.locked ? (
+                      <Lock className="w-4 h-4" />
+                    ) : (
+                      <Unlock className="w-4 h-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {selectedElement.locked
+                    ? t("learning.ppt.editor.unlock")
+                    : t("learning.ppt.editor.lock")}
+                </TooltipContent>
+              </Tooltip>
+            </>
+          )}
         </div>
-
-        {/* Selection actions */}
-        {selectedElement && (
-          <>
-            <div className="flex items-center gap-1 border-r pr-2 mr-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDuplicateSelected}
-                title={t("learning.ppt.editor.duplicate")}
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDeleteSelected}
-                title={t("learning.ppt.editor.delete")}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {/* Layer controls */}
-            <div className="flex items-center gap-1 border-r pr-2 mr-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleMoveLayer("up")}
-                title={t("learning.ppt.editor.bring_forward")}
-              >
-                <ArrowUp className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleMoveLayer("down")}
-                title={t("learning.ppt.editor.send_backward")}
-              >
-                <ArrowDown className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {/* Lock toggle */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() =>
-                updateElement(presentationId, slideId, selectedElementId!, {
-                  locked: !selectedElement.locked,
-                })
-              }
-              title={
-                selectedElement.locked
-                  ? t("learning.ppt.editor.unlock")
-                  : t("learning.ppt.editor.lock")
-              }
-            >
-              {selectedElement.locked ? (
-                <Lock className="w-4 h-4" />
-              ) : (
-                <Unlock className="w-4 h-4" />
-              )}
-            </Button>
-          </>
-        )}
-      </div>
+      </TooltipProvider>
 
       {/* Canvas Area */}
       <div className="flex-1 flex overflow-hidden">
@@ -496,6 +553,7 @@ function ElementRenderer({
       {element.type === "image" && (
         <div style={innerStyle}>
           {element.content ? (
+            // eslint-disable-next-line @next/next/no-img-element -- Dynamic user content (base64/blob URLs)
             <img
               src={element.content}
               alt=""
@@ -545,270 +603,276 @@ function ElementPropertiesPanel({
   );
 
   return (
-    <div className="w-64 border-l bg-muted/30 p-4 overflow-y-auto">
-      <h3 className="font-medium mb-4">
-        {t("learning.ppt.editor.properties")}
-      </h3>
+    <ScrollArea className="w-48 sm:w-64 border-l bg-muted/30">
+      <div className="p-3 sm:p-4">
+        <h3 className="font-medium text-sm sm:text-base mb-3 sm:mb-4">
+          {t("learning.ppt.editor.properties")}
+        </h3>
 
-      {/* Content (for text) */}
-      {element.type === "text" && (
-        <div className="space-y-4 mb-4">
-          <div>
-            <Label className="text-xs">{t("learning.ppt.editor.text")}</Label>
-            <Textarea
-              value={element.content}
-              onChange={(e) =>
-                updateElement(presentationId, slideId, element.id, {
-                  content: e.target.value,
-                })
-              }
-              className="mt-1"
-              rows={3}
-            />
+        {/* Content (for text) */}
+        {element.type === "text" && (
+          <div className="space-y-4 mb-4">
+            <div>
+              <Label className="text-xs">{t("learning.ppt.editor.text")}</Label>
+              <Textarea
+                value={element.content}
+                onChange={(e) =>
+                  updateElement(presentationId, slideId, element.id, {
+                    content: e.target.value,
+                  })
+                }
+                className="mt-1"
+                rows={3}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Position & Size */}
-      <div className="space-y-3 mb-4">
-        <h4 className="text-xs font-medium text-muted-foreground">
-          {t("learning.ppt.editor.position")}
-        </h4>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <Label className="text-xs">X</Label>
-            <Input
-              type="number"
-              value={Math.round(element.position.x)}
-              onChange={(e) =>
-                updateElement(presentationId, slideId, element.id, {
-                  position: { ...element.position, x: Number(e.target.value) },
-                })
-              }
-              className="h-8"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">Y</Label>
-            <Input
-              type="number"
-              value={Math.round(element.position.y)}
-              onChange={(e) =>
-                updateElement(presentationId, slideId, element.id, {
-                  position: { ...element.position, y: Number(e.target.value) },
-                })
-              }
-              className="h-8"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">W</Label>
-            <Input
-              type="number"
-              value={Math.round(element.size.width)}
-              onChange={(e) =>
-                updateElement(presentationId, slideId, element.id, {
-                  size: { ...element.size, width: Number(e.target.value) },
-                })
-              }
-              className="h-8"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">H</Label>
-            <Input
-              type="number"
-              value={Math.round(element.size.height)}
-              onChange={(e) =>
-                updateElement(presentationId, slideId, element.id, {
-                  size: { ...element.size, height: Number(e.target.value) },
-                })
-              }
-              className="h-8"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Typography (for text) */}
-      {element.type === "text" && (
+        {/* Position & Size */}
         <div className="space-y-3 mb-4">
           <h4 className="text-xs font-medium text-muted-foreground">
-            {t("learning.ppt.editor.typography")}
+            {t("learning.ppt.editor.position")}
           </h4>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">X</Label>
+              <Input
+                type="number"
+                value={Math.round(element.position.x)}
+                onChange={(e) =>
+                  updateElement(presentationId, slideId, element.id, {
+                    position: {
+                      ...element.position,
+                      x: Number(e.target.value),
+                    },
+                  })
+                }
+                className="h-8"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Y</Label>
+              <Input
+                type="number"
+                value={Math.round(element.position.y)}
+                onChange={(e) =>
+                  updateElement(presentationId, slideId, element.id, {
+                    position: {
+                      ...element.position,
+                      y: Number(e.target.value),
+                    },
+                  })
+                }
+                className="h-8"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">W</Label>
+              <Input
+                type="number"
+                value={Math.round(element.size.width)}
+                onChange={(e) =>
+                  updateElement(presentationId, slideId, element.id, {
+                    size: { ...element.size, width: Number(e.target.value) },
+                  })
+                }
+                className="h-8"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">H</Label>
+              <Input
+                type="number"
+                value={Math.round(element.size.height)}
+                onChange={(e) =>
+                  updateElement(presentationId, slideId, element.id, {
+                    size: { ...element.size, height: Number(e.target.value) },
+                  })
+                }
+                className="h-8"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Typography (for text) */}
+        {element.type === "text" && (
+          <div className="space-y-3 mb-4">
+            <h4 className="text-xs font-medium text-muted-foreground">
+              {t("learning.ppt.editor.typography")}
+            </h4>
+            <div>
+              <Label className="text-xs">
+                {t("learning.ppt.editor.font_size")}
+              </Label>
+              <Slider
+                value={[element.style.fontSize || 16]}
+                onValueChange={([value]) => updateStyle({ fontSize: value })}
+                min={8}
+                max={72}
+                step={1}
+                className="mt-2"
+              />
+              <span className="text-xs text-muted-foreground">
+                {element.style.fontSize}px
+              </span>
+            </div>
+            <div className="flex gap-1">
+              <Button
+                variant={
+                  element.style.fontWeight === "bold" ? "default" : "outline"
+                }
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() =>
+                  updateStyle({
+                    fontWeight:
+                      element.style.fontWeight === "bold" ? "normal" : "bold",
+                  })
+                }
+              >
+                <Bold className="w-4 h-4" />
+              </Button>
+              <Button
+                variant={
+                  element.style.fontStyle === "italic" ? "default" : "outline"
+                }
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() =>
+                  updateStyle({
+                    fontStyle:
+                      element.style.fontStyle === "italic"
+                        ? "normal"
+                        : "italic",
+                  })
+                }
+              >
+                <Italic className="w-4 h-4" />
+              </Button>
+            </div>
+            <ToggleGroup
+              type="single"
+              value={element.style.textAlign || "left"}
+              onValueChange={(value) => {
+                if (value)
+                  updateStyle({
+                    textAlign: value as "left" | "center" | "right",
+                  });
+              }}
+              className="justify-start"
+            >
+              <ToggleGroupItem value="left" aria-label="Align left">
+                <AlignLeft className="w-4 h-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="center" aria-label="Align center">
+                <AlignCenter className="w-4 h-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="right" aria-label="Align right">
+                <AlignRight className="w-4 h-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+        )}
+
+        {/* Colors */}
+        <div className="space-y-3 mb-4">
+          <h4 className="text-xs font-medium text-muted-foreground">
+            {t("learning.ppt.editor.colors")}
+          </h4>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">
+                {t("learning.ppt.editor.text_color")}
+              </Label>
+              <Input
+                type="color"
+                value={element.style.color || "#000000"}
+                onChange={(e) => updateStyle({ color: e.target.value })}
+                className="h-8 p-1 cursor-pointer"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">
+                {t("learning.ppt.editor.background")}
+              </Label>
+              <Input
+                type="color"
+                value={element.style.backgroundColor || "#ffffff"}
+                onChange={(e) =>
+                  updateStyle({ backgroundColor: e.target.value })
+                }
+                className="h-8 p-1 cursor-pointer"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Border */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-medium text-muted-foreground">
+            {t("learning.ppt.editor.border")}
+          </h4>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">
+                {t("learning.ppt.editor.border_color")}
+              </Label>
+              <Input
+                type="color"
+                value={element.style.borderColor || "#d1d5db"}
+                onChange={(e) => updateStyle({ borderColor: e.target.value })}
+                className="h-8 p-1 cursor-pointer"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">
+                {t("learning.ppt.editor.border_width")}
+              </Label>
+              <Input
+                type="number"
+                value={element.style.borderWidth || 0}
+                onChange={(e) =>
+                  updateStyle({ borderWidth: Number(e.target.value) })
+                }
+                min={0}
+                max={10}
+                className="h-8"
+              />
+            </div>
+          </div>
           <div>
             <Label className="text-xs">
-              {t("learning.ppt.editor.font_size")}
+              {t("learning.ppt.editor.border_radius")}
             </Label>
             <Slider
-              value={[element.style.fontSize || 16]}
-              onValueChange={([value]) => updateStyle({ fontSize: value })}
-              min={8}
-              max={72}
+              value={[element.style.borderRadius || 0]}
+              onValueChange={([value]) => updateStyle({ borderRadius: value })}
+              min={0}
+              max={50}
               step={1}
               className="mt-2"
             />
-            <span className="text-xs text-muted-foreground">
-              {element.style.fontSize}px
-            </span>
-          </div>
-          <div className="flex gap-1">
-            <Button
-              variant={
-                element.style.fontWeight === "bold" ? "default" : "outline"
-              }
-              size="sm"
-              onClick={() =>
-                updateStyle({
-                  fontWeight:
-                    element.style.fontWeight === "bold" ? "normal" : "bold",
-                })
-              }
-            >
-              <Bold className="w-4 h-4" />
-            </Button>
-            <Button
-              variant={
-                element.style.fontStyle === "italic" ? "default" : "outline"
-              }
-              size="sm"
-              onClick={() =>
-                updateStyle({
-                  fontStyle:
-                    element.style.fontStyle === "italic" ? "normal" : "italic",
-                })
-              }
-            >
-              <Italic className="w-4 h-4" />
-            </Button>
-          </div>
-          <div className="flex gap-1">
-            <Button
-              variant={
-                element.style.textAlign === "left" ? "default" : "outline"
-              }
-              size="sm"
-              onClick={() => updateStyle({ textAlign: "left" })}
-            >
-              <AlignLeft className="w-4 h-4" />
-            </Button>
-            <Button
-              variant={
-                element.style.textAlign === "center" ? "default" : "outline"
-              }
-              size="sm"
-              onClick={() => updateStyle({ textAlign: "center" })}
-            >
-              <AlignCenter className="w-4 h-4" />
-            </Button>
-            <Button
-              variant={
-                element.style.textAlign === "right" ? "default" : "outline"
-              }
-              size="sm"
-              onClick={() => updateStyle({ textAlign: "right" })}
-            >
-              <AlignRight className="w-4 h-4" />
-            </Button>
           </div>
         </div>
-      )}
 
-      {/* Colors */}
-      <div className="space-y-3 mb-4">
-        <h4 className="text-xs font-medium text-muted-foreground">
-          {t("learning.ppt.editor.colors")}
-        </h4>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <Label className="text-xs">
-              {t("learning.ppt.editor.text_color")}
-            </Label>
-            <Input
-              type="color"
-              value={element.style.color || "#000000"}
-              onChange={(e) => updateStyle({ color: e.target.value })}
-              className="h-8 p-1 cursor-pointer"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">
-              {t("learning.ppt.editor.background")}
-            </Label>
-            <Input
-              type="color"
-              value={element.style.backgroundColor || "#ffffff"}
-              onChange={(e) => updateStyle({ backgroundColor: e.target.value })}
-              className="h-8 p-1 cursor-pointer"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Border */}
-      <div className="space-y-3">
-        <h4 className="text-xs font-medium text-muted-foreground">
-          {t("learning.ppt.editor.border")}
-        </h4>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <Label className="text-xs">
-              {t("learning.ppt.editor.border_color")}
-            </Label>
-            <Input
-              type="color"
-              value={element.style.borderColor || "#d1d5db"}
-              onChange={(e) => updateStyle({ borderColor: e.target.value })}
-              className="h-8 p-1 cursor-pointer"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">
-              {t("learning.ppt.editor.border_width")}
-            </Label>
-            <Input
-              type="number"
-              value={element.style.borderWidth || 0}
-              onChange={(e) =>
-                updateStyle({ borderWidth: Number(e.target.value) })
-              }
-              min={0}
-              max={10}
-              className="h-8"
-            />
-          </div>
-        </div>
-        <div>
-          <Label className="text-xs">
-            {t("learning.ppt.editor.border_radius")}
-          </Label>
+        {/* Opacity */}
+        <div className="space-y-3 mt-4">
+          <h4 className="text-xs font-medium text-muted-foreground">
+            {t("learning.ppt.editor.opacity")}
+          </h4>
           <Slider
-            value={[element.style.borderRadius || 0]}
-            onValueChange={([value]) => updateStyle({ borderRadius: value })}
+            value={[(element.style.opacity || 1) * 100]}
+            onValueChange={([value]) => updateStyle({ opacity: value / 100 })}
             min={0}
-            max={50}
+            max={100}
             step={1}
-            className="mt-2"
           />
+          <span className="text-xs text-muted-foreground">
+            {Math.round((element.style.opacity || 1) * 100)}%
+          </span>
         </div>
       </div>
-
-      {/* Opacity */}
-      <div className="space-y-3 mt-4">
-        <h4 className="text-xs font-medium text-muted-foreground">
-          {t("learning.ppt.editor.opacity")}
-        </h4>
-        <Slider
-          value={[(element.style.opacity || 1) * 100]}
-          onValueChange={([value]) => updateStyle({ opacity: value / 100 })}
-          min={0}
-          max={100}
-          step={1}
-        />
-        <span className="text-xs text-muted-foreground">
-          {Math.round((element.style.opacity || 1) * 100)}%
-        </span>
-      </div>
-    </div>
+    </ScrollArea>
   );
 }

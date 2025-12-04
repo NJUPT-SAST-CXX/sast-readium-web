@@ -37,7 +37,7 @@ const SLIDE_HEIGHT = 5.625;
 
 // Conversion factor from pixels to inches (assuming 96 DPI design)
 const CANVAS_WIDTH = 960;
-const CANVAS_HEIGHT = 540;
+// const CANVAS_HEIGHT = 540; // Reserved for aspect ratio calculations
 const PX_TO_INCH = SLIDE_WIDTH / CANVAS_WIDTH;
 
 // ============================================================================
@@ -342,10 +342,11 @@ export async function downloadPPTX(
 // Template Generation
 // ============================================================================
 
-interface SlideTemplate {
-  layout: SlideLayout;
-  elements: Array<Omit<SlideElement, "id">>;
-}
+// Reserved for future template-based slide generation
+// interface SlideTemplate {
+//   layout: SlideLayout;
+//   elements: Array<Omit<SlideElement, "id">>;
+// }
 
 /**
  * Generate slide elements from AI-generated content

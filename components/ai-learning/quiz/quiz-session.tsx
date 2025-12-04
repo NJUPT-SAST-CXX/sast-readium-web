@@ -152,12 +152,16 @@ export function QuizSession({ quizId, onComplete, onExit }: QuizSessionProps) {
 
   if (!quiz || !currentQuestion) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-6">
-        <AlertTriangle className="w-16 h-16 text-yellow-500 mb-4" />
-        <h2 className="text-xl font-semibold mb-2">
+      <div className="flex flex-col items-center justify-center h-full p-4 sm:p-6 text-center">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-yellow-500/10 flex items-center justify-center mb-4">
+          <AlertTriangle className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-500" />
+        </div>
+        <h2 className="text-lg sm:text-xl font-semibold mb-2">
           {t("learning.common.error")}
         </h2>
-        <Button onClick={onExit}>{t("learning.common.close")}</Button>
+        <Button onClick={onExit} className="w-full sm:w-auto">
+          {t("learning.common.close")}
+        </Button>
       </div>
     );
   }
@@ -165,15 +169,24 @@ export function QuizSession({ quizId, onComplete, onExit }: QuizSessionProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={handleExit}>
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            {t("learning.common.close")}
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleExit}
+            className="shrink-0 h-8 px-2 sm:px-3"
+          >
+            <ArrowLeft className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">
+              {t("learning.common.close")}
+            </span>
           </Button>
-          <div>
-            <h3 className="font-medium">{quiz.title}</h3>
-            <p className="text-xs text-muted-foreground">
+          <div className="min-w-0">
+            <h3 className="font-medium text-sm sm:text-base truncate">
+              {quiz.title}
+            </h3>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
               {t("learning.quiz.session.question_of", {
                 current: currentQuestionIndex + 1,
                 total: questions.length,
@@ -181,18 +194,21 @@ export function QuizSession({ quizId, onComplete, onExit }: QuizSessionProps) {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {timeRemaining !== null && (
             <Badge
               variant={timeRemaining < 60 ? "destructive" : "outline"}
-              className="gap-1"
+              className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2"
             >
-              <Clock className="w-3 h-3" />
+              <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
               {formatTime(timeRemaining)}
             </Badge>
           )}
-          <Badge variant="secondary" className="gap-1">
-            <Target className="w-3 h-3" />
+          <Badge
+            variant="secondary"
+            className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2"
+          >
+            <Target className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
             {answeredCount} / {questions.length}
           </Badge>
         </div>
@@ -202,11 +218,11 @@ export function QuizSession({ quizId, onComplete, onExit }: QuizSessionProps) {
       <Progress value={progress} className="h-1 rounded-none" />
 
       {/* Question Display */}
-      <div className="flex-1 overflow-auto p-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <Badge variant="outline">
+      <div className="flex-1 overflow-auto p-3 sm:p-6">
+        <Card className="shadow-sm">
+          <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <Badge variant="outline" className="text-[10px] sm:text-xs">
                 {currentQuestion.type === "multiple-choice" &&
                   t("learning.quiz.question_types.multiple_choice")}
                 {currentQuestion.type === "true-false" &&
@@ -219,6 +235,7 @@ export function QuizSession({ quizId, onComplete, onExit }: QuizSessionProps) {
               <Badge
                 variant="secondary"
                 className={cn(
+                  "text-[10px] sm:text-xs",
                   currentQuestion.difficulty === "easy" &&
                     "bg-green-100 text-green-700",
                   currentQuestion.difficulty === "medium" &&
@@ -230,11 +247,11 @@ export function QuizSession({ quizId, onComplete, onExit }: QuizSessionProps) {
                 {t(`learning.quiz.difficulty.${currentQuestion.difficulty}`)}
               </Badge>
             </div>
-            <CardTitle className="text-lg mt-3">
+            <CardTitle className="text-base sm:text-lg mt-2 sm:mt-3">
               <QuestionContent question={currentQuestion} />
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6 pb-4 sm:pb-6">
             <AnswerInput
               question={currentQuestion}
               value={currentAnswer}
@@ -245,10 +262,13 @@ export function QuizSession({ quizId, onComplete, onExit }: QuizSessionProps) {
       </div>
 
       {/* Controls */}
-      <div className="px-4 py-4 border-t bg-muted/30">
-        <div className="flex items-center justify-between">
+      <div className="px-3 sm:px-4 py-3 sm:py-4 border-t bg-muted/30">
+        {/* Mobile: stacked layout, Desktop: row layout */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
           <Button
             variant="outline"
+            size="sm"
+            className="h-9 sm:h-10 order-2 sm:order-1"
             onClick={() => {
               previousQuestion();
               setCurrentAnswer("");
@@ -259,18 +279,24 @@ export function QuizSession({ quizId, onComplete, onExit }: QuizSessionProps) {
             {t("learning.quiz.session.previous")}
           </Button>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 order-1 sm:order-2">
             <Button
               variant="ghost"
+              size="sm"
+              className="h-9 sm:h-10 flex-1 sm:flex-none"
               onClick={handleSkip}
               disabled={currentQuestionIndex >= questions.length - 1}
             >
               <SkipForward className="w-4 h-4 mr-1" />
-              {t("learning.quiz.session.skip")}
+              <span className="hidden xs:inline">
+                {t("learning.quiz.session.skip")}
+              </span>
             </Button>
 
             {currentQuestionIndex < questions.length - 1 ? (
               <Button
+                size="sm"
+                className="h-9 sm:h-10 flex-1 sm:flex-none"
                 onClick={handleSubmitAnswer}
                 disabled={currentAnswer === ""}
               >
@@ -278,7 +304,12 @@ export function QuizSession({ quizId, onComplete, onExit }: QuizSessionProps) {
                 {t("learning.quiz.session.next")}
               </Button>
             ) : (
-              <Button onClick={handleSubmitQuiz} variant="default">
+              <Button
+                size="sm"
+                className="h-9 sm:h-10 flex-1 sm:flex-none"
+                onClick={handleSubmitQuiz}
+                variant="default"
+              >
                 <CheckCircle2 className="w-4 h-4 mr-1" />
                 {t("learning.quiz.session.submit")}
               </Button>

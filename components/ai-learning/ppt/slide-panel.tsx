@@ -6,10 +6,11 @@
  * Sidebar panel showing slide thumbnails with reordering and management.
  */
 
-import { useMemo, useCallback } from "react";
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -107,16 +108,20 @@ export function SlidePanel({
   }
 
   return (
-    <div className="flex flex-col h-full w-48 border-r bg-muted/30">
+    <div className="flex flex-col h-full w-36 sm:w-48 border-r bg-muted/30">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b">
-        <span className="text-sm font-medium">
-          {t("learning.ppt.slides_count")}: {slides.length}
+      <div className="flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2 border-b">
+        <span className="text-xs sm:text-sm font-medium truncate">
+          {slides.length} {t("learning.ppt.slides", "slides")}
         </span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7">
-              <Plus className="w-4 h-4" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 sm:h-7 sm:w-7 shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -140,27 +145,29 @@ export function SlidePanel({
       </div>
 
       {/* Slide Thumbnails */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-2">
-        {slides.map((slide, index) => (
-          <SlideThumbnail
-            key={slide.id}
-            slide={slide}
-            index={index}
-            isSelected={slide.id === selectedSlideId}
-            backgroundColor={
-              slide.backgroundColor || presentation.theme.backgroundColor
-            }
-            onSelect={() => onSelectSlide(slide.id)}
-            onDelete={() => handleDeleteSlide(slide.id)}
-            onDuplicate={() => handleDuplicateSlide(slide.id)}
-            onMoveUp={() => handleMoveSlide(slide.id, "up")}
-            onMoveDown={() => handleMoveSlide(slide.id, "down")}
-            canMoveUp={index > 0}
-            canMoveDown={index < slides.length - 1}
-            canDelete={slides.length > 1}
-          />
-        ))}
-      </div>
+      <ScrollArea className="flex-1">
+        <div className="p-1.5 sm:p-2 space-y-1.5 sm:space-y-2">
+          {slides.map((slide, index) => (
+            <SlideThumbnail
+              key={slide.id}
+              slide={slide}
+              index={index}
+              isSelected={slide.id === selectedSlideId}
+              backgroundColor={
+                slide.backgroundColor || presentation.theme.backgroundColor
+              }
+              onSelect={() => onSelectSlide(slide.id)}
+              onDelete={() => handleDeleteSlide(slide.id)}
+              onDuplicate={() => handleDuplicateSlide(slide.id)}
+              onMoveUp={() => handleMoveSlide(slide.id, "up")}
+              onMoveDown={() => handleMoveSlide(slide.id, "down")}
+              canMoveUp={index > 0}
+              canMoveDown={index < slides.length - 1}
+              canDelete={slides.length > 1}
+            />
+          ))}
+        </div>
+      </ScrollArea>
     </div>
   );
 }

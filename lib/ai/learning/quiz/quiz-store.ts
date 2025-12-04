@@ -19,7 +19,6 @@ import type {
   QuizAttempt,
   UserAnswer,
   DifficultyLevel,
-  QuestionType,
   QuizStats,
 } from "../types";
 import {
@@ -31,7 +30,6 @@ import {
   calculateQuizStats,
   analyzeQuestionPerformance,
   getWeakTopics,
-  getStudyRecommendations,
 } from "./adaptive-engine";
 
 // ============================================================================
@@ -209,6 +207,7 @@ export const useQuizStore = create<QuizState>()(
 
       deleteQuiz: (id) => {
         set((state) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { [id]: deletedQuiz, ...remainingQuizzes } = state.quizzes;
           return {
             quizzes: remainingQuizzes,

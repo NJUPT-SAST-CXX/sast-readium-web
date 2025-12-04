@@ -28,6 +28,35 @@ tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-notification = "2"
 tauri-plugin-process = "2"
+tauri-plugin-shell = "2"
+
+# Secure storage for API keys
+keyring = "3"
+
+# Async runtime and HTTP client for AI proxy
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", features = ["json", "stream"] }
+
+# UUID for unique identifiers
+uuid = { version = "1", features = ["v4"] }
+
+# Chrono for timestamps
+chrono = { version = "0.4", features = ["serde"] }
+
+# Thiserror for error handling
+thiserror = "2"
+
+# Official MCP SDK for Model Context Protocol
+rmcp = { version = "0.10", features = ["client", "transport-child-process"] }
+
+# Anyhow for error handling in async contexts
+anyhow = "1"
+
+# Tracing for logging
+tracing = "0.1"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"
+
+[dev-dependencies]
+tempfile = "3"

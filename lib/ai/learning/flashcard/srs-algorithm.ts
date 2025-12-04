@@ -256,7 +256,6 @@ export function calculateDeckStats(
   sessions: Array<{ startedAt: number; completedAt?: number }>
 ): DeckStats {
   const totalCards = cards.length;
-  const now = Date.now();
 
   let newCards = 0;
   let learningCards = 0;

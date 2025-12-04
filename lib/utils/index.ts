@@ -5,6 +5,7 @@
  * - Tailwind CSS class merging (cn)
  * - Archive file processing
  * - Document type detection
+ * - Markdown processing utilities
  */
 
 // Core utilities
@@ -24,3 +25,37 @@ export {
   readMarkdownContent,
   type DocumentType,
 } from "./document-utils";
+
+// Markdown utilities
+export {
+  // Core parsing
+  slugify,
+  extractHeadings,
+  parseAdmonitions,
+  processKeyboardShortcuts,
+  getContentStats,
+  searchInContent,
+  validateMarkdown,
+  normalizeLineEndings,
+  ADMONITION_TYPES,
+  // Text formatting
+  wrapTextWithMarkers,
+  insertTextAtCursor,
+  toggleLinePrefix,
+  // Markdown generation
+  generateMarkdownTable,
+  generateCodeBlock,
+  generateMarkdownLink,
+  generateMarkdownImage,
+  // Content extraction
+  extractPlainText,
+  getCurrentLine,
+  isInsideCodeBlock,
+  // Types
+  type TOCItem,
+  type ParsedAdmonition,
+  type AdmonitionParseResult,
+  type ContentStats,
+  type SearchResult,
+  type ValidationIssue,
+} from "./markdown-utils";
