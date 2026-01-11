@@ -9,12 +9,12 @@ import path from "path";
 async function createTestPDF() {
   const pdfDoc = await PDFDocument.create();
   const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-  const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  await pdfDoc.embedFont(StandardFonts.Helvetica);
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
   // Page 1: Sales Report with Data
   const page1 = pdfDoc.addPage([612, 792]); // Letter size
-  const { width, height } = page1.getSize();
+  const { height } = page1.getSize();
 
   let y = height - 50;
 

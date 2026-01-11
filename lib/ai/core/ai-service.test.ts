@@ -9,8 +9,9 @@ import {
   isValidAudioFile,
   readAudioFile,
   createAudioBlobUrl,
-  type SpeechGenerationResult,
 } from "./ai-service";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import type { SpeechGenerationResult } from "./ai-service";
 import type { PDFContext } from "./ai-chat-store";
 
 // Mock the AI SDK modules

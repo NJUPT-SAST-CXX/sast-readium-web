@@ -7,6 +7,7 @@ import { persist } from "zustand/middleware";
 import type {
   AIPlan,
   PlanStep,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   PlanStatus,
   PlanStepStatus,
   PlanProgress,

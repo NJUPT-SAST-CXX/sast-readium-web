@@ -102,7 +102,7 @@ pub fn apply_usage_update(
     let provider_stats = stats
         .provider_stats
         .entry(provider.to_string())
-        .or_insert_with(ProviderUsageStats::default);
+        .or_default();
     provider_stats.total_tokens += total_new_tokens;
     provider_stats.total_requests += 1;
     provider_stats.cost_estimate += cost.unwrap_or(0.0);
@@ -185,8 +185,10 @@ mod tests {
     fn save_and_load_usage_stats_round_trip() {
         let dir = tempdir().unwrap();
         let path = dir.path().join("stats.json");
-        let mut stats = AIUsageStats::default();
-        stats.total_requests = 3;
+        let mut stats = AIUsageStats {
+            total_requests: 3,
+            ..Default::default()
+        };
         stats.provider_stats.insert(
             "openai".to_string(),
             ProviderUsageStats {
@@ -218,8 +220,10 @@ mod tests {
     fn save_usage_stats_creates_parent_dirs() {
         let dir = tempdir().unwrap();
         let nested = dir.path().join("nested/stats.json");
-        let mut stats = AIUsageStats::default();
-        stats.total_tokens = 42;
+        let stats = AIUsageStats {
+            total_tokens: 42,
+            ..Default::default()
+        };
 
         save_usage_stats_to_file(&nested, &stats).unwrap();
 

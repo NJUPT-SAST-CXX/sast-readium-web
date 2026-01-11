@@ -3,6 +3,7 @@
  */
 
 import type { Annotation, Bookmark } from "@/lib/pdf";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { AIMemory, MemoryExportData } from "@/lib/ai/memory";
 import type { AIPlan } from "@/lib/ai/plan";
 import type {

@@ -143,16 +143,9 @@ pub struct MCPClientSession {
 }
 
 /// Global state for managing MCP client sessions
+#[derive(Default)]
 pub struct MCPClientState {
     pub sessions: HashMap<String, MCPClientSession>,
-}
-
-impl Default for MCPClientState {
-    fn default() -> Self {
-        Self {
-            sessions: HashMap::new(),
-        }
-    }
 }
 
 /// Thread-safe MCP client state

@@ -9,6 +9,7 @@ import { persist } from "zustand/middleware";
 import type {
   WebGLStoreState,
   WebGLSettings,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   WebGLCapabilities,
   WebGLContextState,
   MemoryStats,

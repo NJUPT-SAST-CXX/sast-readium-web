@@ -13,6 +13,7 @@ import type {
   AIMemory,
   MemoryType,
   MemoryScope,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   MemorySource,
   MemoryRetrievalOptions,
   MemoryRetrievalResult,

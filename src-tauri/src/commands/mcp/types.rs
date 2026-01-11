@@ -119,18 +119,10 @@ pub struct MCPConfigSource {
 // ============================================================================
 
 /// Global state for managing MCP server processes
+#[derive(Default)]
 pub struct MCPServerState {
     pub processes: HashMap<String, Child>,
     pub statuses: HashMap<String, MCPServerStatus>,
-}
-
-impl Default for MCPServerState {
-    fn default() -> Self {
-        Self {
-            processes: HashMap::new(),
-            statuses: HashMap::new(),
-        }
-    }
 }
 
 /// Thread-safe MCP state type
