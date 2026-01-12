@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AboutContent } from "@/components/about/about-content";
+import { AboutContent } from "@/components/pages/about/about-content";
 
 export const metadata: Metadata = {
   title: "About - SAST Readium",

@@ -76,3 +76,4 @@ src-tauri/gen/schemas/
 .swc/
 
 llmdoc/
+.ace-tool/

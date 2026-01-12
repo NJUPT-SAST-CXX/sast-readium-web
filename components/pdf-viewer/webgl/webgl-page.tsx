@@ -16,7 +16,7 @@ import {
   type FilterType,
 } from "@/lib/ui/webgl";
 import { useWebGL } from "./webgl-provider";
-import { PDFWatermark } from "../pdf-watermark";
+import { PDFWatermark } from "../watermark";
 
 interface WebGLPageProps {
   page: PDFPageProxy | null;

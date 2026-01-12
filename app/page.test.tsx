@@ -13,7 +13,7 @@ jest.mock("react-i18next", () => ({
     i18n: { language: "en" },
   }),
 }));
-jest.mock("@/components/welcome-page/welcome-page", () => ({
+jest.mock("@/components/pages/welcome/welcome-page", () => ({
   WelcomePage: ({ onFileSelect }: { onFileSelect: (f: File[]) => void }) => (
     <div data-testid="welcome-page">
       <button
@@ -28,14 +28,14 @@ jest.mock("@/components/welcome-page/welcome-page", () => ({
     </div>
   ),
 }));
-jest.mock("@/components/pdf-viewer/pdf-viewer", () => ({
+jest.mock("@/components/pdf-viewer/viewer", () => ({
   PDFViewer: ({ onClose }: { onClose: () => void }) => (
     <div data-testid="pdf-viewer">
       <button onClick={() => onClose()}>Close PDF</button>
     </div>
   ),
 }));
-jest.mock("@/components/pdf-viewer/pdf-tab-bar", () => ({
+jest.mock("@/components/pdf-viewer/navigation/tab-bar", () => ({
   PDFTabBar: () => <div data-testid="pdf-tab-bar">Tabs</div>,
 }));
 jest.mock("@/hooks/use-pdf-context", () => ({

@@ -47,8 +47,13 @@ import {
   type SearchResult,
 } from "@/lib/utils";
 import { usePDFStore } from "@/lib/pdf";
-import { MarkdownPreview, TOCSidebar, type TOCItem } from "./markdown-preview";
-import { MarkdownEditor } from "./markdown-editor";
+import { MarkdownPreview, TOCSidebar, type TOCItem } from "./preview";
+import {
+  exportAsHtml,
+  exportAsPdf,
+  exportAsPdfBlob,
+} from "@/lib/markdown-export";
+import { MarkdownEditor } from "./editor";
 
 export type MarkdownViewMode = "view" | "edit" | "split";
 
@@ -89,7 +94,8 @@ export function MarkdownViewer({
   const contentRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const { isDarkMode, themeMode, setThemeMode } = usePDFStore();
+  const { isDarkMode, themeMode, setThemeMode, setCurrentPDF, setPdfUrl } =
+    usePDFStore();
 
   // Track unsaved changes
   const handleContentChange = useCallback(
@@ -227,6 +233,28 @@ export function MarkdownViewer({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }, [content, file.name]);
+
+  // Export as HTML
+  const handleExportHtml = useCallback(() => {
+    exportAsHtml(content, file.name);
+  }, [content, file.name]);
+
+  // Export as PDF
+  const handleExportPdf = useCallback(async () => {
+    await exportAsPdf(content, file.name);
+  }, [content, file.name]);
+
+  // Preview as PDF in viewer
+  const handlePreviewPdf = useCallback(async () => {
+    const title = file.name.replace(/\.(md|markdown)$/i, "");
+    const blob = await exportAsPdfBlob(content, title);
+    const pdfFile = new File([blob], `${title}.pdf`, {
+      type: "application/pdf",
+    });
+    setCurrentPDF(pdfFile);
+    const url = URL.createObjectURL(blob);
+    setPdfUrl(url);
+  }, [content, file.name, setCurrentPDF, setPdfUrl]);
 
   // Print
   const handlePrint = useCallback(() => {
@@ -624,21 +652,37 @@ export function MarkdownViewer({
                 className="mx-1 h-6 hidden sm:block"
               />
 
-              {/* Download - always visible */}
-              <Tooltip>
-                <TooltipTrigger asChild>
+              {/* Download/Export Menu - always visible */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={handleDownload}
                     aria-label={t("toolbar.tooltip.download")}
                   >
                     <Download className="h-4 w-4" />
                   </Button>
-                </TooltipTrigger>
-                <TooltipContent>{t("toolbar.tooltip.download")}</TooltipContent>
-              </Tooltip>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleDownload}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    {t("markdown.download_md", "Download Markdown")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportHtml}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    {t("markdown.export_html", "Export as HTML")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportPdf}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    {t("markdown.export_pdf", "Export as PDF")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handlePreviewPdf}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    {t("markdown.preview_pdf", "Preview as PDF")}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               {/* Print - hidden on mobile */}
               <Tooltip>
@@ -792,6 +836,8 @@ export function MarkdownViewer({
                     showTOC={false}
                     enableAnchors={true}
                     onHeadingsChange={setHeadings}
+                    searchQuery={searchQuery}
+                    currentSearchIndex={currentSearchIndex}
                   />
                 </div>
               </ScrollArea>
@@ -836,6 +882,8 @@ export function MarkdownViewer({
                         showTOC={false}
                         enableAnchors={true}
                         onHeadingsChange={setHeadings}
+                        searchQuery={searchQuery}
+                        currentSearchIndex={currentSearchIndex}
                       />
                     </div>
                   </ScrollArea>
@@ -854,11 +902,21 @@ export function MarkdownViewer({
             <span className="hidden sm:inline">
               {content.split(/\s+/).filter(Boolean).length}{" "}
               {t("markdown.words")} · {content.split("\n").length}{" "}
-              {t("markdown.lines")}
+              {t("markdown.lines")} ·{" "}
+              {Math.max(
+                1,
+                Math.ceil(content.split(/\s+/).filter(Boolean).length / 200)
+              )}{" "}
+              {t("markdown.min_read", "min read")}
             </span>
             <span className="sm:hidden">
               {content.split(/\s+/).filter(Boolean).length}W ·{" "}
-              {content.split("\n").length}L
+              {content.split("\n").length}L ·{" "}
+              {Math.max(
+                1,
+                Math.ceil(content.split(/\s+/).filter(Boolean).length / 200)
+              )}
+              m
             </span>
           </span>
         </div>

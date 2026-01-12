@@ -132,6 +132,8 @@ const config: Config = {
     "^remark-gfm$": "<rootDir>/__mocks__/remark-gfm.js",
     "^rehype-raw$": "<rootDir>/__mocks__/rehype-raw.js",
     "^shiki$": "<rootDir>/__mocks__/shiki.js",
+    "^remark-math$": "<rootDir>/__mocks__/remark-math.js",
+    "^rehype-katex$": "<rootDir>/__mocks__/rehype-katex.js",
   },
 
   // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
@@ -212,7 +214,7 @@ const config: Config = {
   // The glob patterns Jest uses to detect test files
   testMatch: [
     "**/__tests__/**/*.?([mc])[jt]s?(x)",
-    "**/?(*.)+(spec|test).?([mc])[jt]s?(x)",
+    "**/?(*.)+(test).?([mc])[jt]s?(x)",
   ],
 
   // An array of regexp pattern strings that are matched against all test paths, matched tests are skipped
@@ -221,7 +223,7 @@ const config: Config = {
     "/.next/",
     "/out/",
     "/src-tauri/",
-    "/e2e/",
+    "<rootDir>/e2e/",
   ],
 
   // The regexp pattern or array of patterns that Jest uses to detect test files

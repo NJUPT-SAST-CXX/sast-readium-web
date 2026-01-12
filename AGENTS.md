@@ -5,10 +5,11 @@
 - `app/` Next.js App Router (routes: `page.tsx`, `layout.tsx`, global styles in `globals.css`).
 - `components/` React components organized by feature:
   - `components/ui/` Reusable UI components (shadcn patterns).
+  - `components/ai/` AI-related components (chat, elements, learning, settings, sidebar, tools).
+  - `components/core/` App-level components (i18n-provider, language-switcher, splash-screen, theme-manager).
+  - `components/markdown-viewer/` Markdown viewer and editor components.
+  - `components/pages/` Page-specific components (about, help, welcome).
   - `components/pdf-viewer/` PDF viewer components.
-  - `components/ai-sidebar/` AI chat interface components.
-  - `components/ai-elements/` AI message rendering components.
-  - `components/welcome-page/` Welcome screen components.
 - `lib/` Shared utilities and services:
   - `lib/pdf-store.ts` — Zustand store for PDF state.
   - `lib/ai-chat-store.ts` — Zustand store for AI chat state.

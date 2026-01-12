@@ -23,7 +23,7 @@ jest.mock("@dnd-kit/utilities", () => ({
 }));
 
 // Mock the PDFThumbnail component
-jest.mock("../pdf-thumbnail", () => ({
+jest.mock("../thumbnail", () => ({
   PDFThumbnail: ({ pageNumber, isActive, onClick }: any) => (
     <div data-testid={`thumbnail-${pageNumber}`}>
       <button onClick={onClick} className={isActive ? "active" : ""}>

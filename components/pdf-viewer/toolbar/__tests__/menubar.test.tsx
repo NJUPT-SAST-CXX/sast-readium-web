@@ -18,13 +18,13 @@ jest.mock("@/components/core/language-switcher", () => ({
 }));
 
 // Mock PDFPropertiesDialog
-jest.mock("../dialogs/properties", () => ({
+jest.mock("../../dialogs/properties", () => ({
   PDFPropertiesDialog: ({ open }: { open: boolean }) =>
     open ? <div data-testid="properties-dialog">Properties Dialog</div> : null,
 }));
 
 // Mock PDFRecentFilesDialog
-jest.mock("../dialogs/recent-files", () => ({
+jest.mock("../../dialogs/recent-files", () => ({
   PDFRecentFilesDialog: ({ open }: { open: boolean }) =>
     open ? (
       <div data-testid="recent-files-dialog">Recent Files Dialog</div>

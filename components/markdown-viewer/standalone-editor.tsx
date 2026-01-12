@@ -2,7 +2,16 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { FileText, FolderOpen, FilePlus, Save, X } from "lucide-react";
+import {
+  FileText,
+  FilePlus,
+  FolderOpen,
+  Save,
+  X,
+  FileDown,
+  Eye,
+  MoreHorizontal,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,8 +23,21 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { MarkdownEditor } from "./markdown-editor";
+import { MarkdownEditor } from "./editor";
+import {
+  exportAsHtml,
+  exportAsPdf,
+  exportAsPdfBlob,
+} from "@/lib/markdown-export";
+import { usePDFStore } from "@/lib/pdf";
 
 // ============================================================================
 // Types
@@ -47,6 +69,53 @@ export function StandaloneMarkdownEditor({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
+
+  // Auto-save draft key
+  const draftKey = `markdown-draft-${fileName}`;
+
+  // Load draft from localStorage on mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem(draftKey);
+    if (savedDraft && !initialContent) {
+      try {
+        const draft = JSON.parse(savedDraft);
+        if (draft.content && draft.timestamp) {
+          const savedTime = new Date(draft.timestamp);
+          // Only restore if draft is less than 7 days old
+          if (Date.now() - savedTime.getTime() < 7 * 24 * 60 * 60 * 1000) {
+            setContent(draft.content);
+            setLastAutoSave(savedTime);
+          }
+        }
+      } catch {
+        // Invalid draft, ignore
+      }
+    }
+  }, [draftKey, initialContent]);
+
+  // Auto-save to localStorage every 30 seconds
+  useEffect(() => {
+    if (!content || content === originalContent) return;
+
+    const timer = setTimeout(() => {
+      const draft = {
+        content,
+        fileName,
+        timestamp: new Date().toISOString(),
+      };
+      localStorage.setItem(draftKey, JSON.stringify(draft));
+      setLastAutoSave(new Date());
+    }, 30000); // 30 seconds
+
+    return () => clearTimeout(timer);
+  }, [content, originalContent, fileName, draftKey]);
+
+  // Clear draft when saved
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(draftKey);
+    setLastAutoSave(null);
+  }, [draftKey]);
 
   // Track unsaved changes
   useEffect(() => {
@@ -64,6 +133,7 @@ export function StandaloneMarkdownEditor({
       onSave(content, fileName);
       setOriginalContent(content);
       setHasUnsavedChanges(false);
+      clearDraft();
     } else {
       // Download file
       const blob = new Blob([content], { type: "text/markdown" });
@@ -77,13 +147,49 @@ export function StandaloneMarkdownEditor({
       URL.revokeObjectURL(url);
       setOriginalContent(content);
       setHasUnsavedChanges(false);
+      clearDraft();
     }
-  }, [content, fileName, onSave]);
+  }, [content, fileName, onSave, clearDraft]);
 
   // Handle save as
   const handleSaveAs = useCallback(() => {
     setShowSaveDialog(true);
   }, []);
+
+  // Handle export as HTML
+  const handleExportHtml = useCallback(() => {
+    exportAsHtml(content, fileName);
+  }, [content, fileName]);
+
+  // Handle export as PDF (download)
+  const handleExportPdf = useCallback(async () => {
+    await exportAsPdf(content, fileName);
+  }, [content, fileName]);
+
+  // Get PDF store actions
+  const setPdfUrl = usePDFStore((state) => state.setPdfUrl);
+  const setCurrentPDF = usePDFStore((state) => state.setCurrentPDF);
+
+  // Handle preview as PDF (open in PDF viewer)
+  const handlePreviewPdf = useCallback(async () => {
+    const title = fileName.replace(/\.(md|markdown)$/i, "");
+    const blob = await exportAsPdfBlob(content, title);
+
+    // Create a File object from the blob
+    const pdfFile = new File([blob], `${title}.pdf`, {
+      type: "application/pdf",
+    });
+
+    // Set the PDF in the store to open in the app's PDF viewer
+    setCurrentPDF(pdfFile);
+
+    // Also create a URL for the PDF viewer
+    const url = URL.createObjectURL(blob);
+    setPdfUrl(url);
+
+    // Navigate to home page where PDF viewer is displayed
+    window.location.href = "/";
+  }, [content, fileName, setCurrentPDF, setPdfUrl]);
 
   // Handle save dialog confirm
   const handleSaveDialogConfirm = useCallback(() => {
@@ -170,17 +276,24 @@ export function StandaloneMarkdownEditor({
   return (
     <div className={cn("flex flex-col h-full", className)}>
       {/* Header bar */}
-      <div className="flex items-center justify-between border-b bg-background px-4 py-2">
-        <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-muted-foreground" />
-          <span className="font-medium">
+      <div className="flex items-center justify-between border-b bg-background px-2 sm:px-4 py-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+          <span className="font-medium truncate">
             {fileName}
             {hasUnsavedChanges && (
               <span className="text-muted-foreground"> •</span>
             )}
           </span>
+          {lastAutoSave && (
+            <span className="text-xs text-muted-foreground hidden sm:inline">
+              (Draft saved {lastAutoSave.toLocaleTimeString()})
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-1">
+
+        {/* Desktop buttons */}
+        <div className="hidden md:flex items-center gap-1">
           <Button variant="ghost" size="sm" onClick={handleNew}>
             <FilePlus className="h-4 w-4 mr-1" />
             {t("markdown.new", "New")}
@@ -197,6 +310,64 @@ export function StandaloneMarkdownEditor({
             <Save className="h-4 w-4 mr-1" />
             {t("markdown.save_btn", "Save")}
           </Button>
+          <Button variant="ghost" size="sm" onClick={handleExportHtml}>
+            <FileDown className="h-4 w-4 mr-1" />
+            HTML
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleExportPdf}>
+            <FileDown className="h-4 w-4 mr-1" />
+            PDF
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handlePreviewPdf}>
+            <Eye className="h-4 w-4 mr-1" />
+            {t("markdown.preview_pdf", "Preview")}
+          </Button>
+          {onClose && (
+            <Button variant="ghost" size="icon" onClick={handleClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        {/* Mobile buttons */}
+        <div className="flex md:hidden items-center gap-1">
+          <Button
+            variant={hasUnsavedChanges ? "default" : "ghost"}
+            size="icon"
+            onClick={handleSave}
+          >
+            <Save className="h-4 w-4" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleNew}>
+                <FilePlus className="h-4 w-4 mr-2" />
+                {t("markdown.new", "New")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleOpen}>
+                <FolderOpen className="h-4 w-4 mr-2" />
+                {t("markdown.open", "Open")}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportHtml}>
+                <FileDown className="h-4 w-4 mr-2" />
+                {t("markdown.export_html", "Export HTML")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                {t("markdown.export_pdf", "Export PDF")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handlePreviewPdf}>
+                <Eye className="h-4 w-4 mr-2" />
+                {t("markdown.preview_pdf", "Preview PDF")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {onClose && (
             <Button variant="ghost" size="icon" onClick={handleClose}>
               <X className="h-4 w-4" />

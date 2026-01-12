@@ -35,8 +35,8 @@ jest.mock("../about-runtime-info", () => ({
   AboutRuntimeInfo: () => <div data-testid="runtime-info">Runtime Info</div>,
 }));
 
-// Mock package.json - use correct relative path from about-content.tsx
-jest.mock("../../../package.json", () => ({
+// Mock package.json - use correct relative path from __tests__ directory
+jest.mock("../../../../package.json", () => ({
   version: "1.0.0",
   dependencies: {
     react: "18.0.0",

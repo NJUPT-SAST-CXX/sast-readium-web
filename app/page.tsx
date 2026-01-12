@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { WelcomePage } from "@/components/welcome-page/welcome-page";
-import { PDFViewer } from "@/components/pdf-viewer/pdf-viewer";
+import { WelcomePage } from "@/components/pages/welcome/welcome-page";
+import { PDFViewer } from "@/components/pdf-viewer/viewer";
 import { MarkdownViewer } from "@/components/markdown-viewer/markdown-viewer";
-import { PDFTabBar } from "@/components/pdf-viewer/pdf-tab-bar";
+import { PDFTabBar } from "@/components/pdf-viewer/navigation/tab-bar";
 import { usePDFStore } from "@/lib/pdf";
 import { unloadPDFDocument } from "@/lib/pdf";
 import { usePDFContext } from "@/hooks/use-pdf-context";
